@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:s="http://smart/maui"
+             xmlns:shell="clr-namespace:Example.Shell"
+             xmlns:modules="clr-namespace:Example.Modules"
+             xmlns:module="clr-namespace:Example.Modules.Grid"
+             x:Class="Example.Modules.Grid.GridMenuView"
+             x:DataType="{x:Type module:GridMenuViewModel}"
+             s:BindingContextResolver.Type="{x:Type module:GridMenuViewModel}"
+             shell:ShellProperty.Title="ClamGrid"
+             shell:ShellProperty.Function1Text="Exit"
+             shell:ShellProperty.Function1Enabled="True">
+
+    <Grid Style="{StaticResource MenuGrid}"
+          RowDefinitions="*,*,*,*,*,*,*">
+        <Button Grid.Row="0"
+                Style="{StaticResource MenuButton}"
+                Command="{Binding ForwardCommand}"
+                CommandParameter="{x:Static modules:ViewId.GridList}"
+                Text="1.List" />
+        <Button Grid.Row="1"
+                Style="{StaticResource MenuButton}"
+                Command="{Binding ForwardCommand}"
+                CommandParameter="{x:Static modules:ViewId.GridScenario}"
+                Text="2.Scenario" />
+        <Button Grid.Row="2"
+                Style="{StaticResource MenuButton}"
+                Command="{Binding ForwardCommand}"
+                CommandParameter="{x:Static modules:ViewId.GridColor}"
+                Text="3.Color" />
+        <Button Grid.Row="3"
+                Style="{StaticResource MenuButton}"
+                Command="{Binding ForwardCommand}"
+                CommandParameter="{x:Static modules:ViewId.GridQuality}"
+                Text="4.Quality" />
+        <Button Grid.Row="4"
+                Style="{StaticResource MenuButton}"
+                Command="{Binding ForwardCommand}"
+                CommandParameter="{x:Static modules:ViewId.GridInput}"
+                Text="5.Input" />
+        <Button Grid.Row="5"
+                Style="{StaticResource MenuButton}"
+                Command="{Binding ForwardCommand}"
+                CommandParameter="{x:Static modules:ViewId.TicketList}"
+                Text="6.Mvvm" />
+        <Button Grid.Row="6"
+                Style="{StaticResource MenuButton}"
+                IsEnabled="False"
+                Text="" />
+    </Grid>
+
+</ContentView>

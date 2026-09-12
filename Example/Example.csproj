@@ -1,0 +1,69 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0-android</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Example</RootNamespace>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
+    <MauiStrictXamlCompilation>true</MauiStrictXamlCompilation>
+    <MauiXamlInflator>SourceGen</MauiXamlInflator>
+    <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
+
+    <!-- Display name -->
+    <ApplicationTitle>ClamGrid</ApplicationTitle>
+
+    <!-- App Identifier -->
+    <ApplicationId>clamgrid.example</ApplicationId>
+
+    <!-- Versions -->
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">30.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- App Icon -->
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" ForegroundScale="0.5" />
+    <!-- Splash Screen -->
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#FFFFFF" BaseSize="128,128" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Modules\Grid\InputVerifier.*.cs">
+      <DependentUpon>InputVerifier.cs</DependentUpon>
+    </Compile>
+    <Compile Update="Modules\Grid\QualityVerifier.*.cs">
+      <DependentUpon>QualityVerifier.cs</DependentUpon>
+    </Compile>
+    <Compile Update="Models\ListScenario.*.cs">
+      <DependentUpon>ListScenario.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClamGrid\ClamGrid.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BunnyTail.DependencyInjection" Version="0.6.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.11">
+      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">none</IncludeAssets>
+      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.100" />
+    <PackageReference Include="Microsoft.Maui.Essentials" Version="10.0.100" />
+    <PackageReference Include="SkiaSharp" Version="4.151.2" />
+    <PackageReference Include="SkiaSharp.Views.Maui.Controls" Version="4.151.2" />
+    <PackageReference Include="Usa.Smart.Core" Version="2.19.0" />
+    <PackageReference Include="Usa.Smart.Maui" Version="2.25.0" />
+    <PackageReference Include="Usa.Smart.Maui.Extensions" Version="2.25.0" />
+    <PackageReference Include="Usa.Smart.Mvvm" Version="2.12.0" />
+    <PackageReference Include="Usa.Smart.Navigation" Version="3.10.0" />
+    <PackageReference Include="Usa.Smart.Navigation.Extensions.DependencyInjection" Version="3.10.0" />
+    <PackageReference Include="Usa.Smart.Navigation.Maui" Version="3.10.0" />
+  </ItemGroup>
+
+</Project>

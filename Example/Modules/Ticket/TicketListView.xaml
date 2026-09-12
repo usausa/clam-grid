@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:s="http://smart/maui"
+             xmlns:shell="clr-namespace:Example.Shell"
+             xmlns:parts="clr-namespace:Example.Modules.Parts"
+             xmlns:module="clr-namespace:Example.Modules.Ticket"
+             x:Class="Example.Modules.Ticket.TicketListView"
+             x:DataType="{x:Type module:TicketListViewModel}"
+             s:BindingContextResolver.Type="{x:Type module:TicketListViewModel}"
+             shell:ShellProperty.Title="チケット一覧"
+             shell:ShellProperty.Function1Text="Back"
+             shell:ShellProperty.Function2Text="Select"
+             shell:ShellProperty.Function3Text="Clear"
+             shell:ShellProperty.Function4Text="Reset"
+             shell:ShellProperty.Function1Enabled="True"
+             shell:ShellProperty.Function2Enabled="True"
+             shell:ShellProperty.Function3Enabled="True"
+             shell:ShellProperty.Function4Enabled="True">
+
+    <Grid Style="{StaticResource FillGrid}"
+          RowDefinitions="Auto,*,Auto,Auto">
+        <Grid Grid.Row="0"
+              ColumnDefinitions="*,*,*">
+            <Label Grid.Column="0"
+                   Style="{StaticResource ValueLabel}"
+                   Text="{Binding PendingCount, StringFormat='未完了 {0}'}" />
+            <Label Grid.Column="1"
+                   Style="{StaticResource ValueLabel}"
+                   HorizontalTextAlignment="Center"
+                   Text="{Binding CompletedCount, StringFormat='完了 {0}'}" />
+            <Label Grid.Column="2"
+                   Style="{StaticResource ValueLabel}"
+                   HorizontalTextAlignment="End"
+                   Text="{Binding Items.SelectedCount, StringFormat='選択 {0}'}" />
+        </Grid>
+
+        <parts:TicketGrid Grid.Row="1"
+                              Style="{StaticResource ListGrid}"
+                              ItemsSource="{Binding Items}" />
+
+        <Label Grid.Row="2"
+               Style="{StaticResource StatusLabel}"
+               Text="{Binding Status}" />
+
+        <Grid Grid.Row="3"
+              Style="{StaticResource SubMenuGrid}"
+              ColumnDefinitions="*,*,*,*">
+            <Button Grid.Column="0"
+                    Style="{StaticResource SubMenuButton}"
+                    Command="{Binding CommitCommand}"
+                    Text="確定" />
+            <Button Grid.Column="1"
+                    Style="{StaticResource SubMenuButton}"
+                    Command="{Binding AdvanceCommand}"
+                    Text="状態更新" />
+            <Button Grid.Column="2"
+                    Style="{StaticResource SubMenuButton}"
+                    Command="{Binding ScanCommand}"
+                    Text="検索" />
+            <Button Grid.Column="3"
+                    Style="{StaticResource SubMenuButton}"
+                    Command="{Binding ReloadCommand}"
+                    Text="再読込" />
+        </Grid>
+    </Grid>
+
+</ContentView>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:s="http://smart/maui"
+             xmlns:clam="clr-namespace:ClamGrid;assembly=ClamGrid"
+             xmlns:shell="clr-namespace:Example.Shell"
+             xmlns:module="clr-namespace:Example.Modules.Grid"
+             x:Class="Example.Modules.Grid.GridInputView"
+             x:DataType="{x:Type module:GridInputViewModel}"
+             s:BindingContextResolver.Type="{x:Type module:GridInputViewModel}"
+             shell:ShellProperty.Title="入力の検証"
+             shell:ShellProperty.Function1Text="Back"
+             shell:ShellProperty.Function1Enabled="True">
+
+    <Grid Style="{StaticResource FillGrid}"
+          RowDefinitions="Auto,350,*">
+        <Label Grid.Row="0"
+               Style="{StaticResource TitleLabel}"
+               Text="Android入力の検証" />
+
+        <ScrollView x:Name="Scroller"
+                    Grid.Row="1">
+            <VerticalStackLayout>
+                <Label Style="{StaticResource ValueLabel}"
+                       HeightRequest="50"
+                       Text="親ScrollView内で入力を検証" />
+                <clam:ClamGridView x:Name="TestGrid"
+                                   HeightRequest="260" />
+                <Label Style="{StaticResource ValueLabel}"
+                       HeightRequest="350"
+                       Text="親のスクロール領域" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Label Grid.Row="2"
+               Style="{StaticResource ValueLabel}"
+               Text="{Binding Status}" />
+    </Grid>
+
+</ContentView>

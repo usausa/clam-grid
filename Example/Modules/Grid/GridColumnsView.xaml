@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:s="http://smart/maui"
+             xmlns:clam="clr-namespace:ClamGrid;assembly=ClamGrid"
+             xmlns:behaviors="clr-namespace:Example.Behaviors"
+             xmlns:shell="clr-namespace:Example.Shell"
+             xmlns:module="clr-namespace:Example.Modules.Grid"
+             x:Class="Example.Modules.Grid.GridColumnsView"
+             x:DataType="{x:Type module:GridColumnsViewModel}"
+             s:BindingContextResolver.Type="{x:Type module:GridColumnsViewModel}"
+             shell:ShellProperty.Title="列設定"
+             shell:ShellProperty.Function1Text="Cancel"
+             shell:ShellProperty.Function4Text="Apply"
+             shell:ShellProperty.Function1Enabled="True"
+             shell:ShellProperty.Function4Enabled="True">
+
+    <Grid Style="{StaticResource FillGrid}"
+          RowDefinitions="Auto,*,Auto">
+        <Label Grid.Row="0"
+               Style="{StaticResource TitleLabel}"
+               Text="一覧の表示項目" />
+
+        <clam:ClamGridView Grid.Row="1"
+                           ItemsSource="{Binding Rows}"
+                           RowMover="{Binding RowMover}"
+                           AllowRowDragging="True"
+                           AllowColumnResizing="False"
+                           AllowColumnConfiguration="False"
+                           IsReadOnly="False"
+                           GridStyle="{Binding GridStyle}"
+                           behaviors:GridBind.Controller="{Binding Grid}" />
+
+        <Label Grid.Row="2"
+               Style="{StaticResource StatusLabel}"
+               Text="{Binding Status}" />
+    </Grid>
+
+</ContentView>

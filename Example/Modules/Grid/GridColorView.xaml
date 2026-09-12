@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:s="http://smart/maui"
+             xmlns:clam="clr-namespace:ClamGrid;assembly=ClamGrid"
+             xmlns:behaviors="clr-namespace:Example.Behaviors"
+             xmlns:shell="clr-namespace:Example.Shell"
+             xmlns:module="clr-namespace:Example.Modules.Grid"
+             x:Class="Example.Modules.Grid.GridColorView"
+             x:DataType="{x:Type module:GridColorViewModel}"
+             s:BindingContextResolver.Type="{x:Type module:GridColorViewModel}"
+             shell:ShellProperty.Title="条件付き着色"
+             shell:ShellProperty.Function1Text="Back"
+             shell:ShellProperty.Function2Text="Font"
+             shell:ShellProperty.Function3Text="Header"
+             shell:ShellProperty.Function4Text="Clear"
+             shell:ShellProperty.Function1Enabled="True"
+             shell:ShellProperty.Function2Enabled="True"
+             shell:ShellProperty.Function3Enabled="True"
+             shell:ShellProperty.Function4Enabled="True">
+
+    <Grid Style="{StaticResource FillGrid}"
+          RowDefinitions="*,Auto">
+        <clam:ClamGridView Grid.Row="0"
+                           ItemsSource="{Binding Rows}"
+                           GridStyle="{Binding GridStyle}"
+                           IsReadOnly="False"
+                           behaviors:GridBind.Controller="{Binding Grid}" />
+
+        <Label Grid.Row="1"
+               Style="{StaticResource StatusLabel}"
+               Text="{Binding Status}" />
+    </Grid>
+
+</ContentView>
