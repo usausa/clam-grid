@@ -7,9 +7,9 @@ internal static class ScenarioGridFactory
         ShowRowHeaders = false,
         FontFamily = "monospace",
         TextColor = Colors.Black,
-        HeaderTextColor = Colors.Black,
-        AscendingHeaderBackground = Color.FromArgb("#90CAF9"),
-        DescendingHeaderBackground = Color.FromArgb("#FFCC80"),
+        HeaderTextColor = Colors.White,
+        AscendingHeaderBackground = Color.FromArgb("#1565C0"),
+        DescendingHeaderBackground = Color.FromArgb("#EF6C00"),
         GridLineColor = Colors.Gray,
         SelectedBackground = Color.FromArgb("#448AFF"),
         SelectedTextColor = Colors.White,
@@ -21,7 +21,7 @@ internal static class ScenarioGridFactory
         {
             Width = GridColumnWidth.Absolute(column.Width),
             Alignment = column.AlignEnd ? TextAlignment.End : TextAlignment.Start,
-            HeaderBackground = Color.FromArgb(column.GreenHeader ? "#4CAF50" : "#9E9E9E"),
+            HeaderBackground = Color.FromArgb(column.GreenHeader ? "#2E7D32" : "#616161"),
             AllowSorting = column.AllowSorting
         }).ToArray();
 

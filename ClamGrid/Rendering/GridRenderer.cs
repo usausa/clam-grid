@@ -28,7 +28,20 @@ internal sealed class GridRenderer : IDisposable
 
     public int Measurements { get; private set; }
 
-    public double AutoRowHeight { get; }
+    // Includes every font resolved so far, so fonts found while measuring the headers and sample rows widen the automatic height
+    public double AutoRowHeight
+    {
+        get
+        {
+            var height = LineHeight(primary);
+            foreach (var fonts in fallbacks.Concat(fallbackByFamily.Values))
+            {
+                height = Math.Max(height, LineHeight(fonts));
+            }
+
+            return Math.Ceiling(height + (style.VerticalPadding * 2));
+        }
+    }
 
     public GridRenderer(GridStyle style)
     {
@@ -37,13 +50,6 @@ internal sealed class GridRenderer : IDisposable
         primary = new FontSet(SKTypeface.FromFamilyName(style.FontFamily), style.FontSize);
         languages = GridFonts.Languages.Count > 0 ? GridFonts.Languages.ToArray() : null;
         fallbacks = GridFonts.Fallbacks.Select(typeface => new FontSet(typeface, style.FontSize, false)).ToArray();
-        var height = primary.Font.Metrics.Descent - primary.Font.Metrics.Ascent;
-        foreach (var fonts in fallbacks)
-        {
-            height = Math.Max(height, fonts.Font.Metrics.Descent - fonts.Font.Metrics.Ascent);
-        }
-
-        AutoRowHeight = Math.Ceiling(height + (style.VerticalPadding * 2));
     }
 
     public static string FormatValue(object? value, string? format) =>
@@ -120,9 +126,10 @@ internal sealed class GridRenderer : IDisposable
 
         canvas.Restore();
         var corner = new GridRect(0, 0, layout.RowHeaderWidth, layout.HeaderHeight);
-        Fill(canvas, corner, style.RowHeaderBackground);
-        DrawText(canvas, corner, style.CornerText, TextAlignment.Center, true, style.TextColor);
+        Fill(canvas, corner, style.HeaderBackground);
+        DrawText(canvas, corner, style.CornerText, TextAlignment.Center, true, style.HeaderTextColor);
         DrawLines(canvas, corner);
+        DrawFrozenLine(canvas, layout);
         DrawScrollbars(canvas, layout);
         return rendered;
     }
@@ -264,6 +271,8 @@ internal sealed class GridRenderer : IDisposable
     private static SKRect ToSkRect(GridRect rect) => new((float)rect.X, (float)rect.Y, (float)rect.Right, (float)rect.Bottom);
 
     private static string Sanitize(string text) => text.Replace('\r', ' ').Replace('\n', ' ');
+
+    private static float LineHeight(FontSet fonts) => fonts.Font.Metrics.Descent - fonts.Font.Metrics.Ascent;
 
     // Variation selectors and joiners have no glyph without shaping, so they only steer the font choice and are not drawn
     private static string StripSelectors(string text) => text.AsSpan().IndexOfAny(Selectors) < 0 ? text : text.Replace("\uFE0F", String.Empty, StringComparison.Ordinal).Replace("\uFE0E", String.Empty, StringComparison.Ordinal).Replace("\u200D", String.Empty, StringComparison.Ordinal);
@@ -534,6 +543,21 @@ internal sealed class GridRenderer : IDisposable
         paint.Style = SKPaintStyle.Fill;
         paint.Color = color.ToSKColor();
         canvas.DrawRect(ToSkRect(rect), paint);
+    }
+
+    // Marks the right edge of the frozen columns so the boundary to the scrolling columns stays visible
+    private void DrawFrozenLine(SKCanvas canvas, GridLayout layout)
+    {
+        if ((layout.FrozenColumnCount == 0) || (layout.FrozenWidth <= 0))
+        {
+            return;
+        }
+
+        paint.Style = SKPaintStyle.Stroke;
+        paint.StrokeWidth = 2;
+        paint.Color = style.FrozenLineColor.ToSKColor();
+        var x = (float)(layout.RowHeaderWidth + layout.FrozenWidth) - 1;
+        canvas.DrawLine(x, 0, x, (float)layout.ViewportHeight, paint);
     }
 
     private void DrawLines(SKCanvas canvas, GridRect rect)

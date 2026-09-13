@@ -27,25 +27,28 @@ public sealed record GridStyle
 
     public TextAlignment RowHeaderAlignment { get; set; } = TextAlignment.End;
 
-    public Color TextColor { get; set; } = Color.FromArgb("#1E293B");
+    // Default colors follow the Material palette: Blue 700 header, Cyan 700 and Orange 700 for the sorted column, Blue 100 selection and Gray tints
+    public Color TextColor { get; set; } = Color.FromArgb("#212121");
 
     public Color Background { get; set; } = Colors.White;
 
-    public Color HeaderBackground { get; set; } = Color.FromArgb("#F8FAFC");
+    public Color HeaderBackground { get; set; } = Color.FromArgb("#1976D2");
 
-    public Color HeaderTextColor { get; set; } = Color.FromArgb("#334155");
+    public Color HeaderTextColor { get; set; } = Colors.White;
 
-    public Color RowHeaderBackground { get; set; } = Color.FromArgb("#F8FAFC");
+    public Color RowHeaderBackground { get; set; } = Color.FromArgb("#F5F5F5");
 
-    public Color GridLineColor { get; set; } = Color.FromArgb("#E2E8F0");
+    public Color GridLineColor { get; set; } = Color.FromArgb("#E0E0E0");
 
-    public Color SelectedBackground { get; set; } = Color.FromArgb("#DBEAFE");
+    public Color FrozenLineColor { get; set; } = Color.FromArgb("#9E9E9E");
 
-    public Color SelectedTextColor { get; set; } = Color.FromArgb("#1E3A8A");
+    public Color SelectedBackground { get; set; } = Color.FromArgb("#BBDEFB");
 
-    public Color AscendingHeaderBackground { get; set; } = Color.FromArgb("#E0E7FF");
+    public Color SelectedTextColor { get; set; } = Color.FromArgb("#0D47A1");
 
-    public Color DescendingHeaderBackground { get; set; } = Color.FromArgb("#FEF3C7");
+    public Color AscendingHeaderBackground { get; set; } = Color.FromArgb("#0097A7");
+
+    public Color DescendingHeaderBackground { get; set; } = Color.FromArgb("#F57C00");
 
     // Sort marks are drawn next to the header text; ShowSortPriority also marks secondary keys with their priority
     public string AscendingSortMark { get; set; } = "↑";

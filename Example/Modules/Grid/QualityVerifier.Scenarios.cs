@@ -15,7 +15,7 @@ public sealed partial class QualityVerifier
             var frame = await NextFrameAsync(() => ScenarioGridFactory.Configure(grid, scenario, data)).ConfigureAwait(true);
             Check($"{scenario.Key}: columns and visible painting", grid.Columns.Count == scenario.Columns.Count && frame.RenderedCells > 0 && !grid.GridStyle.ShowRowHeaders);
             Check($"{scenario.Key}: source keys and values", grid.Columns.All(column => column.ValueAccessor.GetValue(data[0]) is string));
-            Check($"{scenario.Key}: header colors independent of sorting", grid.Columns.Zip(scenario.Columns).All(pair => pair.First.AllowSorting == pair.Second.AllowSorting && Equals(pair.First.HeaderBackground, Color.FromArgb(pair.Second.GreenHeader ? "#4CAF50" : "#9E9E9E"))));
+            Check($"{scenario.Key}: header colors independent of sorting", grid.Columns.Zip(scenario.Columns).All(pair => pair.First.AllowSorting == pair.Second.AllowSorting && Equals(pair.First.HeaderBackground, Color.FromArgb(pair.Second.GreenHeader ? "#2E7D32" : "#616161"))));
             scenario.SelectAll(data, true);
             Check($"{scenario.Key}: bulk selection", data.SelectedCount == (scenario.SingleSelection ? 0 : Enumerable.Range(0, 120).Count(id => scenario.IsPending(new TicketRow(id)))));
             scenario.SelectAll(data, false);

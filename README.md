@@ -273,17 +273,20 @@ Messaging, navigation and screen controllers are application concerns; the libra
 
 ## 🎨 GridStyle
 
+The default colors follow the Material palette: Blue 700 header with white text, Cyan 700 and Orange 700 for the ascending and descending primary sort key, Blue 100 selection and Gray tints for lines and row headers.
+
 | Name | Type | Default | Description |
 |---|---|---|---|
 | `FontFamily` | `string` | `monospace` | Primary font. Characters it lacks are resolved through `GridFonts`. |
 | `FontSize` | `float` | `16` | Font size in DIP. |
 | `HorizontalPadding`, `VerticalPadding` | `float` | `8` | Cell padding in DIP. |
-| `RowHeight`, `HeaderHeight` | `double?` | `null` | `null` derives the height from the font. |
+| `RowHeight`, `HeaderHeight` | `double?` | `null` | `null` derives the height from the primary font and the fallback fonts resolved while measuring the headers and sample rows. |
 | `RowHeaderWidth` | `double` | `48` | Width of the row header. |
 | `ShowColumnHeaders`, `ShowRowHeaders`, `ShowVerticalLines` | `bool` | `true` | Visibility of the headers and vertical lines. |
 | `CornerText` | `string` | `#` | Text of the corner cell above the row headers. |
 | `RowHeaderAlignment` | `TextAlignment` | `End` | Alignment of the row header text. |
 | `TextColor`, `Background`, `HeaderBackground`, `HeaderTextColor`, `RowHeaderBackground`, `GridLineColor`, `SelectedBackground`, `SelectedTextColor` | `Color` | | Base colors. |
+| `FrozenLineColor` | `Color` | `#9E9E9E` | Separator drawn on the right edge of the frozen columns. |
 | `AscendingHeaderBackground`, `DescendingHeaderBackground` | `Color` | | Header background of the primary sort key. |
 | `AscendingSortMark`, `DescendingSortMark` | `string` | `↑`, `↓` | Text drawn next to the header of a sorted column. The mark is kept when the header text has to be truncated. |
 | `SortMarkPosition` | `GridSortMarkPosition` | `Start` | `Start` draws the mark before the header text, `End` after it. |

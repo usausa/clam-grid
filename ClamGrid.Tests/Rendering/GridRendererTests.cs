@@ -125,6 +125,23 @@ public sealed class GridRendererTests
         Assert.Equal("5", plain);
     }
 
+    [Fact]
+    public void AutoRowHeightIncludesFontsResolvedWhileMeasuring()
+    {
+        // Arrange
+        using var renderer = new GridRenderer(new GridStyle());
+        var before = renderer.AutoRowHeight;
+        var column = new GridColumn("id", "日本語の見出し", new GridValueAccessor<Item, int>(static x => x.Id));
+
+        // Act
+        renderer.MeasureColumns([column], [new Item(1)], 500, 1, null);
+        var after = renderer.AutoRowHeight;
+
+        // Assert
+        Assert.True(after >= before);
+        Assert.Equal(after, renderer.AutoRowHeight);
+    }
+
     private static GridDataView<Item> CreateView(GridSortOrder[] orders)
     {
         Item[] items = [new(1), new(2)];

@@ -12,8 +12,8 @@
     <Color x:Key="SecondaryTextColor">#99000000</Color>
     <Color x:Key="DisabledColor">#61000000</Color>
 
-    <Color x:Key="GridSortableColor">#4CAF50</Color>
-    <Color x:Key="GridUnsortableColor">#9E9E9E</Color>
+    <Color x:Key="GridSortableColor">#2E7D32</Color>
+    <Color x:Key="GridUnsortableColor">#616161</Color>
     <Color x:Key="GridSelectedTextColor">White</Color>
     <Color x:Key="GridSelectedBackgroundColor">#448AFF</Color>
 
@@ -344,11 +344,11 @@
                     ShowRowHeaders="False"
                     TextColor="Black"
                     Background="White"
-                    HeaderTextColor="Black"
-                    HeaderBackground="#E0E0E0"
+                    HeaderTextColor="White"
+                    HeaderBackground="#424242"
                     GridLineColor="Gray"
-                    AscendingHeaderBackground="#90CAF9"
-                    DescendingHeaderBackground="#FFCC80"
+                    AscendingHeaderBackground="#1565C0"
+                    DescendingHeaderBackground="#EF6C00"
                     AscendingSortMark="▲"
                     DescendingSortMark="▼" />
 
