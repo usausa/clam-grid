@@ -23,6 +23,10 @@ public sealed record GridStyle
 
     public bool ShowVerticalLines { get; set; } = true;
 
+    public string CornerText { get; set; } = "#";
+
+    public TextAlignment RowHeaderAlignment { get; set; } = TextAlignment.End;
+
     public Color TextColor { get; set; } = Color.FromArgb("#1E293B");
 
     public Color Background { get; set; } = Colors.White;
@@ -59,6 +63,9 @@ public sealed record GridStyle
     public Func<GridColumnHeaderColorContext, GridColors>? ColumnHeaderColors { get; set; }
 
     public Func<GridRowHeaderColorContext, GridColors>? RowHeaderColors { get; set; }
+
+    // Row header text by item; null falls back to the row number
+    public Func<GridRowHeaderTextContext, string?>? RowHeaderText { get; set; }
 
     internal void Validate()
     {

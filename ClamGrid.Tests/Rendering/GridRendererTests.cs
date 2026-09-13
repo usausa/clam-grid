@@ -107,6 +107,24 @@ public sealed class GridRendererTests
         Assert.True(renderer.Measurements > 0);
     }
 
+    [Fact]
+    public void RowHeaderTextCallbackOverridesTheRowNumber()
+    {
+        // Arrange
+        var style = new GridStyle { RowHeaderText = static context => context.IsSelected ? "S" : null };
+        var item = new Item(1);
+
+        // Act
+        var selected = GridRenderer.GetRowHeaderText(style, item, 4, true);
+        var unselected = GridRenderer.GetRowHeaderText(style, item, 4, false);
+        var plain = GridRenderer.GetRowHeaderText(new GridStyle(), item, 4, true);
+
+        // Assert
+        Assert.Equal("S", selected);
+        Assert.Equal("5", unselected);
+        Assert.Equal("5", plain);
+    }
+
     private static GridDataView<Item> CreateView(GridSortOrder[] orders)
     {
         Item[] items = [new(1), new(2)];

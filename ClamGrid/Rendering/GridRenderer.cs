@@ -143,7 +143,7 @@ internal sealed class GridRenderer : IDisposable
             var colors = new GridColors(selected ? style.SelectedTextColor : style.TextColor, selected ? style.SelectedBackground : style.RowHeaderBackground);
             colors = colors.Apply(style.RowHeaderColors?.Invoke(new GridRowHeaderColorContext(items[row], row, selected, colors)) ?? default);
             Fill(canvas, rect, colors.Background!);
-            DrawText(canvas, rect, (row + 1).ToString(CultureInfo.InvariantCulture), TextAlignment.End, false, colors.TextColor!);
+            DrawText(canvas, rect, GetRowHeaderText(style, items[row], row, selected), style.RowHeaderAlignment, false, colors.TextColor!);
             if (showRowHandles)
             {
                 paint.Color = colors.TextColor!.ToSKColor();
@@ -161,7 +161,7 @@ internal sealed class GridRenderer : IDisposable
         canvas.Restore();
         var corner = new GridRect(0, 0, layout.RowHeaderWidth, layout.HeaderHeight);
         Fill(canvas, corner, style.RowHeaderBackground);
-        DrawText(canvas, corner, "#", TextAlignment.Center, true, style.TextColor);
+        DrawText(canvas, corner, style.CornerText, TextAlignment.Center, true, style.TextColor);
         DrawLines(canvas, corner);
         DrawScrollbars(canvas, layout);
         return rendered;
@@ -197,6 +197,9 @@ internal sealed class GridRenderer : IDisposable
 
         return -1;
     }
+
+    internal static string GetRowHeaderText(GridStyle style, object item, int rowIndex, bool selected) =>
+        style.RowHeaderText?.Invoke(new GridRowHeaderTextContext(item, rowIndex, selected)) ?? (rowIndex + 1).ToString(CultureInfo.InvariantCulture);
 
     internal static string GetHeaderText(GridStyle style, GridColumn column, IGridDataView? view)
     {

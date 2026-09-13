@@ -2,16 +2,16 @@
 
 [![NuGet](https://img.shields.io/nuget/v/ClamGrid.svg)](https://www.nuget.org/packages/ClamGrid/)
 
-## What is this?
+## 🐚 What is this?
 
 A .NET MAUI grid view for Android that draws cells with SkiaSharp.
 Layout, sorting, selection and touch handling are implemented in C#, so the grid stays responsive with tens of thousands of rows.
 
-| Selection, sorting and boolean editing | Conditional colors | Columns declared in XAML |
+| 🖱 Selection, sorting and boolean editing | 🎨 Conditional colors | 🧾 Columns declared in XAML |
 |:-:|:-:|:-:|
 | <img src="Document/list.png" width="240" /> | <img src="Document/color.png" width="240" /> | <img src="Document/ticket.png" width="240" /> |
 
-## Quick Start
+## 🚀 Quick Start
 
 Call `UseSkiaSharp()` when building the application.
 
@@ -73,7 +73,7 @@ The sort indicator of a header is text: `AscendingSortMark` / `DescendingSortMar
 The grid scrolls by itself, so place it where it receives a definite size (for example a `*` row of a `Grid`).
 Tapping a column header sorts by the registered key, tapping a row toggles the selection, and a long press selects or clears all rows.
 
-## Binding and MVVM
+## 🔗 Binding and MVVM
 
 Everything a view model needs is a bindable property or a command, so a screen can be declared in XAML without code-behind. `Example/Modules/Ticket` together with `Example/Modules/Parts/TicketGrid.xaml` is a complete screen built this way.
 
@@ -157,7 +157,7 @@ public sealed class TicketListViewModel : ObservableObject
 
 Messaging, navigation and screen controllers are application concerns; the library exposes bindables, commands and events only.
 
-## Supported features
+## ✅ Supported features
 
 | Category | Detail |
 |---|---|
@@ -169,11 +169,11 @@ Messaging, navigation and screen controllers are application concerns; the libra
 | **Editing** | Boolean cell toggle |
 | **Row dragging** | Reorder rows by dragging the row header |
 | **Input** | Tap, long press, pan with inertia, column resize, commands for MVVM |
-| **Styling** | `GridStyle` with font, padding, colors, sort marks and conditional color callbacks. Characters missing from the font (emoji and so on) fall back to the typefaces in `GridFonts.Fallbacks` and then to system fonts per character, guided by `GridFonts.Languages` |
+| **Styling** | `GridStyle` with font, padding, colors, sort marks, row header text and conditional color callbacks. Characters missing from the font (emoji and so on) fall back to the typefaces in `GridFonts.Fallbacks` and then to system fonts per character, guided by `GridFonts.Languages` |
 
-## ClamGridView API
+## 📖 ClamGridView API
 
-### Properties
+### 🧩 Properties
 
 | Name | Type | Default | Description |
 |---|---|---|---|
@@ -207,7 +207,7 @@ Messaging, navigation and screen controllers are application concerns; the libra
 | `InputState` | `GridGestureState` | | Current gesture state. |
 | `IsInertiaRunning` | `bool` | | Whether inertial scrolling is in progress. |
 
-### Methods
+### 🛠 Methods
 
 | Name | Returns | Description |
 |---|---|---|
@@ -231,7 +231,7 @@ Messaging, navigation and screen controllers are application concerns; the libra
 | `InvalidateSurface()` | `void` | Redraws the grid. |
 | `Dispose()` | `void` | Releases the data view subscriptions, timers and native resources. |
 
-### Events
+### 📣 Events
 
 | Name | EventArgs | Description |
 |---|---|---|
@@ -250,7 +250,7 @@ Messaging, navigation and screen controllers are application concerns; the libra
 | `RowMoved` | `GridRowMoveEventArgs` | Row moved. |
 | `FrameRendered` | `GridFrameEventArgs` | Render statistics of a frame. |
 
-## GridColumn
+## 📐 GridColumn
 
 | Name | Type | Default | Description |
 |---|---|---|---|
@@ -268,7 +268,7 @@ Messaging, navigation and screen controllers are application concerns; the libra
 | `AllowSorting` | `bool` | `true` | A header tap sorts the column. |
 | `AllowResizing` | `bool` | `true` | The header boundary can be dragged. |
 
-## GridStyle
+## 🎨 GridStyle
 
 | Name | Type | Default | Description |
 |---|---|---|---|
@@ -278,15 +278,18 @@ Messaging, navigation and screen controllers are application concerns; the libra
 | `RowHeight`, `HeaderHeight` | `double?` | `null` | `null` derives the height from the font. |
 | `RowHeaderWidth` | `double` | `48` | Width of the row header. |
 | `ShowColumnHeaders`, `ShowRowHeaders`, `ShowVerticalLines` | `bool` | `true` | Visibility of the headers and vertical lines. |
+| `CornerText` | `string` | `#` | Text of the corner cell above the row headers. |
+| `RowHeaderAlignment` | `TextAlignment` | `End` | Alignment of the row header text. |
 | `TextColor`, `Background`, `HeaderBackground`, `HeaderTextColor`, `RowHeaderBackground`, `GridLineColor`, `SelectedBackground`, `SelectedTextColor` | `Color` | | Base colors. |
 | `AscendingHeaderBackground`, `DescendingHeaderBackground` | `Color` | | Header background of the primary sort key. |
 | `AscendingSortMark`, `DescendingSortMark` | `string` | `↑`, `↓` | Text drawn next to the header of a sorted column. The mark is kept when the header text has to be truncated. |
 | `SortMarkPosition` | `GridSortMarkPosition` | `Start` | `Start` draws the mark before the header text, `End` after it. |
 | `ShowSortPriority` | `bool` | `false` | With several sort keys, marks the secondary keys too and appends the priority (`▲2`). |
 | `RowBackground` | `Func<object, Color?>?` | `null` | Row background by item. |
+| `RowHeaderText` | `Func<GridRowHeaderTextContext, string?>?` | `null` | Row header text by item and selection state; `null` falls back to the row number. |
 | `CellColors`, `ColumnHeaderColors`, `RowHeaderColors` | callback | `null` | Per cell and per header colors; the context carries the item, the column, the sort state and the default colors. |
 
-## GridFonts
+## 🔤 GridFonts
 
 Global font fallback settings. They are read when a grid creates its renderer, so set them at startup, before the first grid is shown.
 
@@ -300,7 +303,7 @@ GridFonts.Languages = ["ja", "en"];
 GridFonts.Fallbacks = [SKTypeface.FromStream(await FileSystem.OpenAppPackageFileAsync("NotoSansJP-Regular.ttf"))];
 ```
 
-## GridDataView&lt;T&gt;
+## 🗂 GridDataView&lt;T&gt;
 
 | Member | Description |
 |---|---|
@@ -312,6 +315,6 @@ GridFonts.Fallbacks = [SKTypeface.FromStream(await FileSystem.OpenAppPackageFile
 | `SetSource(rows)`, `Refresh()`, `Suspend()` / `Resume()` | Replace the rows, rebuild them or batch changes. |
 | `Changed`, `SelectionChanged`, `SortRequested`, `SortChanged`, `SortFailed` | Events with the same meaning as on the view. |
 
-## Dependencies
+## 📦 Dependencies
 
 - [SkiaSharp](https://github.com/mono/SkiaSharp)

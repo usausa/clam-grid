@@ -86,6 +86,15 @@ public sealed partial class QualityVerifier
             Check("colors: no unregistered sort state", headers.All(static context => context.SortOrder is null && context.SortPriority == -1));
         }
 
+        await NextFrameAsync(() => probe.GridStyle = probe.GridStyle with { RowHeaderText = static context => context.RowIndex == 0 ? "S" : String.Empty, CornerText = String.Empty }).ConfigureAwait(true);
+        using (var bitmap = RenderBitmap())
+        {
+            Check("colors: row header text callback draws the text", CountForeground(bitmap, ToBitmapRect(bitmap, new Rect(0, 40, 48, 40)), Colors.Yellow) >= 3);
+            Check("colors: empty row header text draws no glyph", CountForeground(bitmap, ToBitmapRect(bitmap, new Rect(0, 80, 48, 40)), Colors.Black) == 0);
+            Check("colors: empty corner text draws no glyph", CountForeground(bitmap, ToBitmapRect(bitmap, new Rect(0, 0, 48, 40)), Colors.Black) == 0);
+        }
+
+        await NextFrameAsync(() => probe.GridStyle = probe.GridStyle with { RowHeaderText = null, CornerText = "#" }).ConfigureAwait(true);
         await NextFrameAsync(() => backgroundOnly = true).ConfigureAwait(true);
         using (var bitmap = RenderBitmap())
         {
@@ -186,10 +195,20 @@ public sealed partial class QualityVerifier
 
     private void CheckColors(SKBitmap bitmap, Rect rect, Color background, Color foreground, string name)
     {
+        rect = ToBitmapRect(bitmap, rect);
+        Check($"colors: {name} background pixels", bitmap.GetPixel((int)rect.X + 2, (int)rect.Y + 2) == background.ToSKColor());
+        Check($"colors: {name} foreground pixels", CountForeground(bitmap, rect, foreground) >= 3);
+    }
+
+    private Rect ToBitmapRect(SKBitmap bitmap, Rect rect)
+    {
         var scaleX = bitmap.Width / grid.Width;
         var scaleY = bitmap.Height / grid.Height;
-        rect = new Rect(rect.X * scaleX, rect.Y * scaleY, rect.Width * scaleX, rect.Height * scaleY);
-        Check($"colors: {name} background pixels", bitmap.GetPixel((int)rect.X + 2, (int)rect.Y + 2) == background.ToSKColor());
+        return new Rect(rect.X * scaleX, rect.Y * scaleY, rect.Width * scaleX, rect.Height * scaleY);
+    }
+
+    private static int CountForeground(SKBitmap bitmap, Rect rect, Color foreground)
+    {
         var target = foreground.ToSKColor();
         var matches = 0;
         for (var y = (int)rect.Y + 7; y < Math.Min(bitmap.Height, rect.Bottom - 7); y++)
@@ -205,7 +224,7 @@ public sealed partial class QualityVerifier
             }
         }
 
-        Check($"colors: {name} foreground pixels", matches >= 3);
+        return matches;
     }
 
     private sealed class ColorProbeGrid : ClamGridView
