@@ -2,7 +2,7 @@ namespace ClamGrid;
 
 using System.Collections.ObjectModel;
 
-using ClamGrid.Internal.Columns;
+using ClamGrid.Columns;
 
 public sealed class GridColumnEditSession
 {

@@ -43,6 +43,15 @@ public sealed record GridStyle
 
     public Color DescendingHeaderBackground { get; set; } = Color.FromArgb("#FEF3C7");
 
+    // ソート記号は見出し文字列の一部として描画する。ShowSortPriority は複数キーのとき副キーにも記号と優先順位を付ける。
+    public string AscendingSortMark { get; set; } = "↑";
+
+    public string DescendingSortMark { get; set; } = "↓";
+
+    public GridSortMarkPosition SortMarkPosition { get; set; }
+
+    public bool ShowSortPriority { get; set; }
+
     public Func<object, Color?>? RowBackground { get; set; }
 
     public Func<GridCellColorContext, GridColors>? CellColors { get; set; }

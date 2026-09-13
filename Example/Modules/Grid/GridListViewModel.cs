@@ -207,6 +207,10 @@ public sealed partial class GridListViewModel : AppViewModelBase
     {
         FontSize = fontSize,
         RowHeaderWidth = fontSize > 16 ? 88 : 72,
+        AscendingSortMark = "▲",
+        DescendingSortMark = "▼",
+        SortMarkPosition = GridSortMarkPosition.End,
+        ShowSortPriority = true,
         RowBackground = static x => x is SampleRow { IsDiscontinued: true } ? SampleColumns.DiscontinuedBackground : null
     };
 

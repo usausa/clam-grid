@@ -3,9 +3,9 @@ namespace ClamGrid;
 using System.Collections;
 using System.Diagnostics;
 
-using ClamGrid.Internal.Layout;
-using ClamGrid.Internal.Platform;
-using ClamGrid.Internal.Rendering;
+using ClamGrid.Layout;
+using ClamGrid.Platform;
+using ClamGrid.Rendering;
 
 using SkiaSharp;
 using SkiaSharp.Views.Maui;

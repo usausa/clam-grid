@@ -66,6 +66,7 @@
     <clam:GridColumn Key="ReceiptOrder"
                      Header="受付順"
                      Width="95"
+                     Format="D6"
                      HeaderBackground="{StaticResource GridSortableColor}" />
     <clam:GridColumn Key="CaseNo"
                      Header="案件番号"
@@ -94,6 +95,7 @@
     <clam:GridColumn Key="StartedDate"
                      Header="対応開始日"
                      Width="80"
+                     Format="MM/dd"
                      Alignment="End"
                      HeaderBackground="{StaticResource GridUnsortableColor}"
                      AllowSorting="False" />

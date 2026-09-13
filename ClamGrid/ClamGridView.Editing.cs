@@ -2,7 +2,7 @@ namespace ClamGrid;
 
 using System.Windows.Input;
 
-using ClamGrid.Internal.Layout;
+using ClamGrid.Layout;
 
 using SkiaSharp;
 

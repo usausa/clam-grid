@@ -16,6 +16,8 @@ public sealed class TicketRow(int id) : INotifyPropertyChanged
     public bool IsCompleted => Status == 2;
     public int CompanyNumber => (Id % 30) + 1;
     public string CompanySortKey { get; } = $"ｻﾝﾌﾟﾙ{(id % 30) + 1:D4}00120034";
+    public int ReceiptOrder => Id % 100;
+    public DateTime? StartedDate => IsStarted ? new DateTime(2026, 9, 11) : null;
 
     public void AdvanceStatus()
     {
@@ -35,7 +37,7 @@ public sealed class TicketRow(int id) : INotifyPropertyChanged
         "Escalated" => (Id % 2) == 0 ? "⚠️" : String.Empty,
         "CustomerName" => $"山田 太郎 {Id % 20:D2}",
         "SpecialNote" => "要注意",
-        "ReceiptOrder" => $"{Id % 100:D6}",
+        "ReceiptOrder" => ReceiptOrder.ToString("D6", CultureInfo.InvariantCulture),
         "CaseNo" => $"{Id % 1000:D3}",
         "CompanyKana" => "ｻﾝﾌﾟﾙ",
         "CompanyName" => $"サンプル株式会社 第{CompanyNumber}事業部 長い名称の表示確認",
@@ -43,7 +45,7 @@ public sealed class TicketRow(int id) : INotifyPropertyChanged
         "ProductNo" => $"000{Id + 1:D8}",
         "SiteCode" => $"拠点{Id % 100:D3}",
         "ManagementNo" => $"管理{Id + 1:D6}",
-        "StartedDate" => IsStarted ? "09/11" : String.Empty,
+        "StartedDate" => StartedDate?.ToString("MM/dd", CultureInfo.InvariantCulture) ?? String.Empty,
         "CompletedAt" => IsCompleted ? "09/11 09:00～12:00" : String.Empty,
         "Contact" => (Id % 2) == 0 ? "📞" : String.Empty,
         "RequestType" => RequestState switch { 0 => "🆕", 1 => "🔧", _ => "✅" },

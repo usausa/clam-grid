@@ -15,6 +15,9 @@ public sealed record GridColumn
 
     public TextAlignment Alignment { get; set; }
 
+    // IFormattable な値に適用する書式（"N0" や "yyyy/MM/dd" など）。文字列や bool の値には影響しない。
+    public string? Format { get; set; }
+
     public Color? HeaderBackground { get; set; }
 
     public Color? HeaderTextColor { get; set; }

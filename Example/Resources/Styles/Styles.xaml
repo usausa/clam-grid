@@ -348,7 +348,9 @@
                     HeaderBackground="#E0E0E0"
                     GridLineColor="Gray"
                     AscendingHeaderBackground="#90CAF9"
-                    DescendingHeaderBackground="#FFCC80" />
+                    DescendingHeaderBackground="#FFCC80"
+                    AscendingSortMark="▲"
+                    DescendingSortMark="▼" />
 
     <!-- 行の状態色 -->
     <helpers:StatusColorSelector x:Key="StatusColorSelector"

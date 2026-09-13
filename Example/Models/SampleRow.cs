@@ -44,9 +44,9 @@ public sealed class SampleRow : NotificationObject
 
     public string Unit => (Id % 3) == 0 ? "箱" : "個";
 
-    public string ArrivalDate => $"09/{(Id % 28) + 1:D2}";
+    public DateTime ArrivalDate => new(2026, 9, (Id % 28) + 1);
 
-    public string UpdatedAt => $"09/{(Id % 28) + 1:D2} {(Id % 12) + 8:D2}:00";
+    public DateTime UpdatedAt => new(2026, 9, (Id % 28) + 1, (Id % 12) + 8, 0, 0);
 
     public SampleRow(int id)
     {

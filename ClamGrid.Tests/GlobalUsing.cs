@@ -14,10 +14,11 @@ global using System.Threading;
 global using System.Threading.Tasks;
 
 global using ClamGrid;
-global using ClamGrid.Internal.Accessibility;
-global using ClamGrid.Internal.Columns;
-global using ClamGrid.Internal.Input;
-global using ClamGrid.Internal.Layout;
+global using ClamGrid.Accessibility;
+global using ClamGrid.Columns;
+global using ClamGrid.Input;
+global using ClamGrid.Layout;
+global using ClamGrid.Rendering;
 
 global using Example.Models;
 

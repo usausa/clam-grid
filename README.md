@@ -28,7 +28,7 @@ var grid = new ClamGridView();
 grid.ConfigureColumns(
 [
     new GridColumn("name", "Name", new GridValueAccessor<Customer, string>(static x => x.Name)) { Width = GridColumnWidth.Star(), MinWidth = 120 },
-    new GridColumn("number", "Number", new GridValueAccessor<Customer, string>(static x => x.Number)) { Width = GridColumnWidth.Absolute(160), Alignment = TextAlignment.End },
+    new GridColumn("number", "Number", new GridValueAccessor<Customer, int>(static x => x.Number)) { Width = GridColumnWidth.Absolute(160), Alignment = TextAlignment.End, Format = "N0" },
     new GridColumn("done", "Done", new GridValueAccessor<Customer, bool>(static x => x.IsDone, static (x, value) => x.IsDone = value)) { IsBoolean = true, IsReadOnly = false }
 ]);
 
@@ -50,7 +50,7 @@ Columns can also be declared in XAML. Columns without a `ValueAccessor` are reso
                    ColumnOrders="{Binding ColumnOrders}"
                    SelectionMode="MultipleToggle">
     <clam:GridColumn Key="name" Header="Name" Width="*" MinWidth="120" />
-    <clam:GridColumn Key="number" Header="Number" Width="160" Alignment="End" />
+    <clam:GridColumn Key="number" Header="Number" Width="160" Alignment="End" Format="N0" />
     <clam:GridColumn Key="done" Header="Done" IsBoolean="True" IsReadOnly="False" />
 </clam:ClamGridView>
 ```
@@ -65,16 +65,90 @@ public static GridValueAccessorCollection<Customer> Accessors { get; } = new()
 };
 ```
 
+`Format` applies a .NET format string (`N0`, `yyyy/MM/dd` and so on) to `IFormattable` cell values; strings and booleans are shown as they are.
+
 `GridStyle` can be a XAML resource as well (`<clam:GridStyle x:Key="ListStyle" FontFamily="monospace" ShowRowHeaders="False" />`). Treat a style as immutable once assigned and replace it with a `with` expression to change it.
+The sort indicator of a header is text: `AscendingSortMark` / `DescendingSortMark` (`↑` / `↓` by default) can be any string such as `▲`, `SortMarkPosition="End"` places it after the header text, and `ShowSortPriority` also marks secondary sort keys with their priority (`▲2`).
 
 The grid scrolls by itself, so place it where it receives a definite size (for example a `*` row of a `Grid`).
 Tapping a column header sorts by the registered key, tapping a row toggles the selection, and a long press selects or clears all rows.
+
+## Binding and MVVM
+
+Everything a view model needs is a bindable property or a command, so a screen can be declared in XAML without code-behind. `Example/Modules/Ticket` together with `Example/Modules/Parts/TicketGrid.xaml` is a complete screen built this way.
+
+```xml
+<clam:ClamGridView ItemsSource="{Binding Items}"
+                   ValueAccessors="{x:Static models:TicketRowAccessors.Ticket}"
+                   ColumnOrders="{Binding ColumnOrders}"
+                   GridStyle="{StaticResource ListGridStyle}"
+                   SelectionMode="MultipleToggle"
+                   SelectAllCommand="{Binding SelectCommand}"
+                   ColumnConfigurationCommand="{Binding ColumnEditCommand}">
+    <clam:GridColumn Key="StatusMark" Header="Status" Width="45" AllowSorting="False" />
+    <clam:GridColumn Key="ReceiptOrder" Header="Order" Width="95" Format="D6" />
+    <clam:GridColumn Key="StartedDate" Header="Started" Width="80" Format="MM/dd" />
+</clam:ClamGridView>
+```
+
+```csharp
+public sealed class TicketListViewModel : ObservableObject
+{
+    private readonly IColumnSettingsStore store;
+
+    // Rows, selection and sort state in one object
+    public GridDataView<TicketRow> Items { get; } = new(Array.Empty<TicketRow>(), static x => x.Id);
+
+    // TwoWay bound: the grid writes the normalized orders back, so persisting them in the setter is enough
+    public IReadOnlyList<GridColumnOrder>? ColumnOrders
+    {
+        get;
+        set
+        {
+            field = value;
+            OnPropertyChanged();
+            if (value is not null)
+            {
+                store.Save("columns", value);
+            }
+        }
+    }
+
+    public ICommand SelectCommand { get; }
+
+    public ICommand ColumnEditCommand { get; }
+
+    public TicketListViewModel(IColumnSettingsStore store)
+    {
+        this.store = store;
+        ColumnOrders = store.Load("columns");
+        Items.RegisterSort("ReceiptOrder", static x => x.ReceiptOrder);
+        // Long press on a row: true selects, false clears
+        SelectCommand = new Command<bool>(select => Items.UpdateSelection(x => select && !x.IsCompleted));
+        // Long press on a header: open a settings page with an editable copy, assign session.Export() to ColumnOrders on return
+        ColumnEditCommand = new Command<GridColumnConfigurationEventArgs>(e => OpenColumnSettings(e.CreateEditSession()));
+    }
+}
+```
+
+| Task | Binding |
+|---|---|
+| Rows | Bind `ItemsSource` to a `GridDataView<T>`. It owns the rows, selection and sort state and raises `PropertyChanged` for `Count`, `SelectedCount`, `SelectedItems` and `SortOrders`, so labels and command states can follow it. Any other `IEnumerable` also works and is wrapped in an owned view. |
+| Columns | Declare `GridColumn` children in XAML and bind `ValueAccessors` to a static `GridValueAccessorCollection<T>`. Values stay typed, no reflection is involved, and `Format` / `Alignment` are declared per column. |
+| Column settings | Bind `ColumnOrders` (`TwoWay` by default). Load the saved value into the property and save it in the setter; `null` restores the default and the grid writes the normalized value back. A long press on a header runs `ColumnConfigurationCommand` with `GridColumnConfigurationEventArgs`; `CreateEditSession()` returns an editable copy for a settings page and `Export()` on the session returns the orders to assign back. |
+| Sort state | Register the keys on the data view (`RegisterSort`, `RegisterComparer` or `SetSortCallback`); a header tap calls `SortBy`. Persist the state with `SaveSortOrders()` / `RestoreSortOrders()`. |
+| Selection | `SelectionMode` and `SelectAllCommand` (parameter `bool`) on the grid; `UpdateSelection(predicate)`, `SetSelected` and `TryToggleSelection` on the data view change the selection from the view model. Scrolling a row into view needs the view, so the sample bridges it with a behavior and a request object (`GridSelectBehavior` / `GridSelectRequest`). |
+| Editing | `IsReadOnly` plus `CellValueChangedCommand` (or the `CellValueChanging` / `CellValueChanged` events) for boolean cells. |
+| Colors | `GridStyle` as a resource. `RowBackground`, `CellColors`, `ColumnHeaderColors` and `RowHeaderColors` receive the row item, so state colors stay in the model; the sample composes them in XAML with `GridColorBehavior` and an `IColorSelector` resource. |
+| Other input | `CellTappedCommand`, `CellLongPressedCommand`, `ColumnWidthChangedCommand` and `RowMovedCommand` receive the same arguments as the events. |
+
+Messaging, navigation and screen controllers are application concerns; the library exposes bindables, commands and events only.
 
 ## Supported features
 
 | Category | Detail |
 |---|---|
-| **Columns** | Auto / Absolute / Star width, minimum width, alignment, static header and cell colors |
+| **Columns** | Auto / Absolute / Star width, minimum width, alignment, format string, static header and cell colors |
 | **Column settings** | Visibility and order, edit session for a settings screen, drag to resize |
 | **Data** | `INotifyCollectionChanged` / `INotifyPropertyChanged` tracking, stable row keys |
 | **Sorting** | Multi-key sort with history, direction aware comparers, sort callback |
@@ -82,7 +156,7 @@ Tapping a column header sorts by the registered key, tapping a row toggles the s
 | **Editing** | Boolean cell toggle |
 | **Row dragging** | Reorder rows by dragging the row header |
 | **Input** | Tap, long press, pan with inertia, column resize, commands for MVVM |
-| **Styling** | `GridStyle` with font, padding, colors and conditional color callbacks. Characters missing from the font (emoji and so on) fall back to system fonts per character |
+| **Styling** | `GridStyle` with font, padding, colors, sort marks and conditional color callbacks. Characters missing from the font (emoji and so on) fall back to system fonts per character |
 | **Accessibility** | Android virtual views for headers and cells |
 
 ## ClamGridView API
@@ -162,6 +236,54 @@ Tapping a column header sorts by the registered key, tapping a row toggles the s
 | `RowMoveRequested` | `GridRowMoveEventArgs` | Row drag is about to be applied. Cancelable. |
 | `RowMoved` | `GridRowMoveEventArgs` | Row moved. |
 | `FrameRendered` | `GridFrameEventArgs` | Render statistics of a frame. |
+
+## GridColumn
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `Key` | `string` | `""` | Identifier used by `ColumnOrders`, `ValueAccessors` and sorting. Required and unique. |
+| `Header` | `string` | `""` | Header text. |
+| `ValueAccessor` | `IGridValueAccessor` | unresolved | Typed getter and optional setter (`GridValueAccessor<T, TValue>`). A column declared without one is resolved by `Key` from `ValueAccessors`. |
+| `Width` | `GridColumnWidth` | `Auto` | `Auto`, `Absolute(dip)` or `Star(weight)`; in XAML `Auto`, `85`, `*` or `2*`. |
+| `MinWidth` | `double` | `40` | Lower bound for resizing and star distribution. |
+| `Alignment` | `TextAlignment` | `Start` | Cell text alignment. |
+| `Format` | `string?` | `null` | .NET format string applied to `IFormattable` values (`N0`, `D6`, `yyyy/MM/dd`). |
+| `HeaderBackground`, `HeaderTextColor`, `TextColor`, `Background` | `Color?` | `null` | Static colors; `null` falls back to `GridStyle`. |
+| `IsBoolean` | `bool` | `false` | Draws a check box and toggles the value on tap. |
+| `IsReadOnly` | `bool?` | `null` | Overrides `ClamGridView.IsReadOnly` for the column. |
+| `SortKey` | `string?` | `null` | Sort key registered on the data view when it differs from `Key`. |
+| `AllowSorting` | `bool` | `true` | A header tap sorts the column. |
+| `AllowResizing` | `bool` | `true` | The header boundary can be dragged. |
+
+## GridStyle
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `FontFamily` | `string` | `monospace` | Primary font. Characters it lacks fall back to a Japanese font or a system font per character. |
+| `FontSize` | `float` | `16` | Font size in DIP. |
+| `HorizontalPadding`, `VerticalPadding` | `float` | `8` | Cell padding in DIP. |
+| `RowHeight`, `HeaderHeight` | `double?` | `null` | `null` derives the height from the font. |
+| `RowHeaderWidth` | `double` | `48` | Width of the row header. |
+| `ShowColumnHeaders`, `ShowRowHeaders`, `ShowVerticalLines` | `bool` | `true` | Visibility of the headers and vertical lines. |
+| `TextColor`, `Background`, `HeaderBackground`, `HeaderTextColor`, `RowHeaderBackground`, `GridLineColor`, `SelectedBackground`, `SelectedTextColor` | `Color` | | Base colors. |
+| `AscendingHeaderBackground`, `DescendingHeaderBackground` | `Color` | | Header background of the primary sort key. |
+| `AscendingSortMark`, `DescendingSortMark` | `string` | `↑`, `↓` | Text drawn next to the header of a sorted column. The mark is kept when the header text has to be truncated. |
+| `SortMarkPosition` | `GridSortMarkPosition` | `Start` | `Start` draws the mark before the header text, `End` after it. |
+| `ShowSortPriority` | `bool` | `false` | With several sort keys, marks the secondary keys too and appends the priority (`▲2`). |
+| `RowBackground` | `Func<object, Color?>?` | `null` | Row background by item. |
+| `CellColors`, `ColumnHeaderColors`, `RowHeaderColors` | callback | `null` | Per cell and per header colors; the context carries the item, the column, the sort state and the default colors. |
+
+## GridDataView&lt;T&gt;
+
+| Member | Description |
+|---|---|
+| `GridDataView(IEnumerable source, Func<T, object?>? keySelector)` | Wraps the rows. The key keeps the selection stable across sorting and refreshes; `INotifyCollectionChanged` and `INotifyPropertyChanged` sources are tracked. |
+| `Count`, `this[int]`, `SelectedCount`, `SelectedItems`, `SortOrders`, `SelectionMode` | State for binding and logic. |
+| `SetSelected`, `TryToggleSelection`, `SelectAll`, `ClearSelection`, `UpdateSelection(predicate)` | Selection API. |
+| `RegisterSort(key, selector, comparer)`, `RegisterComparer(key, comparison)`, `SetSortCallback(keys, callback)` | Sort key registration. The callback variant delegates the sorting itself, for example to a database query. |
+| `SortBy(key)`, `RestoreSortOrders(orders)`, `SaveSortOrders()` | Sort and persist the sort state. |
+| `SetSource(rows)`, `Refresh()`, `Suspend()` / `Resume()` | Replace the rows, rebuild them or batch changes. |
+| `Changed`, `SelectionChanged`, `SortRequested`, `SortChanged`, `SortFailed` | Events with the same meaning as on the view. |
 
 ## Dependencies
 

@@ -1,6 +1,6 @@
 namespace ClamGrid;
 
-using ClamGrid.Internal.Platform;
+using ClamGrid.Platform;
 
 public partial class ClamGridView
 {

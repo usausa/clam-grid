@@ -2,7 +2,7 @@ namespace ClamGrid;
 
 using System.Diagnostics.CodeAnalysis;
 
-using ClamGrid.Internal.Columns;
+using ClamGrid.Columns;
 
 [ContentProperty(nameof(ColumnDefinitions))]
 public partial class ClamGridView

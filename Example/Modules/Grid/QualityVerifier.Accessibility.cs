@@ -82,6 +82,8 @@ public sealed partial class QualityVerifier
             Check("accessibility: readonly checkbox", node.Checkable && compatible.Checked && !node.Clickable);
         }
 
+        await NextFrameAsync(() => grid.Columns[1] = number with { Format = "D3" }).ConfigureAwait(true);
+        Check("accessibility: cell description uses the column format", FindVirtualId(provider, "1行、番号、001") == numberId);
         grid.ItemsSource = null;
         grid.RowMover = null;
         grid.AllowRowDragging = false;

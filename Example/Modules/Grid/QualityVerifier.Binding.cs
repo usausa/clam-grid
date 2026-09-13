@@ -29,7 +29,7 @@ public sealed partial class QualityVerifier
             grid.SetBinding(ClamGridView.ColumnOrdersProperty, static (OrderSource source) => source.Orders, BindingMode.TwoWay, source: orders);
             foreach (var column in scenario.Columns)
             {
-                grid.ColumnDefinitions.Add(new GridColumn { Key = column.Key, Header = column.Header, Width = GridColumnWidth.Absolute(column.Width) });
+                grid.ColumnDefinitions.Add(new GridColumn { Key = column.Key, Header = column.Header, Width = GridColumnWidth.Absolute(column.Width), Format = "N0" });
             }
         }).ConfigureAwait(true);
         Check("xaml: orders set before definitions are applied", (grid.Columns.Count == 1) && (grid.Columns[0].Key == "DeptCode") && (grid.ColumnDefinitions.Count == scenario.Columns.Count));
@@ -38,6 +38,7 @@ public sealed partial class QualityVerifier
 
         var frame = await NextFrameAsync(() => grid.ValueAccessors = accessors).ConfigureAwait(true);
         Check("xaml: value accessors are resolved by key", (frame.RenderedCells > 0) && grid.ColumnDefinitions.All(column => column.ValueAccessor.GetValue(data[0]) is string));
+        Check("xaml: format survives accessor resolution", grid.Columns.All(static column => column.Format == "N0"));
 
         await NextFrameAsync(() => orders.Orders = [new("CustomerName", true), new("DeptCode", true)]).ConfigureAwait(true);
         Check("binding: source change reorders columns", grid.Columns.Select(static column => column.Key).SequenceEqual(["CustomerName", "DeptCode"]));

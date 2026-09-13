@@ -3,8 +3,8 @@ namespace ClamGrid;
 using System.Diagnostics;
 using System.Windows.Input;
 
-using ClamGrid.Internal.Input;
-using ClamGrid.Internal.Layout;
+using ClamGrid.Input;
+using ClamGrid.Layout;
 
 using Microsoft.Maui.Dispatching;
 

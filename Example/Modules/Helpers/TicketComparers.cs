@@ -10,7 +10,7 @@ public static class TicketComparers
         { "TicketNo", Pending(Text("TicketNo")) },
         { "TicketType", Pending(Text("TicketType")) },
         { "CustomerName", Pending(Text("CustomerName")) },
-        { "ReceiptOrder", Pending(Text("ReceiptOrder")) },
+        { "ReceiptOrder", Pending(ComparerFactory.Default<TicketRow, int>(static x => x.ReceiptOrder)) },
         { "CaseNo", Pending(Text("CaseNo")) },
         { "CompanyName", Pending(ComparerFactory.Default<TicketRow, string>(static x => x.CompanySortKey)) },
         { "Department", Pending(Text("Department")) },
