@@ -14,7 +14,6 @@ global using System.Threading;
 global using System.Threading.Tasks;
 
 global using ClamGrid;
-global using ClamGrid.Accessibility;
 global using ClamGrid.Columns;
 global using ClamGrid.Input;
 global using ClamGrid.Layout;

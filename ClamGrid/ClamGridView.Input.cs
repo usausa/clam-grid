@@ -109,7 +109,6 @@ public partial class ClamGridView
         }
 
         InvalidateSurface();
-        InvalidateAccessibility();
         return true;
     }
 
@@ -118,7 +117,6 @@ public partial class ClamGridView
         var grid = (ClamGridView)bindable;
         grid.CancelInteraction();
         grid.InvalidateSurface();
-        grid.InvalidateAccessibility();
     }
 
     private void OnGridTouch(object? sender, SKTouchEventArgs e)

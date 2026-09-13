@@ -2,24 +2,16 @@ namespace ClamGrid.Platform;
 
 using Android.Views;
 
-using AndroidX.Core.View;
-
-using ClamGrid.Accessibility;
-
 internal sealed class GridPlatformBridge : IGridPlatformBridge
 {
     private readonly View view;
     private readonly ClamGridView grid;
-    private readonly GridAccessibilityHelper accessibility;
     private ViewTreeObserver? windowObserver;
 
     public GridPlatformBridge(View view, ClamGridView grid)
     {
         this.view = view;
         this.grid = grid;
-        accessibility = new GridAccessibilityHelper(view, grid);
-        ViewCompat.SetAccessibilityDelegate(view, accessibility);
-        view.Hover += OnHover;
         view.ViewAttachedToWindow += OnAttached;
         view.ViewDetachedFromWindow += OnDetached;
         if (view.IsAttachedToWindow)
@@ -28,20 +20,13 @@ internal sealed class GridPlatformBridge : IGridPlatformBridge
         }
     }
 
-    void IGridPlatformBridge.InvalidateAccessibility() => accessibility.InvalidateRoot();
-
-    void IGridPlatformBridge.PruneAccessibility() => accessibility.Prune();
-
     void IGridPlatformBridge.SetParentIntercept(bool allow) => view.Parent?.RequestDisallowInterceptTouchEvent(!allow);
 
     public void Dispose()
     {
         DetachWindowObserver();
-        view.Hover -= OnHover;
         view.ViewAttachedToWindow -= OnAttached;
         view.ViewDetachedFromWindow -= OnDetached;
-        ViewCompat.SetAccessibilityDelegate(view, null);
-        accessibility.Dispose();
     }
 
     private void OnAttached(object? sender, View.ViewAttachedToWindowEventArgs e) => AttachWindowObserver();
@@ -71,14 +56,6 @@ internal sealed class GridPlatformBridge : IGridPlatformBridge
         }
 
         windowObserver = null;
-    }
-
-    private void OnHover(object? sender, View.HoverEventArgs e)
-    {
-        if (e.Event is { } motion)
-        {
-            e.Handled = accessibility.DispatchHoverEvent(motion);
-        }
     }
 
     private void OnWindowFocusChange(object? sender, ViewTreeObserver.WindowFocusChangeEventArgs e)

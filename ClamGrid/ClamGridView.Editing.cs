@@ -59,24 +59,6 @@ public partial class ClamGridView
 
     internal bool CanEditBoolean(GridColumn column) => column.IsBoolean && !(column.IsReadOnly ?? IsReadOnly) && column.ValueAccessor.CanWrite && (column.ValueAccessor.ValueType == typeof(bool));
 
-    internal bool MoveRowForAccessibility(int from, int target)
-    {
-        if (disposed || !IsEnabled || !AllowRowDragging || (from < 0) || (from >= RowCount))
-        {
-            return false;
-        }
-
-        CancelInteraction();
-        var key = DataView?.GetRowKey(from);
-        if (!TryCommitRowMove(key, from, target))
-        {
-            return false;
-        }
-
-        ScrollIntoView(target, 0);
-        return true;
-    }
-
     private bool ActivateBoolean(GridHit hit, object item, bool longPress)
     {
         var column = Columns[hit.ColumnIndex];
@@ -110,7 +92,6 @@ public partial class ClamGridView
         if (!disposed)
         {
             InvalidateSurface();
-            InvalidateAccessibility();
             CellValueChanged?.Invoke(this, args);
             ExecuteCommand(CellValueChangedCommand, args);
         }

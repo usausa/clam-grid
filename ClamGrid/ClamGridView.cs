@@ -119,10 +119,6 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         AttachPlatform();
     }
 
-    private void InvalidateAccessibility() => platform?.InvalidateAccessibility();
-
-    private void PruneAccessibility() => platform?.PruneAccessibility();
-
     private void SetParentIntercept(bool allow) => platform?.SetParentIntercept(allow);
 
     //--------------------------------------------------------------------------------
@@ -304,7 +300,6 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         }
 
         InvalidateSurface();
-        InvalidateAccessibility();
         return true;
     }
 
@@ -352,14 +347,6 @@ public partial class ClamGridView : SKCanvasView, IDisposable
     //--------------------------------------------------------------------------------
     // Internal
     //--------------------------------------------------------------------------------
-
-    internal object GetItem(int rowIndex) => Items[rowIndex];
-
-    internal GridLayout? GetCurrentLayout()
-    {
-        EnsureLayout();
-        return disposed ? null : CurrentLayout;
-    }
 
     internal bool ActivateCell(GridHit hit, Point point, bool longPress = false)
     {
@@ -454,7 +441,6 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         if (CurrentLayout?.ScrollTo(x, y) ?? false)
         {
             InvalidateSurface();
-            InvalidateAccessibility();
         }
     }
 
@@ -564,13 +550,11 @@ public partial class ClamGridView : SKCanvasView, IDisposable
             CancelInput();
             renderer?.ClearCache();
             InvalidateLayout();
-            PruneAccessibility();
         }
 
         SetValue(SelectionModeProperty, SelectionMode);
         NotifyDataProperties();
         InvalidateSurface();
-        InvalidateAccessibility();
         if (e.SelectionChanged)
         {
             SelectionChanged?.Invoke(this, EventArgs.Empty);
@@ -598,8 +582,6 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         CancelInput();
         renderer?.ClearCache();
         InvalidateLayout();
-        PruneAccessibility();
-        InvalidateAccessibility();
     }
 
     private void OnSizeChanged(object? sender, EventArgs e)

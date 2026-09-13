@@ -36,7 +36,6 @@ public sealed partial class QualityVerifier : IDisposable
         await VerifyScenariosAsync().ConfigureAwait(true);
         await VerifyBindingAsync().ConfigureAwait(true);
         await VerifyColorsAsync().ConfigureAwait(true);
-        await VerifyAccessibilityAsync().ConfigureAwait(true);
         await VerifyLifecycleAsync().ConfigureAwait(true);
         foreach (var (rows, columns) in new[] { (1000, 18), (10000, 18), (50000, 30) })
         {

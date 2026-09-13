@@ -157,7 +157,6 @@ Messaging, navigation and screen controllers are application concerns; the libra
 | **Row dragging** | Reorder rows by dragging the row header |
 | **Input** | Tap, long press, pan with inertia, column resize, commands for MVVM |
 | **Styling** | `GridStyle` with font, padding, colors, sort marks and conditional color callbacks. Characters missing from the font (emoji and so on) fall back to the typefaces in `GridFonts.Fallbacks` and then to system fonts per character, guided by `GridFonts.Languages` |
-| **Accessibility** | Android virtual views for headers and cells |
 
 ## ClamGridView API
 
