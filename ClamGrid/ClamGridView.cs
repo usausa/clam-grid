@@ -480,6 +480,7 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         ResetPlatform();
         NotifyDataProperties();
         OnPropertyChanged(nameof(DataView));
+        ApplyRequestedSortOrders();
         SelectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -571,7 +572,11 @@ public partial class ClamGridView : SKCanvasView, IDisposable
 
     private void OnSortRequested(object? sender, GridSortRequestedEventArgs e) => SortRequested?.Invoke(this, e);
 
-    private void OnSortChanged(object? sender, EventArgs e) => SortChanged?.Invoke(this, e);
+    private void OnSortChanged(object? sender, EventArgs e)
+    {
+        PublishSortOrders();
+        SortChanged?.Invoke(this, e);
+    }
 
     private void OnSortFailed(object? sender, GridSortFailedEventArgs e) => SortFailed?.Invoke(this, e);
 

@@ -81,6 +81,7 @@ Everything a view model needs is a bindable property or a command, so a screen c
 <clam:ClamGridView ItemsSource="{Binding Items}"
                    ValueAccessors="{x:Static models:TicketRowAccessors.Ticket}"
                    ColumnOrders="{Binding ColumnOrders}"
+                   SortOrders="{Binding SortOrders}"
                    GridStyle="{StaticResource ListGridStyle}"
                    SelectionMode="MultipleToggle"
                    SelectAllCommand="{Binding SelectCommand}"
@@ -114,6 +115,17 @@ public sealed class TicketListViewModel : ObservableObject
         }
     }
 
+    // TwoWay bound as well: the grid writes the applied sort back after a header tap
+    public IReadOnlyList<GridSortOrder>? SortOrders
+    {
+        get;
+        set
+        {
+            field = value;
+            OnPropertyChanged();
+        }
+    }
+
     public ICommand SelectCommand { get; }
 
     public ICommand ColumnEditCommand { get; }
@@ -122,6 +134,7 @@ public sealed class TicketListViewModel : ObservableObject
     {
         this.store = store;
         ColumnOrders = store.Load("columns");
+        SortOrders = [new GridSortOrder("ReceiptOrder")];
         Items.RegisterSort("ReceiptOrder", static x => x.ReceiptOrder);
         // Long press on a row: true selects, false clears
         SelectCommand = new Command<bool>(select => Items.UpdateSelection(x => select && !x.IsCompleted));
@@ -136,7 +149,7 @@ public sealed class TicketListViewModel : ObservableObject
 | Rows | Bind `ItemsSource` to a `GridDataView<T>`. It owns the rows, selection and sort state and raises `PropertyChanged` for `Count`, `SelectedCount`, `SelectedItems` and `SortOrders`, so labels and command states can follow it. Any other `IEnumerable` also works and is wrapped in an owned view. |
 | Columns | Declare `GridColumn` children in XAML and bind `ValueAccessors` to a static `GridValueAccessorCollection<T>`. Values stay typed, no reflection is involved, and `Format` / `Alignment` are declared per column. |
 | Column settings | Bind `ColumnOrders` (`TwoWay` by default). Load the saved value into the property and save it in the setter; `null` restores the default and the grid writes the normalized value back. A long press on a header runs `ColumnConfigurationCommand` with `GridColumnConfigurationEventArgs`; `CreateEditSession()` returns an editable copy for a settings page and `Export()` on the session returns the orders to assign back. |
-| Sort state | Register the keys on the data view (`RegisterSort`, `RegisterComparer` or `SetSortCallback`); a header tap calls `SortBy`. Persist the state with `SaveSortOrders()` / `RestoreSortOrders()`. |
+| Sort state | Bind `SortOrders` (`TwoWay` by default) and register the keys on the data view (`RegisterSort`, `RegisterComparer` or `SetSortCallback`). A header tap calls `SortBy` and the applied state is written back, so persisting it in the setter is enough; `SaveSortOrders()` / `RestoreSortOrders()` remain for code driven use. |
 | Selection | `SelectionMode` and `SelectAllCommand` (parameter `bool`) on the grid; `UpdateSelection(predicate)`, `SetSelected` and `TryToggleSelection` on the data view change the selection from the view model. Scrolling a row into view needs the view, so the sample bridges it with a behavior and a request object (`GridSelectBehavior` / `GridSelectRequest`). |
 | Editing | `IsReadOnly` plus `CellValueChangedCommand` (or the `CellValueChanging` / `CellValueChanged` events) for boolean cells. |
 | Colors | `GridStyle` as a resource. `RowBackground`, `CellColors`, `ColumnHeaderColors` and `RowHeaderColors` receive the row item, so state colors stay in the model; the sample composes them in XAML with `GridColorBehavior` and an `IColorSelector` resource. |
@@ -170,6 +183,7 @@ Messaging, navigation and screen controllers are application concerns; the libra
 | `ColumnDefinitions` | `GridColumnCollection` | | All column definitions including hidden columns. Content property, so columns can be declared as XAML children. Changes rebuild `Columns` with the current `ColumnOrders`. |
 | `ValueAccessors` | `IGridValueAccessorProvider?` | `null` | Resolves the value accessor of columns declared without one by `Key`. `GridValueAccessorCollection<T>` is the typed implementation. Bindable. |
 | `ColumnOrders` | `IReadOnlyList<GridColumnOrder>` | `[]` | Visibility and order of all columns. Set `null` to restore the default. The value is normalized and written back, so a `TwoWay` binding (the default) receives the normalized orders. Bindable. |
+| `SortOrders` | `IReadOnlyList<GridSortOrder>` | `[]` | Sort keys and directions of the data view. Applied when set, also to a data view that arrives later, and the applied state is written back after a header tap or `SortBy`, so a `TwoWay` binding (the default) receives it. Unregistered keys are dropped, an empty list clears the sort and `null` leaves the data view unchanged. Bindable. |
 | `GridStyle` | `GridStyle` | `new()` | Font, padding, sizes and colors. Bindable. |
 | `SelectionMode` | `GridSelectionMode` | `MultipleToggle` | Selection behavior. Bindable. |
 | `RowCount` | `int` | | Number of rows. |

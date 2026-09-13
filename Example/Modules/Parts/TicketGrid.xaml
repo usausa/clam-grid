@@ -10,6 +10,7 @@
                    GridStyle="{StaticResource ListGridStyle}"
                    ValueAccessors="{x:Static models:TicketRowAccessors.Ticket}"
                    ColumnOrders="{Binding ColumnOrders}"
+                   SortOrders="{Binding SortOrders}"
                    SelectionMode="MultipleToggle"
                    SelectAllCommand="{Binding SelectCommand}"
                    ColumnConfigurationCommand="{Binding ColumnEditCommand}">

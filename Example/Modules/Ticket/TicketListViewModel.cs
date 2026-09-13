@@ -54,6 +54,23 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
         }
     }
 
+    // Sort keys and directions, bound TwoWay and kept in the session when the grid writes the applied value back
+    public IReadOnlyList<GridSortOrder>? SortOrders
+    {
+        get;
+        set
+        {
+            if (ReferenceEquals(field, value))
+            {
+                return;
+            }
+
+            field = value;
+            RaisePropertyChanged(nameof(SortOrders));
+            session.SortOrders = value;
+        }
+    }
+
     // Rows, selection and sort state in one object
     public GridDataView<TicketRow> Items { get; }
 
@@ -92,6 +109,8 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
         Items.RegisterComparers(TicketComparers.Default);
         Items.PropertyChanged += OnItemsPropertyChanged;
         Disposables.Add(Items);
+        // Sort state kept across navigation, or the default; the grid applies it through the binding
+        SortOrders = session.SortOrders ?? DefaultSortOrder;
 
         // Long press: selects only pending rows, or clears all
         SelectCommand = MakeDelegateCommand<bool>(x => Items.UpdateSelection(item => x && !item.IsCompleted));
@@ -166,8 +185,6 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
     {
         var rows = Enumerable.Range(0, RowCount).Select(static id => new TicketRow(id)).ToArray();
         Items.SetSource(rows);
-        // Sort orders kept across navigation take precedence
-        Items.RestoreSortOrders(session.SortOrders ?? DefaultSortOrder);
         UpdateCounts();
         Status = "タップで選択、長押しで未完了を一括選択。見出しタップで並べ替え、見出し長押しで列設定。";
     }
@@ -176,8 +193,6 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
     {
         var selected = Items.SelectedItems.Cast<TicketRow>().ToArray();
         var groups = selected.Select(static x => x.GetText("GroupId")).Distinct(StringComparer.Ordinal).Count();
-        // Keep the sort state
-        session.SortOrders = Items.SaveSortOrders();
         Status = $"確定: {selected.Length}件 / {groups}グループ / ID {String.Join(", ", selected.Take(5).Select(static x => x.Id + 1))}";
     }
 

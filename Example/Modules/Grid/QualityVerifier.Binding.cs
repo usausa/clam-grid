@@ -70,6 +70,26 @@ public sealed partial class QualityVerifier
         }
 
         Check("xaml: unknown key is reported when accessors are set", missing);
+        var sorts = new OrderSource { Sorts = [new("DeptCode", true), new("Unknown")] };
+        using var other = scenario.CreateData(10);
+        await NextFrameAsync(() =>
+        {
+            grid.ItemsSource = null;
+            grid.SetBinding(ClamGridView.SortOrdersProperty, static (OrderSource source) => source.Sorts, BindingMode.TwoWay, source: sorts);
+            grid.ItemsSource = data;
+        }).ConfigureAwait(true);
+        Check("binding: sort orders set before the data view are applied and written back", data.SortOrders.SequenceEqual([new GridSortOrder("DeptCode", true)]) && sorts.Sorts is { Count: 1 } applied && ReferenceEquals(applied, grid.SortOrders));
+        await NextFrameAsync(() => data.SortBy("CustomerName")).ConfigureAwait(true);
+        Check("binding: grid side sort reaches the source", sorts.Sorts is { Count: 2 } written && (written[0].Key == "CustomerName"));
+        await NextFrameAsync(() => sorts.Sorts = []).ConfigureAwait(true);
+        Check("binding: empty sort orders clear the sort", (data.SortOrders.Count == 0) && sorts.Sorts is { Count: 0 });
+        await NextFrameAsync(() =>
+        {
+            sorts.Sorts = [new("DeptCode")];
+            grid.ItemsSource = other;
+        }).ConfigureAwait(true);
+        Check("binding: sort orders follow a new data view", other.SortOrders.SequenceEqual([new GridSortOrder("DeptCode")]) && (data.SortOrders.Count == 1));
+        grid.RemoveBinding(ClamGridView.SortOrdersProperty);
         grid.RemoveBinding(ClamGridView.ColumnOrdersProperty);
         grid.ValueAccessors = null;
         grid.ItemsSource = null;
@@ -80,6 +100,12 @@ public sealed partial class QualityVerifier
 internal sealed class OrderSource : NotificationObject
 {
     public IReadOnlyList<GridColumnOrder>? Orders
+    {
+        get;
+        set => SetProperty(ref field, value);
+    }
+
+    public IReadOnlyList<GridSortOrder>? Sorts
     {
         get;
         set => SetProperty(ref field, value);
