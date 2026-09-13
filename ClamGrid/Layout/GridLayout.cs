@@ -8,6 +8,8 @@ internal sealed class GridLayout
 
     public int ColumnCount => edges.Length - 1;
 
+    public int FrozenColumnCount { get; }
+
     public double RowHeight { get; }
 
     public double HeaderHeight { get; }
@@ -32,6 +34,14 @@ internal sealed class GridLayout
 
     public GridRect BodyBounds => new(RowHeaderWidth, HeaderHeight, Math.Max(0, ViewportWidth - RowHeaderWidth), Math.Max(0, ViewportHeight - HeaderHeight));
 
+    // Width of the frozen columns, limited to the body so the scroll area never becomes negative
+    public double FrozenWidth => Math.Min(edges[FrozenColumnCount], BodyBounds.Width);
+
+    public GridRect FrozenArea => new(RowHeaderWidth, HeaderHeight, FrozenWidth, BodyBounds.Height);
+
+    // Body area right of the frozen columns where the remaining columns scroll horizontally
+    public GridRect ScrollArea => new(RowHeaderWidth + FrozenWidth, HeaderHeight, BodyBounds.Width - FrozenWidth, BodyBounds.Height);
+
     public GridRect ColumnHeaderArea => new(RowHeaderWidth, 0, BodyBounds.Width, Math.Min(HeaderHeight, ViewportHeight));
 
     public GridRect RowHeaderArea => new(0, HeaderHeight, Math.Min(RowHeaderWidth, ViewportWidth), BodyBounds.Height);
@@ -49,25 +59,30 @@ internal sealed class GridLayout
         }
     }
 
+    public GridIndexRange FrozenColumns => new(0, FrozenColumnCount);
+
+    // Scrolling columns that intersect the scroll area; frozen columns are reported separately
     public GridIndexRange VisibleColumns
     {
         get
         {
-            if (BodyBounds.Width <= 0)
+            var area = ScrollArea;
+            if (area.Width <= 0)
             {
-                return default;
+                return new GridIndexRange(FrozenColumnCount, FrozenColumnCount);
             }
 
-            var start = Math.Clamp(UpperBound(ScrollX) - 1, 0, ColumnCount);
-            var end = Math.Clamp(LowerBound(ScrollX + BodyBounds.Width), start, ColumnCount);
+            var start = Math.Clamp(UpperBound(FrozenWidth + ScrollX) - 1, FrozenColumnCount, ColumnCount);
+            var end = Math.Clamp(LowerBound(FrozenWidth + ScrollX + area.Width), start, ColumnCount);
             return new GridIndexRange(start, end);
         }
     }
 
-    public GridLayout(IReadOnlyList<double> columnWidths, int rowCount, double rowHeight, double headerHeight, double rowHeaderWidth, double viewportWidth, double viewportHeight)
+    public GridLayout(IReadOnlyList<double> columnWidths, int rowCount, double rowHeight, double headerHeight, double rowHeaderWidth, double viewportWidth, double viewportHeight, int frozenColumnCount = 0)
     {
         ArgumentNullException.ThrowIfNull(columnWidths);
         ArgumentOutOfRangeException.ThrowIfNegative(rowCount);
+        ArgumentOutOfRangeException.ThrowIfNegative(frozenColumnCount);
         RequireDimension(rowHeight, nameof(rowHeight), false);
         RequireDimension(headerHeight, nameof(headerHeight));
         RequireDimension(rowHeaderWidth, nameof(rowHeaderWidth));
@@ -79,6 +94,7 @@ internal sealed class GridLayout
         }
 
         RowCount = rowCount;
+        FrozenColumnCount = Math.Min(frozenColumnCount, columnWidths.Count);
         RowHeight = rowHeight;
         HeaderHeight = headerHeight;
         RowHeaderWidth = rowHeaderWidth;
@@ -112,6 +128,7 @@ internal sealed class GridLayout
         return true;
     }
 
+    // Frozen columns never need horizontal scrolling; other columns are revealed inside the scroll area
     public bool ScrollIntoView(int row, int column)
     {
         if ((row < 0) || (row >= RowCount) || (column < 0) || (column >= ColumnCount) || BodyBounds.IsEmpty)
@@ -119,18 +136,19 @@ internal sealed class GridLayout
             return false;
         }
 
-        var x = Reveal(edges[column], edges[column + 1], ScrollX, BodyBounds.Width);
+        var x = column < FrozenColumnCount ? ScrollX : Reveal(edges[column] - FrozenWidth, edges[column + 1] - FrozenWidth, ScrollX, ScrollArea.Width);
         var y = Reveal(row * RowHeight, (row + 1d) * RowHeight, ScrollY, BodyBounds.Height);
         ScrollTo(x, y);
         return true;
     }
 
-    public GridRect GetCellBounds(int row, int column) => new(RowHeaderWidth + edges[column] - ScrollX, HeaderHeight + (row * RowHeight) - ScrollY, edges[column + 1] - edges[column], RowHeight);
+    public GridRect GetCellBounds(int row, int column) => new(GetColumnLeft(column), HeaderHeight + (row * RowHeight) - ScrollY, edges[column + 1] - edges[column], RowHeight);
 
-    public GridRect GetColumnHeaderBounds(int column) => new(RowHeaderWidth + edges[column] - ScrollX, 0, edges[column + 1] - edges[column], HeaderHeight);
+    public GridRect GetColumnHeaderBounds(int column) => new(GetColumnLeft(column), 0, edges[column + 1] - edges[column], HeaderHeight);
 
     public GridRect GetRowHeaderBounds(int row) => new(0, HeaderHeight + (row * RowHeight) - ScrollY, RowHeaderWidth, RowHeight);
 
+    // Boundaries hidden under the frozen columns are not grabbable
     public int HitTestColumnBoundary(double x, double y, double tolerance = 8)
     {
         if (!Double.IsFinite(tolerance) || (tolerance < 0) || !ColumnHeaderArea.Contains(x, y))
@@ -140,19 +158,23 @@ internal sealed class GridLayout
 
         var candidate = -1;
         var distance = tolerance;
-        var visible = VisibleColumns;
-        for (var column = visible.Start; column < visible.End; column++)
+        Consider(FrozenColumns, RowHeaderWidth);
+        Consider(VisibleColumns, RowHeaderWidth + FrozenWidth);
+        return candidate;
+
+        void Consider(GridIndexRange range, double left)
         {
-            var rect = GetColumnHeaderBounds(column);
-            var difference = Math.Abs(rect.Right - x);
-            if ((rect.Width > 0) && (rect.Right > RowHeaderWidth) && (rect.Right <= ViewportWidth) && (difference <= distance))
+            for (var column = range.Start; column < range.End; column++)
             {
-                candidate = column;
-                distance = difference;
+                var rect = GetColumnHeaderBounds(column);
+                var difference = Math.Abs(rect.Right - x);
+                if ((rect.Width > 0) && (rect.Right > left) && (rect.Right <= ViewportWidth) && (difference <= distance))
+                {
+                    candidate = column;
+                    distance = difference;
+                }
             }
         }
-
-        return candidate;
     }
 
     public GridHit HitTest(double x, double y)
@@ -168,7 +190,7 @@ internal sealed class GridLayout
         }
 
         var row = y < HeaderHeight ? -1 : Math.Floor((y - HeaderHeight + ScrollY) / RowHeight);
-        var column = x < RowHeaderWidth ? -1 : UpperBound(x - RowHeaderWidth + ScrollX) - 1;
+        var column = x < RowHeaderWidth ? -1 : HitTestColumn(x - RowHeaderWidth);
         if ((row >= RowCount) || (column >= ColumnCount))
         {
             return GridHit.None;
@@ -199,6 +221,11 @@ internal sealed class GridLayout
             throw new ArgumentOutOfRangeException(name);
         }
     }
+
+    private double GetColumnLeft(int column) => RowHeaderWidth + edges[column] - (column < FrozenColumnCount ? 0 : ScrollX);
+
+    // Offsets inside the frozen width map to frozen columns, the rest is shifted by the scroll offset
+    private int HitTestColumn(double offset) => UpperBound(offset < FrozenWidth ? offset : offset + ScrollX) - 1;
 
     private int LowerBound(double value)
     {

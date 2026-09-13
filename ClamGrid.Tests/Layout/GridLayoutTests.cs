@@ -67,6 +67,72 @@ public sealed class GridLayoutTests
     }
 
     [Fact]
+    public void FrozenColumnsStayInPlaceWhileTheOthersScroll()
+    {
+        // Arrange
+        var layout = new GridLayout([100, 100, 100, 100], 10, 40, 40, 40, 300, 440, 1);
+
+        // Act
+        layout.ScrollTo(50, 0);
+
+        // Assert
+        Assert.Equal(100d, layout.FrozenWidth);
+        Assert.Equal(40d, layout.GetCellBounds(0, 0).X);
+        Assert.Equal(90d, layout.GetCellBounds(0, 1).X);
+        Assert.Equal(new GridRect(140, 40, 160, 400), layout.ScrollArea);
+        Assert.Equal(new GridIndexRange(0, 1), layout.FrozenColumns);
+        Assert.Equal(new GridIndexRange(1, 4), layout.VisibleColumns);
+        Assert.Equal(new GridHit(GridCellType.Cell, 0, 0), layout.HitTest(100, 60));
+        Assert.Equal(new GridHit(GridCellType.Cell, 0, 1), layout.HitTest(150, 60));
+        Assert.Equal(new GridHit(GridCellType.ColumnHeader, -1, 2), layout.HitTest(250, 10));
+    }
+
+    [Fact]
+    public void ScrollIntoViewRevealsScrollingColumnsInsideTheScrollArea()
+    {
+        // Arrange
+        var layout = new GridLayout([100, 100, 100, 100], 10, 40, 40, 40, 300, 440, 1);
+        layout.ScrollTo(50, 0);
+
+        // Act
+        var frozen = layout.ScrollIntoView(0, 0);
+        var frozenScroll = layout.ScrollX;
+        var revealed = layout.ScrollIntoView(0, 3);
+
+        // Assert
+        Assert.True(frozen);
+        Assert.Equal(50d, frozenScroll);
+        Assert.True(revealed);
+        Assert.Equal(140d, layout.ScrollX);
+        Assert.Equal(300d, layout.GetCellBounds(0, 3).Right);
+    }
+
+    [Fact]
+    public void BoundariesUnderTheFrozenColumnsAreNotGrabbable()
+    {
+        // Arrange
+        var layout = new GridLayout([100, 100, 100, 100], 10, 40, 40, 40, 300, 440, 1);
+        layout.ScrollTo(150, 0);
+
+        // Act & Assert
+        Assert.Equal(0, layout.HitTestColumnBoundary(140, 10));
+        Assert.Equal(-1, layout.HitTestColumnBoundary(90, 10));
+        Assert.Equal(2, layout.HitTestColumnBoundary(190, 10));
+    }
+
+    [Fact]
+    public void FrozenColumnCountIsLimitedToTheColumnCount()
+    {
+        // Arrange
+        var layout = new GridLayout([100], 10, 40, 40, 40, 300, 440, 5);
+
+        // Act & Assert
+        Assert.Equal(1, layout.FrozenColumnCount);
+        Assert.Equal(0d, layout.MaximumScrollX);
+        Assert.Equal(new GridIndexRange(1, 1), layout.VisibleColumns);
+    }
+
+    [Fact]
     public void ScrollIntoViewMovesMinimallyAndClampsAtTheEnd()
     {
         // Arrange

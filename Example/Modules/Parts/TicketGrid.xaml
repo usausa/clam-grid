@@ -12,6 +12,7 @@
                    ColumnOrders="{Binding ColumnOrders}"
                    SortOrders="{Binding SortOrders}"
                    SortCycle="AscendingDescendingNone"
+                   FrozenColumnCount="2"
                    SelectionMode="MultipleToggle"
                    SelectAllCommand="{Binding SelectCommand}"
                    ColumnConfigurationCommand="{Binding ColumnEditCommand}">

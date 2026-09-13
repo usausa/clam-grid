@@ -341,7 +341,7 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         }
 
         base.OnPaintSurface(e);
-        FrameRendered?.Invoke(this, new GridFrameEventArgs(Stopwatch.GetElapsedTime(started).TotalMilliseconds, cells, currentRenderer.Measurements - measurements, current.VisibleRows, current.VisibleColumns, current.ScrollX, current.ScrollY));
+        FrameRendered?.Invoke(this, new GridFrameEventArgs(Stopwatch.GetElapsedTime(started).TotalMilliseconds, cells, currentRenderer.Measurements - measurements, current.VisibleRows, current.VisibleColumns, current.FrozenColumnCount, current.ScrollX, current.ScrollY));
     }
 
     //--------------------------------------------------------------------------------
@@ -618,7 +618,7 @@ public partial class ClamGridView : SKCanvasView, IDisposable
             widths[resizeColumn] = previewWidth;
         }
 
-        var replacement = new GridLayout(widths, Items.Count, GridStyle.RowHeight ?? renderer.AutoRowHeight, GridStyle.ShowColumnHeaders ? GridStyle.HeaderHeight ?? renderer.AutoRowHeight : 0, rowHeader, Width, Height);
+        var replacement = new GridLayout(widths, Items.Count, GridStyle.RowHeight ?? renderer.AutoRowHeight, GridStyle.ShowColumnHeaders ? GridStyle.HeaderHeight ?? renderer.AutoRowHeight : 0, rowHeader, Width, Height, Math.Clamp(FrozenColumnCount, 0, widths.Length));
         replacement.ScrollTo(ScrollX, ScrollY);
         CurrentLayout = replacement;
         layoutDirty = false;

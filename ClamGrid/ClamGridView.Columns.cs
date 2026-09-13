@@ -8,6 +8,7 @@ using ClamGrid.Columns;
 public partial class ClamGridView
 {
     public static readonly BindableProperty ValueAccessorsProperty = BindableProperty.Create(nameof(ValueAccessors), typeof(IGridValueAccessorProvider), typeof(ClamGridView), propertyChanged: OnValueAccessorsChanged);
+    public static readonly BindableProperty FrozenColumnCountProperty = BindableProperty.Create(nameof(FrozenColumnCount), typeof(int), typeof(ClamGridView), 0, propertyChanged: OnFrozenColumnCountChanged);
     public static readonly BindableProperty ColumnOrdersProperty = BindableProperty.Create(nameof(ColumnOrders), typeof(IReadOnlyList<GridColumnOrder>), typeof(ClamGridView), defaultBindingMode: BindingMode.TwoWay, propertyChanged: OnColumnOrdersChanged);
 
     private GridColumn[] columnCatalog = [];
@@ -23,6 +24,13 @@ public partial class ClamGridView
     {
         get => (IGridValueAccessorProvider?)GetValue(ValueAccessorsProperty);
         set => SetValue(ValueAccessorsProperty, value);
+    }
+
+    // Number of leading columns that stay in place while the others scroll horizontally
+    public int FrozenColumnCount
+    {
+        get => (int)GetValue(FrozenColumnCountProperty);
+        set => SetValue(FrozenColumnCountProperty, value);
     }
 
     // Visibility and order of all columns; the normalized value is written back for TwoWay bindings and null restores the default
@@ -85,6 +93,14 @@ public partial class ClamGridView
         {
             grid.SetColumnConfiguration(grid.columnCatalog, normalized);
         }
+    }
+
+    private static void OnFrozenColumnCountChanged(BindableObject bindable, object? oldValue, object? newValue)
+    {
+        var grid = (ClamGridView)bindable;
+        grid.RequireUiThread();
+        grid.CancelInput();
+        grid.InvalidateLayout();
     }
 
     private static void OnValueAccessorsChanged(BindableObject bindable, object? oldValue, object? newValue)

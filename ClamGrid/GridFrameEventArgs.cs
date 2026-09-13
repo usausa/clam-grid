@@ -1,6 +1,6 @@
 namespace ClamGrid;
 
-public sealed class GridFrameEventArgs(double milliseconds, int renderedCells, int textMeasurements, GridIndexRange rows, GridIndexRange columns, double scrollX, double scrollY) : EventArgs
+public sealed class GridFrameEventArgs(double milliseconds, int renderedCells, int textMeasurements, GridIndexRange rows, GridIndexRange columns, int frozenColumns, double scrollX, double scrollY) : EventArgs
 {
     public double Milliseconds { get; } = milliseconds;
 
@@ -11,6 +11,8 @@ public sealed class GridFrameEventArgs(double milliseconds, int renderedCells, i
     public GridIndexRange Rows { get; } = rows;
 
     public GridIndexRange Columns { get; } = columns;
+
+    public int FrozenColumns { get; } = frozenColumns;
 
     public double ScrollX { get; } = scrollX;
 

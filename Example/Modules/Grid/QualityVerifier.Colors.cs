@@ -155,6 +155,23 @@ public sealed partial class QualityVerifier
 
         await NextFrameAsync(() =>
         {
+            probe.Columns.ReplaceAll([columns[0], columns[1] with { Width = GridColumnWidth.Absolute(300), Alignment = TextAlignment.End }, columns[2] with { Width = GridColumnWidth.Absolute(300) }]);
+            probe.FrozenColumnCount = 1;
+            probe.ScrollTo(100, 0);
+        }).ConfigureAwait(true);
+        using (var bitmap = RenderBitmap())
+        {
+            CheckColors(bitmap, new Rect(48, 120, 100, 40), Colors.LightYellow, Colors.Blue, "frozen column at a horizontal offset");
+            CheckColors(bitmap, new Rect(248, 120, 100, 40), Colors.White, Colors.Black, "scrolling column beside the frozen column");
+            Check("frozen: hit test resolves the frozen column", probe.HitTest(60, 60).ColumnIndex == 0);
+            Check("frozen: hit test shifts scrolling columns by the offset", probe.HitTest(160, 60).ColumnIndex == 1);
+            Check("frozen: frame reports the frozen count and scrolling range", (probe.LastFrame!.FrozenColumns == 1) && (probe.LastFrame.Columns.Start == 1) && probe.ScrollX.Equals(100d));
+        }
+
+        await NextFrameAsync(() =>
+        {
+            probe.FrozenColumnCount = 0;
+            probe.ScrollTo(0, 0);
             probe.Columns.ReplaceAll([columns[1], columns[0]]);
             probe.ScrollIntoView(800, 1);
         }).ConfigureAwait(true);

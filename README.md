@@ -82,6 +82,7 @@ Everything a view model needs is a bindable property or a command, so a screen c
                    ValueAccessors="{x:Static models:TicketRowAccessors.Ticket}"
                    ColumnOrders="{Binding ColumnOrders}"
                    SortOrders="{Binding SortOrders}"
+                   FrozenColumnCount="1"
                    GridStyle="{StaticResource ListGridStyle}"
                    SelectionMode="MultipleToggle"
                    SelectAllCommand="{Binding SelectCommand}"
@@ -161,7 +162,7 @@ Messaging, navigation and screen controllers are application concerns; the libra
 
 | Category | Detail |
 |---|---|
-| **Columns** | Auto / Absolute / Star width, minimum width, alignment, format string, static header and cell colors |
+| **Columns** | Auto / Absolute / Star width, minimum width, alignment, format string, frozen leading columns, static header and cell colors |
 | **Column settings** | Visibility and order, edit session for a settings screen, drag to resize |
 | **Data** | `INotifyCollectionChanged` / `INotifyPropertyChanged` tracking, stable row keys |
 | **Sorting** | Multi-key sort with history, direction aware comparers, sort callback |
@@ -183,6 +184,7 @@ Messaging, navigation and screen controllers are application concerns; the libra
 | `ColumnDefinitions` | `GridColumnCollection` | | All column definitions including hidden columns. Content property, so columns can be declared as XAML children. Changes rebuild `Columns` with the current `ColumnOrders`. |
 | `ValueAccessors` | `IGridValueAccessorProvider?` | `null` | Resolves the value accessor of columns declared without one by `Key`. `GridValueAccessorCollection<T>` is the typed implementation. Bindable. |
 | `ColumnOrders` | `IReadOnlyList<GridColumnOrder>` | `[]` | Visibility and order of all columns. Set `null` to restore the default. The value is normalized and written back, so a `TwoWay` binding (the default) receives the normalized orders. Bindable. |
+| `FrozenColumnCount` | `int` | `0` | Number of leading visible columns that stay in place while the others scroll horizontally. Bindable. |
 | `SortOrders` | `IReadOnlyList<GridSortOrder>` | `[]` | Sort keys and directions of the data view. Applied when set, also to a data view that arrives later, and the applied state is written back after a header tap or `SortBy`, so a `TwoWay` binding (the default) receives it. Unregistered keys are dropped, an empty list clears the sort and `null` leaves the data view unchanged. Bindable. |
 | `SortCycle` | `GridSortCycle` | `AscendingDescending` | Direction sequence of repeated header taps on the same column: `AscendingDescending`, `DescendingAscending`, `AscendingDescendingNone` or `DescendingAscendingNone`; the `None` variants remove the key on the third tap. Bindable. |
 | `GridStyle` | `GridStyle` | `new()` | Font, padding, sizes and colors. Bindable. |
@@ -249,7 +251,7 @@ Messaging, navigation and screen controllers are application concerns; the libra
 | `ColumnConfigurationRequested` | `GridColumnConfigurationEventArgs` | Column configuration requested by a long press on a header. |
 | `RowMoveRequested` | `GridRowMoveEventArgs` | Row drag is about to be applied. Cancelable. |
 | `RowMoved` | `GridRowMoveEventArgs` | Row moved. |
-| `FrameRendered` | `GridFrameEventArgs` | Render statistics of a frame. |
+| `FrameRendered` | `GridFrameEventArgs` | Render statistics of a frame: time, rendered cells, text measurements, visible rows, scrolling columns, frozen column count and scroll offsets. |
 
 ## 📐 GridColumn
 
@@ -298,6 +300,8 @@ Global font fallback settings. They are read when a grid creates its renderer, s
 |---|---|---|---|
 | `Languages` | `IReadOnlyList<string>` | `["ja"]` | BCP-47 tags passed to the per character system font lookup in priority order. CJK ideographs are shared by several languages, so the tag selects the glyph variant. |
 | `Fallbacks` | `IReadOnlyList<SKTypeface>` | `[]` | Typefaces tried before the system lookup for characters the primary font lacks, for example a bundled font. They also count toward the automatic row height. The caller keeps ownership. |
+
+Emoji presentation sequences (a character followed by U+FE0F) are matched against the emoji font first, and variation selectors and zero width joiners only steer the font choice without being drawn.
 
 ```csharp
 GridFonts.Languages = ["ja", "en"];

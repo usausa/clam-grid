@@ -1,5 +1,6 @@
 namespace ClamGrid.Rendering;
 
+using System.Buffers;
 using System.Globalization;
 using System.Text;
 
@@ -10,6 +11,10 @@ using SkiaSharp.Views.Maui;
 
 internal sealed class GridRenderer : IDisposable
 {
+    private const int EmojiFlag = 1 << 24;
+
+    private static readonly string[] EmojiLanguages = ["und-Zsye"];
+    private static readonly SearchValues<char> Selectors = SearchValues.Create("\uFE0E\uFE0F\u200D");
     private static readonly TextRun EmptyRun = new(Array.Empty<TextRun.Part>(), 0);
 
     private readonly GridStyle style;
@@ -70,65 +75,20 @@ internal sealed class GridRenderer : IDisposable
     public int Render(SKCanvas canvas, GridLayout layout, IReadOnlyList<GridColumn> columns, IReadOnlyList<object> items, IGridDataView? dataView, bool showRowHandles)
     {
         var rows = layout.VisibleRows;
-        var visibleColumns = layout.VisibleColumns;
-        var rendered = 0;
-        canvas.Clear(style.Background.ToSKColor());
-        canvas.Save();
-        canvas.ClipRect(ToSkRect(layout.BodyBounds));
+        var states = new RowState[rows.Count];
         for (var row = rows.Start; row < rows.End; row++)
         {
             var selected = dataView?.IsSelected(row) ?? false;
-            var rowBackground = selected ? style.SelectedBackground : style.RowBackground?.Invoke(items[row]);
-            for (var column = visibleColumns.Start; column < visibleColumns.End; column++)
-            {
-                var rect = layout.GetCellBounds(row, column);
-                if (rect.IsEmpty)
-                {
-                    continue;
-                }
-
-                var definition = columns[column];
-                var value = definition.ValueAccessor.GetValue(items[row]);
-                var colors = new GridColors(selected ? style.SelectedTextColor : definition.TextColor ?? style.TextColor, rowBackground ?? definition.Background ?? style.Background);
-                colors = colors.Apply(style.CellColors?.Invoke(new GridCellColorContext(items[row], row, definition, column, value, selected, colors)) ?? default);
-                Fill(canvas, rect, colors.Background!);
-                if (definition.IsBoolean)
-                {
-                    DrawBoolean(canvas, rect, value is true, colors.TextColor!, colors.Background!);
-                }
-                else
-                {
-                    DrawText(canvas, rect, FormatValue(value, definition.Format), definition.Alignment, false, colors.TextColor!);
-                }
-
-                DrawLines(canvas, rect);
-                rendered++;
-            }
+            states[row - rows.Start] = new RowState(selected, selected ? style.SelectedBackground : style.RowBackground?.Invoke(items[row]));
         }
 
-        canvas.Restore();
-        canvas.Save();
-        canvas.ClipRect(ToSkRect(layout.ColumnHeaderArea));
-        for (var column = visibleColumns.Start; column < visibleColumns.End; column++)
-        {
-            var rect = layout.GetColumnHeaderBounds(column);
-            if (rect.IsEmpty)
-            {
-                continue;
-            }
-
-            var definition = columns[column];
-            var priority = GetSortPriority(definition, dataView);
-            var order = priority >= 0 ? dataView!.SortOrders[priority] : null;
-            var background = priority == 0 ? order!.Descending ? style.DescendingHeaderBackground : style.AscendingHeaderBackground : definition.HeaderBackground ?? style.HeaderBackground;
-            var colors = new GridColors(definition.HeaderTextColor ?? style.HeaderTextColor, background);
-            colors = colors.Apply(style.ColumnHeaderColors?.Invoke(new GridColumnHeaderColorContext(definition, column, order, priority, colors)) ?? default);
-            Fill(canvas, rect, colors.Background!);
-            DrawHeader(canvas, rect, definition, dataView, colors.TextColor!);
-            DrawLines(canvas, rect);
-        }
-
-        canvas.Restore();
+        canvas.Clear(style.Background.ToSKColor());
+        var headerArea = layout.ColumnHeaderArea;
+        var scrollArea = layout.ScrollArea;
+        var rendered = RenderCells(canvas, layout, scrollArea, layout.VisibleColumns, columns, items, rows, states);
+        rendered += RenderCells(canvas, layout, layout.FrozenArea, layout.FrozenColumns, columns, items, rows, states);
+        RenderHeaders(canvas, layout, new GridRect(scrollArea.X, 0, scrollArea.Width, headerArea.Height), layout.VisibleColumns, columns, dataView);
+        RenderHeaders(canvas, layout, new GridRect(headerArea.X, 0, layout.FrozenWidth, headerArea.Height), layout.FrozenColumns, columns, dataView);
         canvas.Save();
         canvas.ClipRect(ToSkRect(layout.RowHeaderArea));
         for (var row = rows.Start; row < rows.End; row++)
@@ -139,7 +99,7 @@ internal sealed class GridRenderer : IDisposable
                 continue;
             }
 
-            var selected = dataView?.IsSelected(row) ?? false;
+            var selected = states[row - rows.Start].Selected;
             var colors = new GridColors(selected ? style.SelectedTextColor : style.TextColor, selected ? style.SelectedBackground : style.RowHeaderBackground);
             colors = colors.Apply(style.RowHeaderColors?.Invoke(new GridRowHeaderColorContext(items[row], row, selected, colors)) ?? default);
             Fill(canvas, rect, colors.Background!);
@@ -165,6 +125,82 @@ internal sealed class GridRenderer : IDisposable
         DrawLines(canvas, corner);
         DrawScrollbars(canvas, layout);
         return rendered;
+    }
+
+    // Scrolling and frozen columns are painted in separate passes with their own clip so frozen cells cover scrolled ones
+    private int RenderCells(SKCanvas canvas, GridLayout layout, GridRect clip, GridIndexRange range, IReadOnlyList<GridColumn> columns, IReadOnlyList<object> items, GridIndexRange rows, RowState[] states)
+    {
+        if (clip.IsEmpty || (range.Count == 0))
+        {
+            return 0;
+        }
+
+        var rendered = 0;
+        canvas.Save();
+        canvas.ClipRect(ToSkRect(clip));
+        for (var row = rows.Start; row < rows.End; row++)
+        {
+            var state = states[row - rows.Start];
+            for (var column = range.Start; column < range.End; column++)
+            {
+                var rect = layout.GetCellBounds(row, column);
+                if (rect.IsEmpty)
+                {
+                    continue;
+                }
+
+                var definition = columns[column];
+                var value = definition.ValueAccessor.GetValue(items[row]);
+                var colors = new GridColors(state.Selected ? style.SelectedTextColor : definition.TextColor ?? style.TextColor, state.Background ?? definition.Background ?? style.Background);
+                colors = colors.Apply(style.CellColors?.Invoke(new GridCellColorContext(items[row], row, definition, column, value, state.Selected, colors)) ?? default);
+                Fill(canvas, rect, colors.Background!);
+                if (definition.IsBoolean)
+                {
+                    DrawBoolean(canvas, rect, value is true, colors.TextColor!, colors.Background!);
+                }
+                else
+                {
+                    DrawText(canvas, rect, FormatValue(value, definition.Format), definition.Alignment, false, colors.TextColor!);
+                }
+
+                DrawLines(canvas, rect);
+                rendered++;
+            }
+        }
+
+        canvas.Restore();
+        return rendered;
+    }
+
+    private void RenderHeaders(SKCanvas canvas, GridLayout layout, GridRect clip, GridIndexRange range, IReadOnlyList<GridColumn> columns, IGridDataView? dataView)
+    {
+        if (clip.IsEmpty || (range.Count == 0))
+        {
+            return;
+        }
+
+        canvas.Save();
+        canvas.ClipRect(ToSkRect(clip));
+        for (var column = range.Start; column < range.End; column++)
+        {
+            var rect = layout.GetColumnHeaderBounds(column);
+            if (rect.IsEmpty)
+            {
+                continue;
+            }
+
+            var definition = columns[column];
+            var priority = GetSortPriority(definition, dataView);
+            var order = priority >= 0 ? dataView!.SortOrders[priority] : null;
+            var background = priority == 0 ? order!.Descending ? style.DescendingHeaderBackground : style.AscendingHeaderBackground : definition.HeaderBackground ?? style.HeaderBackground;
+            var colors = new GridColors(definition.HeaderTextColor ?? style.HeaderTextColor, background);
+            colors = colors.Apply(style.ColumnHeaderColors?.Invoke(new GridColumnHeaderColorContext(definition, column, order, priority, colors)) ?? default);
+            Fill(canvas, rect, colors.Background!);
+            DrawHeader(canvas, rect, definition, dataView, colors.TextColor!);
+            DrawLines(canvas, rect);
+        }
+
+        canvas.Restore();
     }
 
     public void ClearCache() => textCache.Clear();
@@ -229,35 +265,44 @@ internal sealed class GridRenderer : IDisposable
 
     private static string Sanitize(string text) => text.Replace('\r', ' ').Replace('\n', ' ');
 
-    private FontSet ResolveFonts(int codepoint)
+    // Variation selectors and joiners have no glyph without shaping, so they only steer the font choice and are not drawn
+    private static string StripSelectors(string text) => text.AsSpan().IndexOfAny(Selectors) < 0 ? text : text.Replace("\uFE0F", String.Empty, StringComparison.Ordinal).Replace("\uFE0E", String.Empty, StringComparison.Ordinal).Replace("\u200D", String.Empty, StringComparison.Ordinal);
+
+    private FontSet ResolveFonts(int codepoint, bool emoji)
     {
-        if (codepoint <= 127)
+        if ((codepoint <= 127) && !emoji)
         {
             return primary;
         }
 
-        if (fallbackByCodepoint.TryGetValue(codepoint, out var fonts))
+        var key = emoji ? codepoint | EmojiFlag : codepoint;
+        if (fallbackByCodepoint.TryGetValue(key, out var fonts))
         {
             return fonts;
         }
 
-        fonts = primary;
-        if (!primary.Font.ContainsGlyph(codepoint))
+        // An emoji presentation sequence asks the system for the emoji font before the primary font is considered
+        fonts = emoji ? MatchSystemFont(codepoint, EmojiLanguages) : null;
+        if (fonts is null)
         {
-            // Configured fallback fonts come first, then the system fonts are searched per character with the language hints
-            fonts = Array.Find(fallbacks, fallback => fallback.Font.ContainsGlyph(codepoint)) ?? MatchSystemFont(codepoint);
+            fonts = primary;
+            if (!primary.Font.ContainsGlyph(codepoint))
+            {
+                // Configured fallback fonts come first, then the system fonts are searched per character with the language hints
+                fonts = Array.Find(fallbacks, fallback => fallback.Font.ContainsGlyph(codepoint)) ?? MatchSystemFont(codepoint, languages) ?? primary;
+            }
         }
 
-        fallbackByCodepoint[codepoint] = fonts;
+        fallbackByCodepoint[key] = fonts;
         return fonts;
     }
 
-    private FontSet MatchSystemFont(int codepoint)
+    private FontSet? MatchSystemFont(int codepoint, string[]? hints)
     {
-        var typeface = SKFontManager.Default.MatchCharacter(style.FontFamily, SKFontStyle.Normal, languages, codepoint);
+        var typeface = SKFontManager.Default.MatchCharacter(style.FontFamily, SKFontStyle.Normal, hints, codepoint);
         if (typeface is null)
         {
-            return primary;
+            return null;
         }
 
         if (fallbackByFamily.TryGetValue(typeface.FamilyName, out var existing))
@@ -278,9 +323,12 @@ internal sealed class GridRenderer : IDisposable
         var boundaries = StringInfo.ParseCombiningCharacters(text);
         FontSet? current = null;
         var start = 0;
-        foreach (var index in boundaries)
+        for (var i = 0; i < boundaries.Length; i++)
         {
-            var fonts = Rune.TryGetRuneAt(text, index, out var rune) ? ResolveFonts(rune.Value) : primary;
+            var index = boundaries[i];
+            var end = i + 1 < boundaries.Length ? boundaries[i + 1] : text.Length;
+            var emoji = text.AsSpan(index, end - index).Contains('\uFE0F');
+            var fonts = Rune.TryGetRuneAt(text, index, out var rune) ? ResolveFonts(rune.Value, emoji) : primary;
             if (ReferenceEquals(fonts, current))
             {
                 continue;
@@ -288,7 +336,7 @@ internal sealed class GridRenderer : IDisposable
 
             if (current is not null)
             {
-                segments.Add(new TextSegment(text[start..index], header ? current.HeaderFont : current.Font));
+                segments.Add(new TextSegment(StripSelectors(text[start..index]), header ? current.HeaderFont : current.Font));
             }
 
             current = fonts;
@@ -297,7 +345,7 @@ internal sealed class GridRenderer : IDisposable
 
         if (current is not null)
         {
-            segments.Add(new TextSegment(text[start..], header ? current.HeaderFont : current.Font));
+            segments.Add(new TextSegment(StripSelectors(text[start..]), header ? current.HeaderFont : current.Font));
         }
 
         return segments;
@@ -534,13 +582,16 @@ internal sealed class GridRenderer : IDisposable
             canvas.DrawRoundRect(SKRect.Create((float)body.Right - 5, (float)y, 4, (float)height), 2, 2, paint);
         }
 
-        if ((layout.MaximumScrollX > 0) && !body.IsEmpty)
+        var area = layout.ScrollArea;
+        if ((layout.MaximumScrollX > 0) && !area.IsEmpty)
         {
-            var width = Math.Min(body.Width, Math.Max(24, body.Width * body.Width / layout.ContentWidth));
-            var x = body.X + ((body.Width - width) * layout.ScrollX / layout.MaximumScrollX);
-            canvas.DrawRoundRect(SKRect.Create((float)x, (float)body.Bottom - 5, (float)width, 4), 2, 2, paint);
+            var width = Math.Min(area.Width, Math.Max(24, area.Width * area.Width / (layout.ContentWidth - layout.FrozenWidth)));
+            var x = area.X + ((area.Width - width) * layout.ScrollX / layout.MaximumScrollX);
+            canvas.DrawRoundRect(SKRect.Create((float)x, (float)area.Bottom - 5, (float)width, 4), 2, 2, paint);
         }
     }
+
+    private readonly record struct RowState(bool Selected, Color? Background);
 
     private sealed record TextSegment(string Text, SKFont Font);
 
