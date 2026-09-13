@@ -263,7 +263,7 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         }
 
         var column = Columns[columnIndex];
-        return DataView.SortBy(column.SortKey ?? column.Key);
+        return DataView.SortBy(column.SortKey ?? column.Key, SortCycle);
     }
 
     //--------------------------------------------------------------------------------

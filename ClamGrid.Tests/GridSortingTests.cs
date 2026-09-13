@@ -32,6 +32,57 @@ public sealed class GridSortingTests
     }
 
     [Fact]
+    public void ClearingCycleRemovesTheKeyOnTheThirdRequest()
+    {
+        // Arrange
+        using var view = CreateView();
+        view.SortBy("name");
+
+        // Act
+        view.SortBy("number", GridSortCycle.AscendingDescendingNone);
+
+        // Assert
+        Assert.Equal(new[] { new GridSortOrder("number"), new GridSortOrder("name") }, view.SortOrders);
+
+        // Act
+        view.SortBy("number", GridSortCycle.AscendingDescendingNone);
+
+        // Assert
+        Assert.Equal(new[] { new GridSortOrder("number", true), new GridSortOrder("name") }, view.SortOrders);
+
+        // Act
+        view.SortBy("number", GridSortCycle.AscendingDescendingNone);
+
+        // Assert
+        Assert.Equal(new[] { new GridSortOrder("name") }, view.SortOrders);
+    }
+
+    [Fact]
+    public void DescendingFirstCycleStartsDescendingAndToggles()
+    {
+        // Arrange
+        using var view = CreateView();
+
+        // Act
+        view.SortBy("number", GridSortCycle.DescendingAscending);
+
+        // Assert
+        Assert.Equal(new GridSortOrder("number", true), view.SortOrders[0]);
+
+        // Act
+        view.SortBy("number", GridSortCycle.DescendingAscending);
+
+        // Assert
+        Assert.Equal(new GridSortOrder("number"), view.SortOrders[0]);
+
+        // Act
+        view.SortBy("number", GridSortCycle.DescendingAscending);
+
+        // Assert
+        Assert.Equal(new GridSortOrder("number", true), view.SortOrders[0]);
+    }
+
+    [Fact]
     public void SecondaryKeysAndTiesAreStableInBothDirections()
     {
         // Arrange

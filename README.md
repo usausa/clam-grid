@@ -149,7 +149,7 @@ public sealed class TicketListViewModel : ObservableObject
 | Rows | Bind `ItemsSource` to a `GridDataView<T>`. It owns the rows, selection and sort state and raises `PropertyChanged` for `Count`, `SelectedCount`, `SelectedItems` and `SortOrders`, so labels and command states can follow it. Any other `IEnumerable` also works and is wrapped in an owned view. |
 | Columns | Declare `GridColumn` children in XAML and bind `ValueAccessors` to a static `GridValueAccessorCollection<T>`. Values stay typed, no reflection is involved, and `Format` / `Alignment` are declared per column. |
 | Column settings | Bind `ColumnOrders` (`TwoWay` by default). Load the saved value into the property and save it in the setter; `null` restores the default and the grid writes the normalized value back. A long press on a header runs `ColumnConfigurationCommand` with `GridColumnConfigurationEventArgs`; `CreateEditSession()` returns an editable copy for a settings page and `Export()` on the session returns the orders to assign back. |
-| Sort state | Bind `SortOrders` (`TwoWay` by default) and register the keys on the data view (`RegisterSort`, `RegisterComparer` or `SetSortCallback`). A header tap calls `SortBy` and the applied state is written back, so persisting it in the setter is enough; `SaveSortOrders()` / `RestoreSortOrders()` remain for code driven use. |
+| Sort state | Bind `SortOrders` (`TwoWay` by default) and register the keys on the data view (`RegisterSort`, `RegisterComparer` or `SetSortCallback`). A header tap calls `SortBy` following `SortCycle` and the applied state is written back, so persisting it in the setter is enough; `SaveSortOrders()` / `RestoreSortOrders()` remain for code driven use. |
 | Selection | `SelectionMode` and `SelectAllCommand` (parameter `bool`) on the grid; `UpdateSelection(predicate)`, `SetSelected` and `TryToggleSelection` on the data view change the selection from the view model. Scrolling a row into view needs the view, so the sample bridges it with a behavior and a request object (`GridSelectBehavior` / `GridSelectRequest`). |
 | Editing | `IsReadOnly` plus `CellValueChangedCommand` (or the `CellValueChanging` / `CellValueChanged` events) for boolean cells. |
 | Colors | `GridStyle` as a resource. `RowBackground`, `CellColors`, `ColumnHeaderColors` and `RowHeaderColors` receive the row item, so state colors stay in the model; the sample composes them in XAML with `GridColorBehavior` and an `IColorSelector` resource. |
@@ -184,6 +184,7 @@ Messaging, navigation and screen controllers are application concerns; the libra
 | `ValueAccessors` | `IGridValueAccessorProvider?` | `null` | Resolves the value accessor of columns declared without one by `Key`. `GridValueAccessorCollection<T>` is the typed implementation. Bindable. |
 | `ColumnOrders` | `IReadOnlyList<GridColumnOrder>` | `[]` | Visibility and order of all columns. Set `null` to restore the default. The value is normalized and written back, so a `TwoWay` binding (the default) receives the normalized orders. Bindable. |
 | `SortOrders` | `IReadOnlyList<GridSortOrder>` | `[]` | Sort keys and directions of the data view. Applied when set, also to a data view that arrives later, and the applied state is written back after a header tap or `SortBy`, so a `TwoWay` binding (the default) receives it. Unregistered keys are dropped, an empty list clears the sort and `null` leaves the data view unchanged. Bindable. |
+| `SortCycle` | `GridSortCycle` | `AscendingDescending` | Direction sequence of repeated header taps on the same column: `AscendingDescending`, `DescendingAscending`, `AscendingDescendingNone` or `DescendingAscendingNone`; the `None` variants remove the key on the third tap. Bindable. |
 | `GridStyle` | `GridStyle` | `new()` | Font, padding, sizes and colors. Bindable. |
 | `SelectionMode` | `GridSelectionMode` | `MultipleToggle` | Selection behavior. Bindable. |
 | `RowCount` | `int` | | Number of rows. |
@@ -220,7 +221,7 @@ Messaging, navigation and screen controllers are application concerns; the libra
 | `TryToggleSelectionByKey(object key, out bool isSelected)` | `bool` | Toggles the selection by row key and scrolls the row into view. |
 | `SelectAll()` | `void` | Selects all rows. |
 | `ClearSelection()` | `void` | Clears the selection. |
-| `SortByColumn(int columnIndex)` | `GridSortResult` | Sorts by the column key, toggling the direction of the primary key. |
+| `SortByColumn(int columnIndex)` | `GridSortResult` | Sorts by the column key following `SortCycle`. |
 | `Refresh()` | `void` | Rebuilds the rows from the source. |
 | `RefreshRows(int startIndex, int count)` | `bool` | Redraws values and colors of the rows. |
 | `ScrollTo(double x, double y)` | `void` | Scrolls to the offset. |
@@ -311,7 +312,7 @@ GridFonts.Fallbacks = [SKTypeface.FromStream(await FileSystem.OpenAppPackageFile
 | `Count`, `this[int]`, `SelectedCount`, `SelectedItems`, `SortOrders`, `SelectionMode` | State for binding and logic. |
 | `SetSelected`, `TryToggleSelection`, `SelectAll`, `ClearSelection`, `UpdateSelection(predicate)` | Selection API. |
 | `RegisterSort(key, selector, comparer)`, `RegisterComparer(key, comparison)`, `SetSortCallback(keys, callback)` | Sort key registration. The callback variant delegates the sorting itself, for example to a database query. |
-| `SortBy(key)`, `RestoreSortOrders(orders)`, `SaveSortOrders()` | Sort and persist the sort state. |
+| `SortBy(key, cycle)`, `RestoreSortOrders(orders)`, `SaveSortOrders()` | Sort by a key following a `GridSortCycle` (ascending then descending when omitted) and persist the sort state. |
 | `SetSource(rows)`, `Refresh()`, `Suspend()` / `Resume()` | Replace the rows, rebuild them or batch changes. |
 | `Changed`, `SelectionChanged`, `SortRequested`, `SortChanged`, `SortFailed` | Events with the same meaning as on the view. |
 

@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 public partial class ClamGridView
 {
     public static readonly BindableProperty SortOrdersProperty = BindableProperty.Create(nameof(SortOrders), typeof(IReadOnlyList<GridSortOrder>), typeof(ClamGridView), defaultBindingMode: BindingMode.TwoWay, propertyChanged: OnSortOrdersChanged);
+    public static readonly BindableProperty SortCycleProperty = BindableProperty.Create(nameof(SortCycle), typeof(GridSortCycle), typeof(ClamGridView), GridSortCycle.AscendingDescending);
 
     private GridSortOrder[]? requestedSortOrders;
     private bool applyingSortOrders;
@@ -15,6 +16,13 @@ public partial class ClamGridView
     {
         get => (IReadOnlyList<GridSortOrder>?)GetValue(SortOrdersProperty) ?? DataView?.SortOrders ?? Array.Empty<GridSortOrder>();
         set => SetValue(SortOrdersProperty, value);
+    }
+
+    // Direction sequence of repeated header taps on the same column
+    public GridSortCycle SortCycle
+    {
+        get => (GridSortCycle)GetValue(SortCycleProperty);
+        set => SetValue(SortCycleProperty, value);
     }
 
     private static void OnSortOrdersChanged(BindableObject bindable, object? oldValue, object? newValue)

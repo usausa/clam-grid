@@ -252,8 +252,33 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
             return new GridSortResult(GridSortStatus.Rejected, Array.AsReadOnly([key]));
         }
 
-        var descending = (SortOrders.Count > 0) && (SortOrders[0].Key == key) && !SortOrders[0].Descending;
-        return RestoreSortOrders(new[] { new GridSortOrder(key, descending) }.Concat(SortOrders.Where(order => order.Key != key)));
+        return SortBy(key, GridSortCycle.AscendingDescending);
+    }
+
+    // Repeated sorts on the primary key follow the cycle; any other key becomes the primary key in the first direction
+    public GridSortResult SortBy(string key, GridSortCycle cycle)
+    {
+        RequireAccess();
+        if (!CanSort(key))
+        {
+            return new GridSortResult(GridSortStatus.Rejected, Array.AsReadOnly([key]));
+        }
+
+        var first = cycle is GridSortCycle.DescendingAscending or GridSortCycle.DescendingAscendingNone;
+        var rest = SortOrders.Where(order => order.Key != key);
+        var primary = (SortOrders.Count > 0) && (SortOrders[0].Key == key) ? SortOrders[0] : null;
+        if (primary is null)
+        {
+            return RestoreSortOrders(rest.Prepend(new GridSortOrder(key, first)));
+        }
+
+        if (primary.Descending == first)
+        {
+            return RestoreSortOrders(rest.Prepend(new GridSortOrder(key, !first)));
+        }
+
+        var clears = cycle is GridSortCycle.AscendingDescendingNone or GridSortCycle.DescendingAscendingNone;
+        return RestoreSortOrders(clears ? rest : rest.Prepend(new GridSortOrder(key, first)));
     }
 
     public GridSortResult RestoreSortOrders(IEnumerable<GridSortOrder> orders)

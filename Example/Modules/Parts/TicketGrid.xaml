@@ -11,6 +11,7 @@
                    ValueAccessors="{x:Static models:TicketRowAccessors.Ticket}"
                    ColumnOrders="{Binding ColumnOrders}"
                    SortOrders="{Binding SortOrders}"
+                   SortCycle="AscendingDescendingNone"
                    SelectionMode="MultipleToggle"
                    SelectAllCommand="{Binding SelectCommand}"
                    ColumnConfigurationCommand="{Binding ColumnEditCommand}">

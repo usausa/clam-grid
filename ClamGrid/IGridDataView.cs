@@ -48,6 +48,8 @@ public interface IGridDataView : INotifyPropertyChanged
 
     GridSortResult SortBy(string key);
 
+    GridSortResult SortBy(string key, GridSortCycle cycle);
+
     GridSortResult RestoreSortOrders(IEnumerable<GridSortOrder> orders);
 
     void CancelPendingSort();

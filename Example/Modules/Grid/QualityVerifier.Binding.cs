@@ -89,6 +89,15 @@ public sealed partial class QualityVerifier
             grid.ItemsSource = other;
         }).ConfigureAwait(true);
         Check("binding: sort orders follow a new data view", other.SortOrders.SequenceEqual([new GridSortOrder("DeptCode")]) && (data.SortOrders.Count == 1));
+        grid.SortCycle = GridSortCycle.AscendingDescendingNone;
+        grid.SortByColumn(0);
+        Check("cycle: second tap sorts descending", other.SortOrders[0] == new GridSortOrder("DeptCode", true));
+        grid.SortByColumn(0);
+        Check("cycle: third tap removes the key and reaches the source", (other.SortOrders.Count == 0) && sorts.Sorts is { Count: 0 });
+        grid.SortCycle = GridSortCycle.DescendingAscending;
+        grid.SortByColumn(0);
+        Check("cycle: descending first", other.SortOrders[0] == new GridSortOrder("DeptCode", true));
+        grid.SortCycle = GridSortCycle.AscendingDescending;
         grid.RemoveBinding(ClamGridView.SortOrdersProperty);
         grid.RemoveBinding(ClamGridView.ColumnOrdersProperty);
         grid.ValueAccessors = null;
