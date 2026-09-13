@@ -200,11 +200,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
         RegisterComparer(key, (left, right, descending) => descending ? comparer.Compare(selector(right), selector(left)) : comparer.Compare(selector(left), selector(right)));
     }
 
-    /// <summary>
-    /// ソート可能なキーとソート全体の実装を設定する。次のソートまたはデータ同期から使用する。
-    /// </summary>
-    /// <param name="sortKeys">非表示キーも含む、コールバックが対応するキー。</param>
-    /// <param name="callback">同じ行集合の並べ替え結果を返す同期処理。</param>
+    // Delegates sorting for the given keys (hidden ones included) to the callback from the next sort or data sync
     public void SetSortCallback(IEnumerable<string> sortKeys, GridSortCallback<T> callback)
     {
         RequireMutation();
@@ -227,9 +223,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
         Version++;
     }
 
-    /// <summary>
-    /// 登録済み比較関数を使う標準ソートへ戻す。現在の全ソートキーに比較関数が必要。
-    /// </summary>
+    // Returns to the standard sort with the registered comparers, which must cover every current sort key
     public void ClearSortCallback()
     {
         RequireMutation();
@@ -398,7 +392,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
             return;
         }
 
-        // Notifications may have been missed while disconnected, including Reset.
+        // Notifications may have been missed while disconnected, including Reset
         Synchronize(GridDataChangeKind.Reset, true);
         Connect();
     }
@@ -494,7 +488,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
         return positions.Select(index => rows[index]).ToArray();
     }
 
-    [SuppressMessage("Design", "CA1031", Justification = "利用側のソート処理と遅延列挙の例外を標準ソートと同じ失敗経路へ変換し、確定済みの表示を維持する。")]
+    [SuppressMessage("Design", "CA1031", Justification = "User sort code and lazy enumeration failures take the same failure path as the standard sort so the committed view is kept")]
     private static T[] SortWithCallback(T[] rows, IReadOnlyList<GridSortOrder> orders, GridSortCallback<T> callback)
     {
         try
@@ -523,7 +517,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
         }
         catch (Exception error) when (error is not OutOfMemoryException)
         {
-            // Array.Sortの比較関数と同様に、利用側の例外を共通の失敗通知へ渡す。
+            // Like an Array.Sort comparer, user exceptions are forwarded to the common failure notification
             throw new InvalidOperationException("The sort callback failed or returned an invalid row sequence.", error);
         }
     }
@@ -555,7 +549,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
                 }
                 catch (Exception error) when (error is InvalidOperationException or ArgumentException)
                 {
-                    // Preserve the last committed view until a valid Refresh succeeds.
+                    // Preserve the last committed view until a valid Refresh succeeds
                     SortFailed?.Invoke(this, new GridSortFailedEventArgs(error));
                     return;
                 }
@@ -625,7 +619,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
         publishing = true;
         try
         {
-            // All state is committed before any notification can inspect it.
+            // All state is committed before any notification can inspect it
             Changed?.Invoke(this, args);
             if (args.Kind != GridDataChangeKind.Selection)
             {

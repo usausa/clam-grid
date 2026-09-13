@@ -2,7 +2,7 @@ namespace Example.Modules.Grid;
 
 public sealed partial class QualityVerifier
 {
-    // XAML と同じ順序（ColumnOrders → 列定義を1件ずつ追加 → ValueAccessors）で構成したときの動作と、ColumnOrders の TwoWay バインディングを検証する。
+    // Verifies the XAML construction order (ColumnOrders, then definitions one by one, then ValueAccessors) and the TwoWay ColumnOrders binding
     private async Task VerifyBindingAsync()
     {
         report("列定義と列設定バインディングの検証");
@@ -25,7 +25,7 @@ public sealed partial class QualityVerifier
             grid.ConfigureColumns([]);
             grid.GridStyle = ScenarioGridFactory.CreateStyle(scenario);
             grid.ItemsSource = data;
-            // 定義より先に表示・順序をバインドしても、定義の追加時に適用される
+            // Orders bound before the definitions are applied when the definitions are added
             grid.SetBinding(ClamGridView.ColumnOrdersProperty, static (OrderSource source) => source.Orders, BindingMode.TwoWay, source: orders);
             foreach (var column in scenario.Columns)
             {
@@ -76,7 +76,7 @@ public sealed partial class QualityVerifier
     }
 }
 
-// Binding.Create のソース生成はラムダ引数の型に internal 以上の可視性を要求する
+// The Binding.Create source generator requires the lambda parameter type to be at least internal
 internal sealed class OrderSource : NotificationObject
 {
     public IReadOnlyList<GridColumnOrder>? Orders

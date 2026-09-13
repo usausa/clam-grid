@@ -20,7 +20,7 @@ public sealed partial class QualityVerifier
         {
             var orders = new[] { new GridSortOrder("CompanyName", (iteration % 2) != 0) }.Concat(baseOrders).ToArray();
             int[]? expected = null;
-            // 実行順を交互にし、各回の入力順・主キー・副キーを両方式で揃える。
+            // Alternates the execution order and gives both methods the same input order, primary key and secondary key each round
             bool[] modes = (iteration % 2) == 0 ? [false, true] : [true, false];
             foreach (var useCallback in modes)
             {

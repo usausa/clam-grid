@@ -91,6 +91,22 @@ public sealed class GridRendererTests
         Assert.Equal("A", header);
     }
 
+    [Fact]
+    public void MeasurementUsesFallbackFontsForCharactersThePrimaryFontLacks()
+    {
+        // Arrange
+        using var renderer = new GridRenderer(new GridStyle());
+        var column = new GridColumn("id", "見出し 🍎 ▲", new GridValueAccessor<Item, int>(static x => x.Id));
+
+        // Act
+        var widths = renderer.MeasureColumns([column], [new Item(1)], 500, 1, null);
+
+        // Assert
+        Assert.True(widths[0] > 0);
+        Assert.True(renderer.AutoRowHeight > 0);
+        Assert.True(renderer.Measurements > 0);
+    }
+
     private static GridDataView<Item> CreateView(GridSortOrder[] orders)
     {
         Item[] items = [new(1), new(2)];

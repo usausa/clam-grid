@@ -1,6 +1,6 @@
 namespace Example.Modules.Helpers;
 
-// 未完了の行を方向に関わらず先頭に固定し、続けて各列を比較する。
+// Pins pending rows first regardless of the direction, then compares each column
 public static class TicketComparers
 {
     public static IReadOnlyDictionary<string, Func<TicketRow, TicketRow, bool, int>> Default { get; } = new Dictionary<string, Func<TicketRow, TicketRow, bool, int>>(StringComparer.Ordinal)

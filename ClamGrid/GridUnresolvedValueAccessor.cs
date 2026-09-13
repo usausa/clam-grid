@@ -1,6 +1,6 @@
 namespace ClamGrid;
 
-// 値アクセサが未解決の列の既定値。空のセルとして描画され、編集はできない。
+// Default accessor of an unresolved column, painted as an empty read-only cell
 internal sealed class GridUnresolvedValueAccessor : IGridValueAccessor
 {
     public static GridUnresolvedValueAccessor Instance { get; } = new();

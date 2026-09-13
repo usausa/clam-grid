@@ -1,13 +1,13 @@
 namespace Example.Modules;
 
-// 一覧グリッド部品（Parts）がバインドするViewModelの契約。
+// View model contract bound by the list grid part
 public interface IColumnEditable
 {
     ICommand SelectCommand { get; }
 
     ICommand ColumnEditCommand { get; }
 
-    // 列の表示と順序。グリッドが正規化した値をTwoWayで書き戻す
+    // Visibility and order of the columns; the grid writes the normalized value back through the TwoWay binding
     IReadOnlyList<GridColumnOrder>? ColumnOrders { get; set; }
 
     GridSelectRequest GridSelectRequest { get; }

@@ -30,9 +30,9 @@ public sealed partial class QualityVerifier
         }).ConfigureAwait(true);
         var native = (View)grid.Handler!.PlatformView!;
         var provider = native.AccessibilityNodeProvider ?? throw new InvalidOperationException("Accessibility provider missing");
-        var headerId = FindVirtualId(provider, "列見出し、番号");
-        var booleanId = FindVirtualId(provider, "1行、発注、");
-        var numberId = FindVirtualId(provider, "1行、番号、1");
+        var headerId = FindVirtualId(provider, "Column header, 番号");
+        var booleanId = FindVirtualId(provider, "Row 1, 発注, ");
+        var numberId = FindVirtualId(provider, "Row 1, 番号, 1");
         using (var node = provider.CreateAccessibilityNodeInfo(booleanId)!)
         {
             using var compatible = AccessibilityNodeInfoCompat.Wrap(node)!;
@@ -50,7 +50,7 @@ public sealed partial class QualityVerifier
         Check("accessibility: reverse sort action", provider.PerformAction(headerId, Android.Views.Accessibility.Action.Click, null) && view.SortOrders[0].Descending);
         using (var node = provider.CreateAccessibilityNodeInfo(headerId)!)
         {
-            Check("accessibility: direction and heading", node.Heading && node.ContentDescription!.Contains("降順", StringComparison.Ordinal));
+            Check("accessibility: direction and heading", node.Heading && node.ContentDescription!.Contains("descending", StringComparison.Ordinal));
         }
 
         var requests = 0;
@@ -61,13 +61,13 @@ public sealed partial class QualityVerifier
         grid.RowMover = new GridRowMover<SampleRow>(rows, view);
         using (var node = provider.CreateAccessibilityNodeInfo(numberId)!)
         {
-            var action = node.ActionList!.Single(static item => item.Label?.ToString() == "下へ移動");
+            var action = node.ActionList!.Single(static item => item.Label?.ToString() == "Move down");
             Check("accessibility: move row down", provider.PerformAction(numberId, (Android.Views.Accessibility.Action)action.Id, null) && rows[1].Id == 0 && ReferenceEquals(rows[1], grid.SelectedItems.Single()));
         }
 
         using (var node = provider.CreateAccessibilityNodeInfo(numberId)!)
         {
-            var action = node.ActionList!.Single(static item => item.Label?.ToString() == "上へ移動");
+            var action = node.ActionList!.Single(static item => item.Label?.ToString() == "Move up");
             static void CancelMove(object? sender, GridRowMoveEventArgs args) => args.Cancel = true;
             grid.RowMoveRequested += CancelMove;
             Check("accessibility: move cancellation", !provider.PerformAction(numberId, (Android.Views.Accessibility.Action)action.Id, null) && rows[1].Id == 0);
@@ -83,7 +83,7 @@ public sealed partial class QualityVerifier
         }
 
         await NextFrameAsync(() => grid.Columns[1] = number with { Format = "D3" }).ConfigureAwait(true);
-        Check("accessibility: cell description uses the column format", FindVirtualId(provider, "1行、番号、001") == numberId);
+        Check("accessibility: cell description uses the column format", FindVirtualId(provider, "Row 1, 番号, 001") == numberId);
         grid.ItemsSource = null;
         grid.RowMover = null;
         grid.AllowRowDragging = false;
@@ -92,7 +92,7 @@ public sealed partial class QualityVerifier
     private static int FindVirtualId(AccessibilityNodeProvider provider, string description)
     {
         using var root = provider.CreateAccessibilityNodeInfo(-1);
-        // 新しい補助オブジェクトが払い出したIDを走査し、実際のノード説明から対象を解決する。
+        // Scans the ids issued by the current helper and resolves the target from the actual node description
         foreach (var id in Enumerable.Range(-12, 11).Concat(Enumerable.Range(1, 100)))
         {
             using var node = provider.CreateAccessibilityNodeInfo(id);

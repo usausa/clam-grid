@@ -9,7 +9,7 @@ public sealed class GridSelectEventArgs(int index) : EventArgs
     public bool IsSelected { get; set; }
 }
 
-// ViewModelから行の選択切替を要求し、切替後の状態を受け取る。
+// Requests a row selection toggle from the view model and receives the resulting state
 public sealed class GridSelectRequest : IEventRequest<GridSelectEventArgs>
 {
     public event EventHandler<GridSelectEventArgs>? Requested;

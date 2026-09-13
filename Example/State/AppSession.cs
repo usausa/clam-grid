@@ -2,7 +2,7 @@ namespace Example.State;
 
 using BunnyTail.DependencyInjection;
 
-// 画面遷移をまたいで保持する状態。
+// State kept across navigation
 [Singleton]
 public sealed class AppSession
 {

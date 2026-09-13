@@ -2,7 +2,7 @@ namespace Example.Modules.Helpers;
 
 using Example.Behaviors;
 
-// 進捗状態で行の背景色を決める。XAMLリソースとして定義する。
+// Picks the row background by progress state, defined as a XAML resource
 public sealed class StatusColorSelector : IColorSelector
 {
     public Color? PendingColor { get; set; }

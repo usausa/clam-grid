@@ -2,7 +2,7 @@ namespace Example.Behaviors;
 
 using Smart.Maui.Interactivity;
 
-// 行データの状態に応じた背景色と選択色をGridStyleへ合成する。
+// Composes the row background by item state and the selection colors into GridStyle
 public sealed class GridColorBehavior : BehaviorBase<ClamGridView>
 {
     public static readonly BindableProperty ColorSelectorProperty = BindableProperty.Create(
@@ -69,7 +69,7 @@ public sealed class GridColorBehavior : BehaviorBase<ClamGridView>
 
     private void GridOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        // スタイルが差し替えられても色の設定を維持する
+        // Keeps the color settings when the style is replaced
         if (!applying && (e.PropertyName == nameof(ClamGridView.GridStyle)) && (AssociatedObject is { } grid))
         {
             Apply(grid);

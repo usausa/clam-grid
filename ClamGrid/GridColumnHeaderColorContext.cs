@@ -1,4 +1,4 @@
 namespace ClamGrid;
 
-/// <summary>列見出し。SortPriorityは主キーが0、副キーが1以降、対象外は-1。DefaultColorsには主キーのソート色も反映済み。</summary>
+// Column header being painted; SortPriority is 0 for the primary key, 1 and up for secondary keys, -1 when unsorted, and DefaultColors include the sort colors
 public readonly record struct GridColumnHeaderColorContext(GridColumn Column, int ColumnIndex, GridSortOrder? SortOrder, int SortPriority, GridColors DefaultColors);

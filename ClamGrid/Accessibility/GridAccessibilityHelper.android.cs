@@ -107,7 +107,7 @@ internal sealed class GridAccessibilityHelper : ExploreByTouchHelper
         base.OnPopulateNodeForHost(node);
         if (node is not null)
         {
-            node.ContentDescription = $"{grid.RowCount}行、{grid.Columns.Count}列の表";
+            node.ContentDescription = $"Table with {grid.RowCount} rows and {grid.Columns.Count} columns";
             node.Scrollable = true;
             node.AddAction(AccessibilityNodeInfoCompat.ActionScrollForward);
             node.AddAction(AccessibilityNodeInfoCompat.ActionScrollBackward);
@@ -126,7 +126,7 @@ internal sealed class GridAccessibilityHelper : ExploreByTouchHelper
         var hit = Decode(virtualViewId);
         if ((grid.GetCurrentLayout() is not { } layout) || (hit.CellType == GridCellType.None) || (hit.RowIndex >= grid.RowCount) || (hit.ColumnIndex < 0) || (hit.ColumnIndex >= grid.Columns.Count))
         {
-            node.ContentDescription = "利用できないセル";
+            node.ContentDescription = "Unavailable cell";
             using var empty = new AndroidRect(0, 0, 1, 1);
             SetBoundsInScreenFromBoundsInParent(node, empty);
             return;
@@ -138,7 +138,7 @@ internal sealed class GridAccessibilityHelper : ExploreByTouchHelper
             var orders = grid.DataView?.SortOrders;
             var primary = orders is { Count: > 0 } ? orders[0] : null;
             var key = column.SortKey ?? column.Key;
-            node.ContentDescription = $"列見出し、{column.Header}" + (primary?.Key == key ? primary.Descending ? "、降順" : "、昇順" : String.Empty);
+            node.ContentDescription = $"Column header, {column.Header}" + (primary?.Key == key ? primary.Descending ? ", descending" : ", ascending" : String.Empty);
             node.ClassName = "android.widget.TextView";
             node.Heading = true;
             node.Focusable = true;
@@ -150,7 +150,7 @@ internal sealed class GridAccessibilityHelper : ExploreByTouchHelper
         }
 
         var value = column.ValueAccessor.GetValue(grid.GetItem(hit.RowIndex));
-        node.ContentDescription = $"{hit.RowIndex + 1}行、{column.Header}、{GridRenderer.FormatValue(value, column.Format)}";
+        node.ContentDescription = $"Row {hit.RowIndex + 1}, {column.Header}, {GridRenderer.FormatValue(value, column.Format)}";
         node.ClassName = column.IsBoolean ? "android.widget.CheckBox" : "android.widget.TextView";
         node.Checkable = column.IsBoolean;
         node.Checked = value is true;
@@ -163,13 +163,13 @@ internal sealed class GridAccessibilityHelper : ExploreByTouchHelper
         {
             if (hit.RowIndex > 0)
             {
-                using var action = new AccessibilityNodeInfoCompat.AccessibilityActionCompat(MoveUpAction, "上へ移動");
+                using var action = new AccessibilityNodeInfoCompat.AccessibilityActionCompat(MoveUpAction, "Move up");
                 node.AddAction(action);
             }
 
             if (hit.RowIndex < grid.RowCount - 1)
             {
-                using var action = new AccessibilityNodeInfoCompat.AccessibilityActionCompat(MoveDownAction, "下へ移動");
+                using var action = new AccessibilityNodeInfoCompat.AccessibilityActionCompat(MoveDownAction, "Move down");
                 node.AddAction(action);
             }
         }

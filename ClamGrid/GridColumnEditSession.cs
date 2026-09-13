@@ -16,7 +16,7 @@ public sealed class GridColumnEditSession
         Columns = [with(copy)];
     }
 
-    // 列定義と保存済みの表示・順序から編集用のコピーを作る。未知のキーは除外し、定義にだけある列は非表示として末尾に補う。
+    // Creates an editable copy from the definitions and saved orders; unknown keys are dropped and new columns are appended hidden
     public static GridColumnEditSession Create(IEnumerable<GridColumn> columns, IEnumerable<GridColumnOrder>? orders = null)
     {
         ArgumentNullException.ThrowIfNull(columns);

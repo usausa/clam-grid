@@ -1,6 +1,6 @@
 namespace Example.Models;
 
-// XAML で宣言した列（Key）に対応する値アクセサ。ReceiptOrder と StartedDate は型付きの値を返し、列の Format で書式化する。実際のアプリでは { nameof(Entry.DeptCode), static x => x.DeptCode } のように型付きプロパティを登録する。
+// Value accessors for the columns declared in XAML; ReceiptOrder and StartedDate are typed and formatted by the column Format
 public static class TicketRowAccessors
 {
     public static GridValueAccessorCollection<TicketRow> Ticket { get; } = new()

@@ -64,7 +64,7 @@ internal sealed class GridPlatformBridge : IGridPlatformBridge
 
     private void DetachWindowObserver()
     {
-        // Viewを外すとViewTreeObserverが変わるため、購読した元のObserverから解除する。
+        // Detaching the view swaps its ViewTreeObserver, so unsubscribe from the observer that was subscribed
         if (windowObserver is { IsAlive: true } observer)
         {
             observer.WindowFocusChange -= OnWindowFocusChange;

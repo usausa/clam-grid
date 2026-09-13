@@ -2,7 +2,7 @@ namespace Example.Models;
 
 public sealed partial record ListScenario
 {
-    // LINQの安定ソートを使い、比較値の取得をキーごと・行ごとの1回に抑える利用側実装例。
+    // Sample callback using the stable LINQ sort with one key extraction per row and key
     public IEnumerable<TicketRow> SortRows(IReadOnlyList<TicketRow> rows, IReadOnlyList<GridSortOrder> orders)
     {
         IOrderedEnumerable<TicketRow>? sorted = null;
@@ -11,7 +11,7 @@ public sealed partial record ListScenario
             var key = order.Key;
             if ((PendingField is not null) && (Columns.Any(column => column.Key == key) || (key == "ProductType")))
             {
-                // 未処理グループは降順でも先頭に固定する。
+                // The pending group stays first even when descending
                 sorted = Append(rows, sorted, row => !IsPending(row), false, Comparer<bool>.Default);
             }
 

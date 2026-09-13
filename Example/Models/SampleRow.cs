@@ -1,6 +1,6 @@
 namespace Example.Models;
 
-// 商品一覧のサンプル行。INotifyPropertyChanged で変更通知し、発注と廃番はグリッドから編集できる。
+// Product row of the list sample; raises INotifyPropertyChanged and the order and discontinued flags are editable in the grid
 public sealed class SampleRow : NotificationObject
 {
     public int Id { get; }
@@ -25,7 +25,7 @@ public sealed class SampleRow : NotificationObject
         set => SetProperty(ref field, value);
     }
 
-    // 状態とカテゴリは絵文字で表す（絵文字フォントへのフォールバック描画の確認を兼ねる）
+    // Status and category are emoji, which also exercises the emoji font fallback
     public string Status => IsDiscontinued ? "⛔" : "🟢";
 
     public string Category => (Id % 4) switch { 0 => "🍎", 1 => "🧴", 2 => "✏️", _ => "🎁" };

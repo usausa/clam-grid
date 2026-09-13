@@ -2,7 +2,7 @@ namespace Example;
 
 using BunnyTail.DependencyInjection;
 
-// 画面と ViewModel は命名規約で登録する（ソース生成）
+// Views and view models are registered by naming convention (source generated)
 public static partial class ServiceCollectionExtensions
 {
     [ComponentRegistration(Lifetime.Transient, "Page$", Namespace = "Example")]

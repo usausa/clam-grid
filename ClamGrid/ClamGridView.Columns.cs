@@ -15,17 +15,17 @@ public partial class ClamGridView
     private GridColumnOrder[]? requestedOrders;
     private bool applyingColumns;
 
-    // 非表示列を含む全列の定義。XAML ではコンテンツとして列を並べる。
+    // All column definitions including hidden ones, declared as XAML content
     public GridColumnCollection ColumnDefinitions { get; } = [];
 
-    // ValueAccessor を持たない列（XAML で宣言した列）の値アクセサを Key から解決する。
+    // Resolves the value accessor of columns declared without one by key
     public IGridValueAccessorProvider? ValueAccessors
     {
         get => (IGridValueAccessorProvider?)GetValue(ValueAccessorsProperty);
         set => SetValue(ValueAccessorsProperty, value);
     }
 
-    // 全列の表示と順序。適用後は正規化した値に置き換わり、TwoWay バインディングでは ViewModel へ戻る。null は既定の表示。
+    // Visibility and order of all columns; the normalized value is written back for TwoWay bindings and null restores the default
     [AllowNull]
     public IReadOnlyList<GridColumnOrder> ColumnOrders
     {
@@ -73,7 +73,7 @@ public partial class ClamGridView
             return;
         }
 
-        // 定義より先に設定された場合は定義の到着時に適用する
+        // Orders set before the definitions are applied when the definitions arrive
         grid.requestedOrders = (newValue as IEnumerable<GridColumnOrder>)?.ToArray();
         if (grid.columnCatalog.Length == 0)
         {
@@ -129,7 +129,7 @@ public partial class ClamGridView
         EnsureLayout();
     }
 
-    // Columns が直接編集されたとき、定義と表示・順序を追従させる。
+    // Keeps the definitions and orders in sync when Columns is edited directly
     private void SynchronizeColumnCatalog()
     {
         if (applyingColumns)
@@ -142,7 +142,7 @@ public partial class ClamGridView
         {
             if (Columns.Select(static column => column.Key).SequenceEqual(columnOrders.Where(static order => order.IsVisible).Select(static order => order.Key)))
             {
-                // 列幅の変更など。定義側の同じ列を差し替える
+                // Column resize and similar edits replace the same column in the definitions
                 var visible = Columns.ToDictionary(static column => column.Key, StringComparer.Ordinal);
                 columnCatalog = columnCatalog.Select(column => visible.GetValueOrDefault(column.Key, column)).ToArray();
                 for (var i = 0; i < columnCatalog.Length; i++)
@@ -170,7 +170,7 @@ public partial class ClamGridView
         ResolveValueAccessors(columnCatalog);
     }
 
-    // コントロール側の変更としてプロパティへ書き戻す。OneWay バインディングは維持され、TwoWay ではソースへ反映される。
+    // Writes the value back as a control side change so OneWay bindings survive and TwoWay bindings update the source
     private void PublishColumnOrders() => SetValueFromRenderer(ColumnOrdersProperty, Array.AsReadOnly(columnOrders));
 
     private bool ResolveValueAccessors(IEnumerable<GridColumn> catalog)

@@ -14,7 +14,8 @@ internal sealed class GridRenderer : IDisposable
 
     private readonly GridStyle style;
     private readonly FontSet primary;
-    private readonly FontSet japanese;
+    private readonly string[]? languages;
+    private readonly FontSet[] fallbacks;
     private readonly Dictionary<string, FontSet> fallbackByFamily = [with(StringComparer.Ordinal)];
     private readonly Dictionary<int, FontSet> fallbackByCodepoint = [];
     private readonly SKPaint paint = new() { IsAntialias = true };
@@ -29,8 +30,15 @@ internal sealed class GridRenderer : IDisposable
         style.Validate();
         this.style = style;
         primary = new FontSet(SKTypeface.FromFamilyName(style.FontFamily), style.FontSize);
-        japanese = new FontSet(SKFontManager.Default.MatchCharacter(style.FontFamily, SKFontStyle.Normal, ["ja"], '日') ?? SKTypeface.FromFamilyName("sans-serif"), style.FontSize);
-        AutoRowHeight = Math.Ceiling(Math.Max(primary.Font.Metrics.Descent - primary.Font.Metrics.Ascent, japanese.Font.Metrics.Descent - japanese.Font.Metrics.Ascent) + (style.VerticalPadding * 2));
+        languages = GridFonts.Languages.Count > 0 ? GridFonts.Languages.ToArray() : null;
+        fallbacks = GridFonts.Fallbacks.Select(typeface => new FontSet(typeface, style.FontSize, false)).ToArray();
+        var height = primary.Font.Metrics.Descent - primary.Font.Metrics.Ascent;
+        foreach (var fonts in fallbacks)
+        {
+            height = Math.Max(height, fonts.Font.Metrics.Descent - fonts.Font.Metrics.Ascent);
+        }
+
+        AutoRowHeight = Math.Ceiling(height + (style.VerticalPadding * 2));
     }
 
     public static string FormatValue(object? value, string? format) =>
@@ -165,8 +173,7 @@ internal sealed class GridRenderer : IDisposable
     {
         paint.Dispose();
         primary.Dispose();
-        japanese.Dispose();
-        foreach (var fonts in fallbackByFamily.Values)
+        foreach (var fonts in fallbacks.Concat(fallbackByFamily.Values))
         {
             fonts.Dispose();
         }
@@ -202,7 +209,7 @@ internal sealed class GridRenderer : IDisposable
         return style.SortMarkPosition == GridSortMarkPosition.End ? $"{column.Header} {mark}" : $"{mark} {column.Header}";
     }
 
-    // 主キーには常に記号を付け、副キーは ShowSortPriority のときだけ記号と優先順位を付ける。
+    // The primary key always gets a mark; secondary keys get a mark with their priority only with ShowSortPriority
     private static string GetSortMark(GridStyle style, GridColumn column, IGridDataView? view)
     {
         var priority = GetSortPriority(column, view);
@@ -226,37 +233,42 @@ internal sealed class GridRenderer : IDisposable
             return primary;
         }
 
-        if (japanese.Font.ContainsGlyph(codepoint))
+        if (fallbackByCodepoint.TryGetValue(codepoint, out var fonts))
         {
-            return japanese;
+            return fonts;
         }
 
-        // 絵文字などプライマリ・日本語フォントに無い文字は、システムのフォントから文字単位で探す
-        if (!fallbackByCodepoint.TryGetValue(codepoint, out var fonts))
+        fonts = primary;
+        if (!primary.Font.ContainsGlyph(codepoint))
         {
-            fonts = japanese;
-            var typeface = SKFontManager.Default.MatchCharacter(style.FontFamily, SKFontStyle.Normal, null, codepoint);
-            if (typeface is not null)
-            {
-                if (fallbackByFamily.TryGetValue(typeface.FamilyName, out var existing))
-                {
-                    typeface.Dispose();
-                    fonts = existing;
-                }
-                else
-                {
-                    fonts = new FontSet(typeface, style.FontSize);
-                    fallbackByFamily[typeface.FamilyName] = fonts;
-                }
-            }
-
-            fallbackByCodepoint[codepoint] = fonts;
+            // Configured fallback fonts come first, then the system fonts are searched per character with the language hints
+            fonts = Array.Find(fallbacks, fallback => fallback.Font.ContainsGlyph(codepoint)) ?? MatchSystemFont(codepoint);
         }
 
+        fallbackByCodepoint[codepoint] = fonts;
         return fonts;
     }
 
-    // 文字要素（結合文字・サロゲートペアを含む）ごとにフォントを決め、同じフォントが続く範囲をまとめる
+    private FontSet MatchSystemFont(int codepoint)
+    {
+        var typeface = SKFontManager.Default.MatchCharacter(style.FontFamily, SKFontStyle.Normal, languages, codepoint);
+        if (typeface is null)
+        {
+            return primary;
+        }
+
+        if (fallbackByFamily.TryGetValue(typeface.FamilyName, out var existing))
+        {
+            typeface.Dispose();
+            return existing;
+        }
+
+        var fonts = new FontSet(typeface, style.FontSize);
+        fallbackByFamily[typeface.FamilyName] = fonts;
+        return fonts;
+    }
+
+    // Picks a font per text element (combining marks and surrogate pairs included) and merges runs that share a font
     private List<TextSegment> Segment(string text, bool header)
     {
         var segments = new List<TextSegment>();
@@ -265,7 +277,7 @@ internal sealed class GridRenderer : IDisposable
         var start = 0;
         foreach (var index in boundaries)
         {
-            var fonts = Rune.TryGetRuneAt(text, index, out var rune) ? ResolveFonts(rune.Value) : japanese;
+            var fonts = Rune.TryGetRuneAt(text, index, out var rune) ? ResolveFonts(rune.Value) : primary;
             if (ReferenceEquals(fonts, current))
             {
                 continue;
@@ -328,7 +340,7 @@ internal sealed class GridRenderer : IDisposable
         }
         else
         {
-            // 省略記号を含めて収まる最長の先頭部分を、文字要素の境界で二分探索する
+            // Binary search on text element boundaries for the longest prefix that fits together with the ellipsis
             var ellipsisFont = header ? primary.HeaderFont : primary.Font;
             Measurements++;
             var ellipsisWidth = ellipsisFont.MeasureText("…");
@@ -423,7 +435,7 @@ internal sealed class GridRenderer : IDisposable
         canvas.Restore();
     }
 
-    // 見出しは記号を優先して描き、収まらない分は見出し文字列側を省略する。
+    // The sort mark is kept and only the header text is truncated when the header does not fit
     private void DrawHeader(SKCanvas canvas, GridRect rect, GridColumn column, IGridDataView? view, Color color)
     {
         var mark = GetSortMark(style, column, view);
@@ -536,14 +548,17 @@ internal sealed class GridRenderer : IDisposable
 
     private sealed class FontSet : IDisposable
     {
+        private readonly bool ownsTypeface;
+
         public SKTypeface Typeface { get; }
 
         public SKFont Font { get; }
 
         public SKFont HeaderFont { get; }
 
-        public FontSet(SKTypeface typeface, float size)
+        public FontSet(SKTypeface typeface, float size, bool ownsTypeface = true)
         {
+            this.ownsTypeface = ownsTypeface;
             Typeface = typeface;
             Font = new SKFont(typeface, size);
             HeaderFont = new SKFont(typeface, size) { Embolden = true };
@@ -553,7 +568,10 @@ internal sealed class GridRenderer : IDisposable
         {
             HeaderFont.Dispose();
             Font.Dispose();
-            Typeface.Dispose();
+            if (ownsTypeface)
+            {
+                Typeface.Dispose();
+            }
         }
     }
 }

@@ -1,6 +1,6 @@
 namespace ClamGrid;
 
-// XAML からも生成できるよう引数なしコンストラクターを持つ。ValueAccessor を設定しない列は ClamGridView.ValueAccessors から Key で解決される。
+// Has a parameterless constructor for XAML; a column without ValueAccessor is resolved by key from ClamGridView.ValueAccessors
 public sealed record GridColumn
 {
     public string Key { get; set; } = String.Empty;
@@ -15,7 +15,7 @@ public sealed record GridColumn
 
     public TextAlignment Alignment { get; set; }
 
-    // IFormattable な値に適用する書式（"N0" や "yyyy/MM/dd" など）。文字列や bool の値には影響しない。
+    // Format string applied to IFormattable values such as "N0" or "yyyy/MM/dd"; strings and booleans are not affected
     public string? Format { get; set; }
 
     public Color? HeaderBackground { get; set; }

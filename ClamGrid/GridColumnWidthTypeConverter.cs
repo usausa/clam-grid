@@ -3,7 +3,7 @@ namespace ClamGrid;
 using System.ComponentModel;
 using System.Globalization;
 
-// XAML の文字列を列幅へ変換する。"Auto"、"*"、"2*"、"85" を受け付ける。
+// Converts XAML strings such as "Auto", "*", "2*" and "85" to a column width
 public sealed class GridColumnWidthTypeConverter : TypeConverter
 {
     public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => sourceType == typeof(string);

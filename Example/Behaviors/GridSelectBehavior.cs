@@ -3,7 +3,7 @@ namespace Example.Behaviors;
 using Smart.Maui.Interactivity;
 using Smart.Mvvm.Messaging;
 
-// ViewModelからの選択要求（GridSelectRequest）を橋渡しする。選択モードやコマンドはClamGridViewのプロパティへ直接バインドする。
+// Bridges selection requests (GridSelectRequest) from the view model; selection mode and commands bind directly to ClamGridView
 public sealed class GridSelectBehavior : BehaviorBase<ClamGridView>
 {
     public static readonly BindableProperty RequestProperty = BindableProperty.Create(

@@ -4,7 +4,7 @@ using Example.Components;
 using Example.Modules.Helpers;
 using Example.State;
 
-// 一覧画面のViewModel。グリッド部品（Parts/TicketGrid）とはIColumnEditableで接続する。
+// View model of the list screen, connected to the grid part (Parts/TicketGrid) through IColumnEditable
 public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEditable
 {
     private const string ColumnSettingsKey = "clamgrid.example.work.columns";
@@ -34,7 +34,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
 
     public GridSelectRequest GridSelectRequest { get; } = new();
 
-    // 列の表示と順序。グリッドへTwoWayでバインドし、正規化された値が戻ったら保存する
+    // Visibility and order of the columns, bound TwoWay and saved when the normalized value comes back
     public IReadOnlyList<GridColumnOrder>? ColumnOrders
     {
         get;
@@ -54,7 +54,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
         }
     }
 
-    // 一覧・選択・ソートを1つで担う。
+    // Rows, selection and sort state in one object
     public GridDataView<TicketRow> Items { get; }
 
     [ObservableProperty]
@@ -85,7 +85,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
         this.columnSettingsStore = columnSettingsStore;
         this.session = session;
 
-        // 保存済みの列設定。バインディングで適用され、未知の列は除外・新しい列は非表示で補われる
+        // Saved column settings applied through the binding; unknown columns are dropped and new ones are appended hidden
         ColumnOrders = columnSettingsStore.Load(ColumnSettingsKey);
 
         Items = new GridDataView<TicketRow>(Array.Empty<TicketRow>(), static x => x.Id);
@@ -93,9 +93,9 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
         Items.PropertyChanged += OnItemsPropertyChanged;
         Disposables.Add(Items);
 
-        // 長押し: 未完了だけを一括選択（解除時は全解除）
+        // Long press: selects only pending rows, or clears all
         SelectCommand = MakeDelegateCommand<bool>(x => Items.UpdateSelection(item => x && !item.IsCompleted));
-        // 見出し長押し: 列設定画面へ
+        // Header long press: opens the column settings screen
         ColumnEditCommand = MakeAsyncCommand<GridColumnConfigurationEventArgs>(x => Navigator.PushAsync(ViewId.GridColumns, Parameters.MakeColumnEditSession(x.CreateEditSession())));
 
         CommitCommand = MakeDelegateCommand(Commit, () => Items.SelectedCount > 0);
@@ -126,7 +126,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
         }
         else if (context.Parameter.TryGetColumnOrders(out var orders))
         {
-            // 列設定画面の結果。グリッドが正規化した値を書き戻すので、保存は setter に任せる
+            // Result of the column settings screen; the grid writes the normalized value back, so the setter saves it
             ColumnOrders = orders;
         }
 
@@ -151,7 +151,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
 
     protected override Task OnNotifyFunction4()
     {
-        // 列設定を既定へ戻す（null で既定の表示になり、正規化された既定値が書き戻される）
+        // Restores the default column settings; null shows the default and the normalized value is written back
         columnSettingsStore.Remove(ColumnSettingsKey);
         ColumnOrders = null;
         Status = "列設定を既定の表示と順序へ戻しました。";
@@ -166,7 +166,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
     {
         var rows = Enumerable.Range(0, RowCount).Select(static id => new TicketRow(id)).ToArray();
         Items.SetSource(rows);
-        // ソート条件は画面遷移をまたいで保持した内容を優先する
+        // Sort orders kept across navigation take precedence
         Items.RestoreSortOrders(session.SortOrders ?? DefaultSortOrder);
         UpdateCounts();
         Status = "タップで選択、長押しで未完了を一括選択。見出しタップで並べ替え、見出し長押しで列設定。";
@@ -176,7 +176,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
     {
         var selected = Items.SelectedItems.Cast<TicketRow>().ToArray();
         var groups = selected.Select(static x => x.GetText("GroupId")).Distinct(StringComparer.Ordinal).Count();
-        // 状態保持
+        // Keep the sort state
         session.SortOrders = Items.SaveSortOrders();
         Status = $"確定: {selected.Length}件 / {groups}グループ / ID {String.Join(", ", selected.Take(5).Select(static x => x.Id + 1))}";
     }
@@ -184,7 +184,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
     private void Advance()
     {
         var row = (TicketRow)Items.SelectedItems[0];
-        // INotifyPropertyChangedの通知で並べ替えと着色が更新され、選択は行の同一性で維持される
+        // The INotifyPropertyChanged notification refreshes sorting and colors while the selection follows the row identity
         row.AdvanceStatus();
         UpdateCounts();
         Status = $"状態更新: ID={row.Id + 1} / {row.GetText("StatusMark")}";
@@ -192,7 +192,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
 
     private void Scan()
     {
-        // 製品番号を1件決め、一致する行だけを選択状態にする
+        // Picks one product number and selects only the matching rows
         scanIndex = (scanIndex + 7) % Items.Count;
         var productNo = Items[scanIndex].GetText("ProductNo");
         for (var i = 0; i < Items.Count; i++)
@@ -228,7 +228,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
     {
         if (e.PropertyName is nameof(Items.SelectedCount) or nameof(Items.Count))
         {
-            // 選択数に応じてコマンドの可否を更新する
+            // Updates the command states from the selection count
             CommitCommand.RaiseCanExecuteChanged();
             AdvanceCommand.RaiseCanExecuteChanged();
             ScanCommand.RaiseCanExecuteChanged();

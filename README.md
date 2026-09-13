@@ -156,7 +156,7 @@ Messaging, navigation and screen controllers are application concerns; the libra
 | **Editing** | Boolean cell toggle |
 | **Row dragging** | Reorder rows by dragging the row header |
 | **Input** | Tap, long press, pan with inertia, column resize, commands for MVVM |
-| **Styling** | `GridStyle` with font, padding, colors, sort marks and conditional color callbacks. Characters missing from the font (emoji and so on) fall back to system fonts per character |
+| **Styling** | `GridStyle` with font, padding, colors, sort marks and conditional color callbacks. Characters missing from the font (emoji and so on) fall back to the typefaces in `GridFonts.Fallbacks` and then to system fonts per character, guided by `GridFonts.Languages` |
 | **Accessibility** | Android virtual views for headers and cells |
 
 ## ClamGridView API
@@ -259,7 +259,7 @@ Messaging, navigation and screen controllers are application concerns; the libra
 
 | Name | Type | Default | Description |
 |---|---|---|---|
-| `FontFamily` | `string` | `monospace` | Primary font. Characters it lacks fall back to a Japanese font or a system font per character. |
+| `FontFamily` | `string` | `monospace` | Primary font. Characters it lacks are resolved through `GridFonts`. |
 | `FontSize` | `float` | `16` | Font size in DIP. |
 | `HorizontalPadding`, `VerticalPadding` | `float` | `8` | Cell padding in DIP. |
 | `RowHeight`, `HeaderHeight` | `double?` | `null` | `null` derives the height from the font. |
@@ -272,6 +272,20 @@ Messaging, navigation and screen controllers are application concerns; the libra
 | `ShowSortPriority` | `bool` | `false` | With several sort keys, marks the secondary keys too and appends the priority (`▲2`). |
 | `RowBackground` | `Func<object, Color?>?` | `null` | Row background by item. |
 | `CellColors`, `ColumnHeaderColors`, `RowHeaderColors` | callback | `null` | Per cell and per header colors; the context carries the item, the column, the sort state and the default colors. |
+
+## GridFonts
+
+Global font fallback settings. They are read when a grid creates its renderer, so set them at startup, before the first grid is shown.
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `Languages` | `IReadOnlyList<string>` | `["ja"]` | BCP-47 tags passed to the per character system font lookup in priority order. CJK ideographs are shared by several languages, so the tag selects the glyph variant. |
+| `Fallbacks` | `IReadOnlyList<SKTypeface>` | `[]` | Typefaces tried before the system lookup for characters the primary font lacks, for example a bundled font. They also count toward the automatic row height. The caller keeps ownership. |
+
+```csharp
+GridFonts.Languages = ["ja", "en"];
+GridFonts.Fallbacks = [SKTypeface.FromStream(await FileSystem.OpenAppPackageFileAsync("NotoSansJP-Regular.ttf"))];
+```
 
 ## GridDataView&lt;T&gt;
 

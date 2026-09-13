@@ -3,8 +3,7 @@ namespace Example.Models;
 using System.ComponentModel;
 using System.Globalization;
 
-// 一覧シナリオ用の合成データ（問い合わせチケット）。Status は 0=未対応 / 1=対応中 / 2=完了 で、AdvanceStatus で遷移する。
-// フラグや種別の列は文字ではなく絵文字で表し、絵文字フォントへのフォールバック描画も兼ねて確認する。
+// Synthetic helpdesk ticket; Status is 0 pending / 1 started / 2 completed (AdvanceStatus cycles it) and flag columns are emoji
 public sealed class TicketRow(int id) : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;

@@ -2,7 +2,7 @@ namespace ClamGrid;
 
 using System.Collections;
 
-// 列キーと型付きアクセサの対応表。コレクション初期化子で { "Key", static x => x.Property } のように登録する。
+// Maps column keys to typed accessors, registered with a collection initializer like { "Key", static x => x.Property }
 public sealed class GridValueAccessorCollection<TItem> : IGridValueAccessorProvider, IEnumerable<KeyValuePair<string, IGridValueAccessor>>
     where TItem : class
 {

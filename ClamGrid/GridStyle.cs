@@ -1,6 +1,6 @@
 namespace ClamGrid;
 
-// XAML のリソースとしても定義できる。割り当て後は不変として扱い、変更するときは with 式で新しいインスタンスを設定する。
+// Can be a XAML resource; treat it as immutable once assigned and replace it with a with expression
 public sealed record GridStyle
 {
     public string FontFamily { get; set; } = "monospace";
@@ -43,7 +43,7 @@ public sealed record GridStyle
 
     public Color DescendingHeaderBackground { get; set; } = Color.FromArgb("#FEF3C7");
 
-    // ソート記号は見出し文字列の一部として描画する。ShowSortPriority は複数キーのとき副キーにも記号と優先順位を付ける。
+    // Sort marks are drawn next to the header text; ShowSortPriority also marks secondary keys with their priority
     public string AscendingSortMark { get; set; } = "↑";
 
     public string DescendingSortMark { get; set; } = "↓";

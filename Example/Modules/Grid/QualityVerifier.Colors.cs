@@ -197,7 +197,7 @@ public sealed partial class QualityVerifier
             for (var x = (int)rect.X + 4; x < Math.Min(bitmap.Width, rect.Right - 4); x++)
             {
                 var pixel = bitmap.GetPixel(x, y);
-                // アンチエイリアスによる端の混色を許容し、文字色の取り違えを検出する。
+                // Tolerates anti-aliased edge blending while still detecting a wrong text color
                 if ((Math.Abs(pixel.Red - target.Red) <= 24) && (Math.Abs(pixel.Green - target.Green) <= 24) && (Math.Abs(pixel.Blue - target.Blue) <= 24))
                 {
                     matches++;
