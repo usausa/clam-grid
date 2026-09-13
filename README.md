@@ -7,6 +7,10 @@
 A .NET MAUI grid view for Android that draws cells with SkiaSharp.
 Layout, sorting, selection and touch handling are implemented in C#, so the grid stays responsive with tens of thousands of rows.
 
+| Selection, sorting and boolean editing | Conditional colors | Columns declared in XAML |
+|:-:|:-:|:-:|
+| <img src="Document/list.png" width="240" /> | <img src="Document/color.png" width="240" /> | <img src="Document/ticket.png" width="240" /> |
+
 ## Quick Start
 
 Call `UseSkiaSharp()` when building the application.
