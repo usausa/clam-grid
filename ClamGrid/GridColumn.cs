@@ -18,6 +18,8 @@ public sealed record GridColumn
     // Format string applied to IFormattable values such as "N0" or "yyyy/MM/dd"; strings and booleans are not affected
     public string? Format { get; set; }
 
+    public IValueConverter? Converter { get; set; }
+
     public Color? HeaderBackground { get; set; }
 
     public Color? HeaderTextColor { get; set; }

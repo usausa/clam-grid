@@ -57,6 +57,9 @@ internal sealed class GridRenderer : IDisposable
             ? formattable.ToString(format, CultureInfo.CurrentCulture)
             : Convert.ToString(value, CultureInfo.CurrentCulture) ?? String.Empty;
 
+    public static string GetCellText(GridColumn column, object? value) =>
+        FormatValue(column.Converter is { } converter ? converter.Convert(value, typeof(string), null, CultureInfo.CurrentCulture) : value, column.Format);
+
     public double[] MeasureColumns(IReadOnlyList<GridColumn> columns, IReadOnlyList<object> items, double availableWidth, int sampleSize, IGridDataView? dataView)
     {
         var specs = new GridColumnWidthSpec[columns.Count];
@@ -68,7 +71,7 @@ internal sealed class GridRenderer : IDisposable
             {
                 for (var row = 0; row < Math.Min(sampleSize, items.Count); row++)
                 {
-                    width = Math.Max(width, column.IsBoolean ? 24 : Measure(FormatValue(column.ValueAccessor.GetValue(items[row]), column.Format), false));
+                    width = Math.Max(width, column.IsBoolean ? 24 : Measure(GetCellText(column, column.ValueAccessor.GetValue(items[row])), false));
                 }
             }
 
@@ -167,7 +170,7 @@ internal sealed class GridRenderer : IDisposable
                 }
                 else
                 {
-                    DrawText(canvas, rect, FormatValue(value, definition.Format), definition.Alignment, false, colors.TextColor!);
+                    DrawText(canvas, rect, GetCellText(definition, value), definition.Alignment, false, colors.TextColor!);
                 }
 
                 DrawLines(canvas, rect);

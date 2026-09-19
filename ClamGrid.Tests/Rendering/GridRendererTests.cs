@@ -24,6 +24,27 @@ public sealed class GridRendererTests
     }
 
     [Fact]
+    public void ConverterRunsBeforeTheFormatString()
+    {
+        // Arrange
+        var plain = Column("a") with { Format = "D6" };
+        var scaled = plain with { Converter = new ScaleConverter() };
+        var marked = plain with { Converter = new MarkConverter() };
+
+        // Act
+        var formatted = GridRenderer.GetCellText(plain, 12);
+        var converted = GridRenderer.GetCellText(scaled, 12);
+        var text = GridRenderer.GetCellText(marked, 12);
+        var nothing = GridRenderer.GetCellText(marked, null);
+
+        // Assert
+        Assert.Equal("000012", formatted);
+        Assert.Equal("000120", converted);
+        Assert.Equal("★12", text);
+        Assert.Equal(String.Empty, nothing);
+    }
+
+    [Fact]
     public void DefaultHeaderMarksOnlyThePrimarySortKey()
     {
         // Arrange
@@ -155,4 +176,20 @@ public sealed class GridRendererTests
     private static GridColumn Column(string key) => new(key, key.ToUpperInvariant(), new GridValueAccessor<Item, int>(static x => x.Id));
 
     private sealed record Item(int Id);
+
+    // Keeps the value formattable
+    private sealed class ScaleConverter : IValueConverter
+    {
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value is int number ? number * 10 : value;
+
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotSupportedException();
+    }
+
+    // Produces text, so the format string no longer applies
+    private sealed class MarkConverter : IValueConverter
+    {
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value is null ? null : $"★{value}";
+
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotSupportedException();
+    }
 }

@@ -21,6 +21,7 @@ global using ClamGrid.Rendering;
 
 global using Example.Models;
 
+global using Microsoft.Maui.Controls;
 global using Microsoft.Maui.Graphics;
 
 global using Xunit;

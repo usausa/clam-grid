@@ -91,6 +91,7 @@
 | `MinWidth` | `double` | `40` | Lower bound for resizing and star distribution |
 | `Alignment` | `TextAlignment` | `Start` | Cell text alignment |
 | `Format` | `string?` | `null` | .NET format string applied to `IFormattable` values (`N0`, `D6`, `yyyy/MM/dd`) |
+| `Converter` | `IValueConverter?` | `null` | Runs on the cell value before `Format` when a text cell is painted; boolean cells, sorting and editing use the raw value |
 | `HeaderBackground`, `HeaderTextColor`, `TextColor`, `Background` | `Color?` | `null` | Static colors; `null` falls back to `GridStyle` |
 | `IsBoolean` | `bool` | `false` | Draws a check box and toggles the value on tap |
 | `IsReadOnly` | `bool?` | `null` | Overrides `ClamGridView.IsReadOnly` for the column |
