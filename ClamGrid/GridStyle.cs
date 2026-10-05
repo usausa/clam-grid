@@ -32,6 +32,9 @@ public sealed record GridStyle
 
     public Color Background { get; set; } = Colors.White;
 
+    // Background of every second row in display order; null keeps Background
+    public Color? AlternatingRowBackground { get; set; }
+
     public Color HeaderBackground { get; set; } = Color.FromArgb("#1976D2");
 
     public Color HeaderTextColor { get; set; } = Colors.White;

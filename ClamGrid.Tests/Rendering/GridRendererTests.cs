@@ -147,6 +147,29 @@ public sealed class GridRendererTests
     }
 
     [Fact]
+    public void AlternatingRowsYieldToRowAndColumnColors()
+    {
+        // Arrange
+        var style = new GridStyle { Background = Colors.White, AlternatingRowBackground = Colors.LightGray };
+        var plain = Column("a");
+        var colored = plain with { Background = Colors.Yellow };
+
+        // Act
+        var even = GridRenderer.GetCellBackground(style, plain, 2, null);
+        var odd = GridRenderer.GetCellBackground(style, plain, 3, null);
+        var column = GridRenderer.GetCellBackground(style, colored, 3, null);
+        var row = GridRenderer.GetCellBackground(style, colored, 3, Colors.Red);
+        var unset = GridRenderer.GetCellBackground(new GridStyle { Background = Colors.White }, plain, 3, null);
+
+        // Assert
+        Assert.Equal(Colors.White, even);
+        Assert.Equal(Colors.LightGray, odd);
+        Assert.Equal(Colors.Yellow, column);
+        Assert.Equal(Colors.Red, row);
+        Assert.Equal(Colors.White, unset);
+    }
+
+    [Fact]
     public void AutoRowHeightIncludesFontsResolvedWhileMeasuring()
     {
         // Arrange

@@ -4,6 +4,8 @@ internal static class SampleColumns
 {
     public static readonly Color DiscontinuedBackground = Color.FromArgb("#FEF9C3");
 
+    public static readonly Color AlternatingBackground = Color.FromArgb("#F1F5F9");
+
     public static GridColumn[] CreateList() =>
     [
         new GridColumn("visible", "発注", new GridValueAccessor<SampleRow, bool>(static x => x.IsChecked, static (x, value) => x.IsChecked = value)) { Width = GridColumnWidth.Absolute(64), IsBoolean = true, AllowSorting = false },

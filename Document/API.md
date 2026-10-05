@@ -116,6 +116,7 @@ The default colors follow the Material palette: Blue 700 header, Cyan 700 and Or
 | `CornerText` | `string` | `#` | Text of the corner cell above the row headers |
 | `RowHeaderAlignment` | `TextAlignment` | `End` | Alignment of the row header text |
 | `TextColor`, `Background`, `HeaderBackground`, `HeaderTextColor`, `RowHeaderBackground`, `GridLineColor`, `SelectedBackground`, `SelectedTextColor` | `Color` | | Base colors |
+| `AlternatingRowBackground` | `Color?` | `null` | Background of every second row in display order; the selection, `RowBackground` and the column background win, row headers keep their own color |
 | `FrozenLineColor` | `Color` | `#9E9E9E` | Separator on the right edge of the frozen columns |
 | `AscendingHeaderBackground`, `DescendingHeaderBackground` | `Color` | | Header background of the primary sort key |
 | `AscendingSortMark`, `DescendingSortMark` | `string` | `↑`, `↓` | Text drawn next to the header of a sorted column; kept when the header text is truncated |

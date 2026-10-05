@@ -127,6 +127,20 @@ public sealed partial class QualityVerifier
             CheckColors(bitmap, new Rect(0, 40, 48, 40), Colors.Beige, Colors.Black, "row header property change");
         }
 
+        await NextFrameAsync(() => probe.GridStyle = probe.GridStyle with { AlternatingRowBackground = Colors.Lavender }).ConfigureAwait(true);
+        using (var bitmap = RenderBitmap())
+        {
+            CheckColors(bitmap, new Rect(148, 160, 100, 40), Colors.Lavender, Colors.Black, "alternating row");
+            CheckColors(bitmap, new Rect(148, 120, 100, 40), Colors.White, Colors.Black, "row between alternating rows");
+            CheckColors(bitmap, new Rect(148, 80, 100, 40), Colors.LightCyan, Colors.Black, "row callback over alternating row");
+            CheckColors(bitmap, new Rect(48, 160, 100, 40), Colors.LightYellow, Colors.Blue, "column color over alternating row");
+            CheckColors(bitmap, new Rect(0, 160, 48, 40), Colors.Beige, Colors.Black, "row header ignores alternating row");
+            var alternate = cells.First(static context => (context.RowIndex == 3) && (context.Column.Key == "id"));
+            Check("colors: alternating row in default colors", Equals(alternate.DefaultColors.Background, Colors.Lavender));
+        }
+
+        await NextFrameAsync(() => probe.GridStyle = probe.GridStyle with { AlternatingRowBackground = null }).ConfigureAwait(true);
+
         await NextFrameAsync(() => view.RestoreSortOrders([new("nameKey", true), new("id")])).ConfigureAwait(true);
         using (var bitmap = RenderBitmap())
         {

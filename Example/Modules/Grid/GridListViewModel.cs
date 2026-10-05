@@ -213,7 +213,8 @@ public sealed partial class GridListViewModel : AppViewModelBase
         ShowSortPriority = true,
         CornerText = "No.",
         RowHeaderText = static context => context.IsSelected ? "✓" : null,
-        RowBackground = static x => x is SampleRow { IsDiscontinued: true } ? SampleColumns.DiscontinuedBackground : null
+        RowBackground = static x => x is SampleRow { IsDiscontinued: true } ? SampleColumns.DiscontinuedBackground : null,
+        AlternatingRowBackground = SampleColumns.AlternatingBackground
     };
 
     private void Load()

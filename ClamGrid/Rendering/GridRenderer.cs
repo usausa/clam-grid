@@ -161,7 +161,7 @@ internal sealed class GridRenderer : IDisposable
 
                 var definition = columns[column];
                 var value = definition.ValueAccessor.GetValue(items[row]);
-                var colors = new GridColors(state.Selected ? style.SelectedTextColor : definition.TextColor ?? style.TextColor, state.Background ?? definition.Background ?? style.Background);
+                var colors = new GridColors(state.Selected ? style.SelectedTextColor : definition.TextColor ?? style.TextColor, GetCellBackground(style, definition, row, state.Background));
                 colors = colors.Apply(style.CellColors?.Invoke(new GridCellColorContext(items[row], row, definition, column, value, state.Selected, colors)) ?? default);
                 Fill(canvas, rect, colors.Background!);
                 if (definition.IsBoolean)
@@ -243,6 +243,10 @@ internal sealed class GridRenderer : IDisposable
 
         return -1;
     }
+
+    // Selection and row callback colors win over the column color, which wins over the alternating and base backgrounds
+    internal static Color GetCellBackground(GridStyle style, GridColumn column, int rowIndex, Color? rowBackground) =>
+        rowBackground ?? column.Background ?? ((rowIndex % 2) == 1 ? style.AlternatingRowBackground : null) ?? style.Background;
 
     internal static string GetRowHeaderText(GridStyle style, object item, int rowIndex, bool selected) =>
         style.RowHeaderText?.Invoke(new GridRowHeaderTextContext(item, rowIndex, selected)) ?? (rowIndex + 1).ToString(CultureInfo.InvariantCulture);

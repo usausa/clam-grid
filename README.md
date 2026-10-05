@@ -167,7 +167,7 @@ Messaging, navigation and screen controllers belong to the application.
 | **Editing** | Boolean cell toggle |
 | **Row dragging** | Reorder rows by dragging the row header |
 | **Input** | Tap, long press, pan with inertia, column resize, commands for MVVM |
-| **Styling** | Font, padding, colors, sort marks, row header text and conditional color callbacks |
+| **Styling** | Font, padding, colors, alternating rows, sort marks, row header text and conditional color callbacks |
 | **Fonts** | Per character fallback to `GridFonts` typefaces and system fonts, emoji sequences included |
 
 ## 📖 API
