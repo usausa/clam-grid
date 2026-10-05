@@ -47,7 +47,7 @@
 | `IsSelected(int rowIndex)` | `bool` | Whether the row is selected |
 | `SetSelected(int rowIndex, bool value)` | `bool` | Selects or clears the row |
 | `TryToggleSelection(int rowIndex, out bool isSelected)` | `bool` | Toggles the row selection |
-| `TryToggleSelectionByKey(object key, out bool isSelected)` | `bool` | Toggles the selection by row key and scrolls the row into view |
+| `TryToggleSelectionByKey(object key, out bool isSelected)` | `bool` | Toggles the selection by row key and scrolls the row into view without moving horizontally |
 | `SelectAll()` | `void` | Selects all rows |
 | `ClearSelection()` | `void` | Clears the selection |
 | `SortByColumn(int columnIndex)` | `GridSortResult` | Sorts by the column key following `SortCycle` |
@@ -55,11 +55,14 @@
 | `RefreshRows(int startIndex, int count)` | `bool` | Redraws values and colors of the rows |
 | `ScrollTo(double x, double y)` | `void` | Scrolls to the offset |
 | `ScrollBy(double x, double y)` | `void` | Scrolls by the delta |
-| `ScrollIntoView(int rowIndex, int columnIndex)` | `bool` | Scrolls until the cell is visible |
+| `ScrollIntoView(int rowIndex, int? columnIndex = null, ScrollToPosition position = MakeVisible)` | `bool` | Places the row at `Start`, `Center` or `End`, or moves it just into view with `MakeVisible`; the column is revealed with the smallest move and `null` keeps the horizontal offset |
+| `ScrollIntoViewByKey(object key, ScrollToPosition position = MakeVisible)` | `bool` | Scrolls only vertically to the row with the key; `false` when no shown row has it |
 | `HitTest(double x, double y)` | `GridHit` | Resolves the cell at the position in DIP |
 | `CancelInteraction()` | `void` | Stops the current gesture and inertia |
 | `InvalidateSurface()` | `void` | Redraws the grid |
 | `Dispose()` | `void` | Releases the data view subscriptions, timers and native resources |
+
+Scroll requests made before the grid has a size are kept, the latest one is applied by the first layout and the `ScrollIntoView` methods return `true` for them.  
 
 ### 📣 Events
 

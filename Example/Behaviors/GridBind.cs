@@ -114,7 +114,7 @@ public static class GridBind
 
             if (e.RowIndex >= 0)
             {
-                grid.ScrollIntoView(e.RowIndex, e.ColumnIndex);
+                grid.ScrollIntoView(e.RowIndex, e.ColumnIndex, e.Position);
             }
             else
             {

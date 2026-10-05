@@ -128,16 +128,30 @@ internal sealed class GridLayout
         return true;
     }
 
-    // Frozen columns never need horizontal scrolling; other columns are revealed inside the scroll area
-    public bool ScrollIntoView(int row, int column)
+    // Places the row at the position; a null or frozen column keeps the horizontal offset, other columns are revealed inside the scroll area
+    public bool ScrollIntoView(int row, int? column, ScrollToPosition position = ScrollToPosition.MakeVisible)
     {
-        if ((row < 0) || (row >= RowCount) || (column < 0) || (column >= ColumnCount) || BodyBounds.IsEmpty)
+        if ((row < 0) || (row >= RowCount) || (column is < 0) || (column >= ColumnCount) || BodyBounds.IsEmpty)
         {
             return false;
         }
 
-        var x = column < FrozenColumnCount ? ScrollX : Reveal(edges[column] - FrozenWidth, edges[column + 1] - FrozenWidth, ScrollX, ScrollArea.Width);
-        var y = Reveal(row * RowHeight, (row + 1d) * RowHeight, ScrollY, BodyBounds.Height);
+        var x = ScrollX;
+        if ((column is { } index) && (index >= FrozenColumnCount))
+        {
+            x = Reveal(edges[index] - FrozenWidth, edges[index + 1] - FrozenWidth, ScrollX, ScrollArea.Width);
+        }
+
+        var top = row * RowHeight;
+        var bottom = (row + 1d) * RowHeight;
+        var height = BodyBounds.Height;
+        var y = position switch
+        {
+            ScrollToPosition.Start => top,
+            ScrollToPosition.Center => (top + bottom - height) / 2,
+            ScrollToPosition.End => bottom - height,
+            _ => Reveal(top, bottom, ScrollY, height)
+        };
         ScrollTo(x, y);
         return true;
     }

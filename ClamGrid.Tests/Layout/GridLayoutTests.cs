@@ -155,6 +155,50 @@ public sealed class GridLayoutTests
     }
 
     [Fact]
+    public void ScrollIntoViewPlacesTheRowAtTheRequestedPosition()
+    {
+        // Arrange
+        var layout = new GridLayout([100, 100, 100], 100, 40, 40, 40, 240, 440);
+
+        // Act & Assert
+        Assert.True(layout.ScrollIntoView(50, null, ScrollToPosition.Start));
+        Assert.Equal(2000, layout.ScrollY);
+        Assert.True(layout.ScrollIntoView(50, null, ScrollToPosition.Center));
+        Assert.Equal(1820, layout.ScrollY);
+        Assert.True(layout.ScrollIntoView(50, null, ScrollToPosition.End));
+        Assert.Equal(1640, layout.ScrollY);
+        Assert.True(layout.ScrollIntoView(50, null, ScrollToPosition.MakeVisible));
+        Assert.Equal(1640, layout.ScrollY);
+
+        // Act & Assert
+        Assert.True(layout.ScrollIntoView(1, null, ScrollToPosition.Center));
+        Assert.Equal(0, layout.ScrollY);
+        Assert.True(layout.ScrollIntoView(99, null, ScrollToPosition.Start));
+        Assert.Equal(3600, layout.ScrollY);
+    }
+
+    [Fact]
+    public void RowOnlyScrollKeepsTheHorizontalOffset()
+    {
+        // Arrange
+        var layout = new GridLayout([100, 100, 100, 100], 100, 40, 40, 40, 240, 440, 1);
+        layout.ScrollTo(60, 0);
+
+        // Act & Assert
+        Assert.True(layout.ScrollIntoView(30, null));
+        Assert.Equal(60, layout.ScrollX);
+        Assert.Equal(840, layout.ScrollY);
+        Assert.True(layout.ScrollIntoView(31, 0, ScrollToPosition.Start));
+        Assert.Equal(60, layout.ScrollX);
+        Assert.Equal(1240, layout.ScrollY);
+
+        // Act & Assert
+        Assert.False(layout.ScrollIntoView(-1, null));
+        Assert.False(layout.ScrollIntoView(0, -1));
+        Assert.False(layout.ScrollIntoView(0, 4));
+    }
+
+    [Fact]
     public void OversizedCellAlignsItsLeadingEdge()
     {
         // Arrange

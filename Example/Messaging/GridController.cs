@@ -4,22 +4,24 @@ public sealed class GridScrollRequestEventArgs : EventArgs
 {
     public int RowIndex { get; }
 
-    public int ColumnIndex { get; }
+    public int? ColumnIndex { get; }
+
+    public ScrollToPosition Position { get; }
 
     public double DeltaX { get; }
 
     public double DeltaY { get; }
 
-    public GridScrollRequestEventArgs(int rowIndex, int columnIndex)
+    public GridScrollRequestEventArgs(int rowIndex, int? columnIndex, ScrollToPosition position)
     {
         RowIndex = rowIndex;
         ColumnIndex = columnIndex;
+        Position = position;
     }
 
     public GridScrollRequestEventArgs(double deltaX, double deltaY)
     {
         RowIndex = -1;
-        ColumnIndex = -1;
         DeltaX = deltaX;
         DeltaY = deltaY;
     }
@@ -76,9 +78,10 @@ public sealed class GridController : NotificationObject
 
     // Request
 
-    public void ScrollIntoView(int rowIndex, int columnIndex)
+    // A null column moves only vertically
+    public void ScrollIntoView(int rowIndex, int? columnIndex = null, ScrollToPosition position = ScrollToPosition.MakeVisible)
     {
-        ScrollRequest?.Invoke(this, new GridScrollRequestEventArgs(rowIndex, columnIndex));
+        ScrollRequest?.Invoke(this, new GridScrollRequestEventArgs(rowIndex, columnIndex, position));
     }
 
     public void ScrollBy(double deltaX, double deltaY)

@@ -27,6 +27,7 @@ public partial class ClamGridView : SKCanvasView, IDisposable
     private IGridPlatformBridge? platform;
     private bool disposed;
     private bool layoutDirty = true;
+    private Func<GridLayout, bool>? pendingScroll;
 
     public event EventHandler<GridCellEventArgs>? CellTapped;
 
@@ -234,7 +235,7 @@ public partial class ClamGridView : SKCanvasView, IDisposable
             return false;
         }
 
-        ScrollIntoView(row, 0);
+        ScrollIntoView(row);
         return true;
     }
 
@@ -282,25 +283,29 @@ public partial class ClamGridView : SKCanvasView, IDisposable
 
     public void ScrollBy(double x, double y) => ScrollTo(ScrollX + x, ScrollY + y);
 
-    public void ScrollTo(double x, double y)
-    {
-        RequireUiThread();
-        CancelInput();
-        ScrollCore(x, y);
-    }
+    public void ScrollTo(double x, double y) => RequestScroll(layout => layout.ScrollTo(x, y));
 
-    public bool ScrollIntoView(int rowIndex, int columnIndex)
+    // Places the row at the position; the column is revealed with the smallest move and a null column keeps the horizontal offset
+    public bool ScrollIntoView(int rowIndex, int? columnIndex = null, ScrollToPosition position = ScrollToPosition.MakeVisible)
     {
-        RequireUiThread();
-        CancelInput();
-        EnsureLayout();
-        if (!(CurrentLayout?.ScrollIntoView(rowIndex, columnIndex) ?? false))
+        if (!Enum.IsDefined(position))
         {
-            return false;
+            throw new ArgumentOutOfRangeException(nameof(position));
         }
 
-        InvalidateSurface();
-        return true;
+        return RequestScroll(layout => layout.ScrollIntoView(rowIndex, columnIndex, position));
+    }
+
+    // Moves only vertically; false when no shown row has the key
+    public bool ScrollIntoViewByKey(object key, ScrollToPosition position = ScrollToPosition.MakeVisible)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        if (!Enum.IsDefined(position))
+        {
+            throw new ArgumentOutOfRangeException(nameof(position));
+        }
+
+        return RequestScroll(layout => layout.ScrollIntoView(DataView?.IndexOfKey(key) ?? -1, null, position));
     }
 
     public GridHit HitTest(double x, double y)
@@ -442,6 +447,28 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         {
             InvalidateSurface();
         }
+    }
+
+    // A request made before the size is known is kept and applied by the first layout
+    private bool RequestScroll(Func<GridLayout, bool> scroll)
+    {
+        RequireUiThread();
+        CancelInput();
+        EnsureLayout();
+        if (CurrentLayout is not { } layout)
+        {
+            pendingScroll = scroll;
+            return true;
+        }
+
+        pendingScroll = null;
+        if (!scroll(layout))
+        {
+            return false;
+        }
+
+        InvalidateSurface();
+        return true;
     }
 
     private void SetDataSource(IEnumerable? source)
@@ -622,6 +649,11 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         replacement.ScrollTo(ScrollX, ScrollY);
         CurrentLayout = replacement;
         layoutDirty = false;
+        if (pendingScroll is { } pending)
+        {
+            pendingScroll = null;
+            pending(replacement);
+        }
     }
 
     private void RequireUiThread()

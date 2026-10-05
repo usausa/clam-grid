@@ -337,8 +337,8 @@ public sealed partial class GridListViewModel : AppViewModelBase
         var index = Rows.IndexOfKey(key);
         if (Rows.TryToggleSelection(index, out var selected))
         {
-            Grid.ScrollIntoView(index, 0);
-            Status = $"外部指定 ID={key + 1} / 選択={selected} / 表示行={index + 1}";
+            Grid.ScrollIntoView(index, position: ScrollToPosition.Center);
+            Status = $"外部指定 ID={key + 1} / 選択={selected} / 表示行={index + 1}（横位置を保って中央に表示）";
         }
         else
         {
