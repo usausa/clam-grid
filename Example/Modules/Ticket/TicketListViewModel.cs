@@ -173,7 +173,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
         // Restores the default column settings; null shows the default and the normalized value is written back
         columnSettingsStore.Remove(ColumnSettingsKey);
         ColumnOrders = null;
-        Status = "列設定を既定の表示と順序へ戻しました。";
+        Status = "列設定を既定の表示・順序・幅へ戻しました。";
         return Task.CompletedTask;
     }
 

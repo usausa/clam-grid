@@ -161,6 +161,7 @@ public sealed partial class InputVerifier : IDisposable
         Check("header long press requests configuration without sort", configurations == 1 && taps == priorTaps && !data.SortOrders[0].Descending);
         await DragAsync(140, 20, 200, 20).ConfigureAwait(true);
         Check("resize commits width without tap or sort", Math.Abs(grid.Columns[0].Width.Value - 160) < 1 && resizes == 1 && taps == priorTaps && !data.SortOrders[0].Descending);
+        Check("resize saves the width in the column orders", (grid.ColumnOrders[0].Width is { } width) && (Math.Abs(width - 160) < 1) && grid.ColumnDefinitions[0].Width.Equals(GridColumnWidth.Absolute(100)));
         cancelResize = true;
         await DragAsync(200, 20, 240, 20).ConfigureAwait(true);
         Check("resize event can cancel commit", Math.Abs(grid.Columns[0].Width.Value - 160) < 1 && resizes == 1);
@@ -169,6 +170,7 @@ public sealed partial class InputVerifier : IDisposable
         Check("resize clamps to minimum width", Math.Abs(grid.Columns[0].Width.Value - 40) < 1 && resizes == 2 && taps == priorTaps);
         grid.Columns[0] = grid.Columns[0] with { Width = GridColumnWidth.Absolute(160) };
         resizes = 1;
+        Check("direct width edit replaces the saved width", (grid.ColumnOrders[0].Width is null) && grid.ColumnDefinitions[0].Width.Equals(GridColumnWidth.Absolute(160)));
         Send(MotionEventActions.Down, 200, 20);
         Send(MotionEventActions.Move, 240, 20);
         Send(MotionEventActions.Cancel, 240, 20);
@@ -185,6 +187,13 @@ public sealed partial class InputVerifier : IDisposable
         Check("per-column resize permission is respected", Math.Abs(grid.Columns[0].Width.Value - 160) < 1 && resizes == 1 && grid.ScrollX > 0);
         grid.Columns[0] = grid.Columns[0] with { AllowResizing = true };
         grid.ScrollTo(0, 0);
+        await DragAsync(200, 20, 240, 20).ConfigureAwait(true);
+        var saved = grid.ColumnOrders.ToArray();
+        grid.ApplyColumnOrders([saved[0] with { IsVisible = false }, saved[1], saved[2]]);
+        grid.ApplyColumnOrders(saved);
+        Check("saved width survives hiding the column", Math.Abs(grid.Columns[0].Width.Value - 200) < 1 && resizes == 2);
+        grid.ApplyColumnOrders(null);
+        Check("default column orders restore the declared width", Math.Abs(grid.Columns[0].Width.Value - 160) < 1 && grid.ColumnOrders.All(static order => order.Width is null));
 
         priorTaps = taps;
         Send(MotionEventActions.Down, 90, 80);

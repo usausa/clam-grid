@@ -23,6 +23,20 @@ public sealed class GridColumnOption : INotifyPropertyChanged
         }
     }
 
+    // Saved absolute width in DIP; null restores the width of the definition
+    public double? Width
+    {
+        get;
+        set
+        {
+            if (!Nullable.Equals(field, value))
+            {
+                field = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Width)));
+            }
+        }
+    }
+
     public GridColumnOption(string key, string header, bool isVisible)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);

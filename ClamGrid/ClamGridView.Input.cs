@@ -267,7 +267,7 @@ public partial class ClamGridView
             return;
         }
 
-        Columns[column] = Columns[column] with { Width = GridColumnWidth.Absolute(newWidth) };
+        SetColumnWidth(args.ColumnKey, newWidth);
         EnsureLayout();
         ColumnWidthChanged?.Invoke(this, args);
         ExecuteCommand(ColumnWidthChangedCommand, args);

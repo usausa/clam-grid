@@ -11,7 +11,7 @@
 | `Columns` | `GridColumnCollection` | | | Visible columns in display order |
 | `ColumnDefinitions` | `GridColumnCollection` | | | All definitions including hidden columns, declared as XAML content |
 | `ValueAccessors` | `IGridValueAccessorProvider?` | `null` | ✓ | Resolves the accessor of columns declared without one by `Key` |
-| `ColumnOrders` | `IReadOnlyList<GridColumnOrder>` | `[]` | ✓ TwoWay | Visibility and order of all columns; `null` restores the default and the normalized value is written back |
+| `ColumnOrders` | `IReadOnlyList<GridColumnOrder>` | `[]` | ✓ TwoWay | Visibility, order and saved width of all columns; a dragged width is saved here instead of the definition, the normalized value is written back and `null` restores the defaults including the declared widths |
 | `FrozenColumnCount` | `int` | `0` | ✓ | Leading columns that stay in place while the others scroll |
 | `SortOrders` | `IReadOnlyList<GridSortOrder>` | `[]` | ✓ TwoWay | Sort keys and directions; applied to the data view and written back after every sort, an empty list clears the sort and `null` leaves the view unchanged |
 | `SortCycle` | `GridSortCycle` | `AscendingDescending` | ✓ | Direction sequence of repeated header taps; the `None` variants remove the key on the third tap |
@@ -98,6 +98,18 @@
 | `SortKey` | `string?` | `null` | Sort key registered on the data view when it differs from `Key` |
 | `AllowSorting` | `bool` | `true` | A header tap sorts the column |
 | `AllowResizing` | `bool` | `true` | The header boundary can be dragged |
+
+## 🧭 GridColumnOrder
+
+An entry of `ColumnOrders`, also produced by `GridColumnEditSession.Export()`.  
+
+| Name | Type | Description |
+|---|---|---|
+| `Key` | `string` | Column key |
+| `IsVisible` | `bool` | Whether the column is shown |
+| `Width` | `double?` | Absolute width in DIP saved by a drag on the header boundary, kept while the column is hidden; `null` uses the width of the definition and `GridColumnOption.Width` edits it in a settings screen |
+
+Editing `Columns` directly changes the definitions; an edit that changes the width of a column with a saved width drops the saved width.  
 
 ## 🎨 GridStyle
 

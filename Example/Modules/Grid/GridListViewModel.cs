@@ -252,7 +252,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
             case "列設定を初期化":
                 Grid.ColumnOrders = [];
                 columnSettingsStore.Remove(ColumnSettingsKey);
-                Status = "列設定を既定の表示と順序へ戻しました。";
+                Status = "列設定を既定の表示・順序・幅へ戻しました。";
                 break;
             case "行を追加":
                 Source.Add(new SampleRow(nextId++));
@@ -368,8 +368,11 @@ public sealed partial class GridListViewModel : AppViewModelBase
     private void OnCellValueChanged(object? sender, GridCellValueEventArgs e) =>
         Status = $"セル編集: {e.ColumnKey} ID={((SampleRow)e.Item).Id + 1} → {e.NewValue}";
 
-    private void OnColumnWidthChanged(object? sender, GridColumnWidthEventArgs e) =>
-        Status = $"列幅変更: {e.ColumnKey} / {e.OldWidth:F0} → {e.NewWidth:F0} DIP";
+    private void OnColumnWidthChanged(object? sender, GridColumnWidthEventArgs e)
+    {
+        columnSettingsStore.Save(ColumnSettingsKey, Grid.ColumnOrders!);
+        Status = $"列幅変更: {e.ColumnKey} / {e.OldWidth:F0} → {e.NewWidth:F0} DIP（保存しました）";
+    }
 
     private void OnSortRequested(object? sender, GridSortRequestedEventArgs e) => sortStarted = Stopwatch.GetTimestamp();
 

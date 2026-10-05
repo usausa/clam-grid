@@ -71,7 +71,7 @@ public sealed class GridController : NotificationObject
     {
         var headers = Columns.ToDictionary(static x => x.Key, static x => x.Header, StringComparer.Ordinal);
         var orders = ColumnOrders ?? Columns.Select(static x => new GridColumnOrder(x.Key, true)).ToArray();
-        return new GridColumnEditSession(orders.Where(x => headers.ContainsKey(x.Key)).Select(x => new GridColumnOption(x.Key, headers[x.Key], x.IsVisible)));
+        return new GridColumnEditSession(orders.Where(x => headers.ContainsKey(x.Key)).Select(x => new GridColumnOption(x.Key, headers[x.Key], x.IsVisible) { Width = x.Width }));
     }
 
     // Request

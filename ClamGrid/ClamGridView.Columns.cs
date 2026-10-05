@@ -108,7 +108,16 @@ public partial class ClamGridView
         var grid = (ClamGridView)bindable;
         if (grid.ResolveValueAccessors(grid.columnCatalog))
         {
-            grid.OnColumnsChanged(grid, EventArgs.Empty);
+            // Columns with a saved width are copies of the definitions, so they are arranged again with the resolved accessors
+            grid.applyingColumns = true;
+            try
+            {
+                grid.Columns.ReplaceAll(GridColumnSettings.Arrange(grid.columnCatalog, grid.columnOrders));
+            }
+            finally
+            {
+                grid.applyingColumns = false;
+            }
         }
     }
 
@@ -127,8 +136,7 @@ public partial class ClamGridView
     private void SetColumnConfiguration(GridColumn[] catalog, GridColumnOrder[] orders)
     {
         ResolveValueAccessors(catalog);
-        var map = catalog.ToDictionary(static column => column.Key, StringComparer.Ordinal);
-        var visible = orders.Where(static order => order.IsVisible).Select(order => map[order.Key]).ToArray();
+        var visible = GridColumnSettings.Arrange(catalog, orders);
         columnCatalog = catalog;
         columnOrders = orders;
         applyingColumns = true;
@@ -158,15 +166,23 @@ public partial class ClamGridView
         {
             if (Columns.Select(static column => column.Key).SequenceEqual(columnOrders.Where(static order => order.IsVisible).Select(static order => order.Key)))
             {
-                // Column resize and similar edits replace the same column in the definitions
-                var visible = Columns.ToDictionary(static column => column.Key, StringComparer.Ordinal);
-                columnCatalog = columnCatalog.Select(column => visible.GetValueOrDefault(column.Key, column)).ToArray();
+                // Edits of the same columns go to the definitions; accessors are resolved first so both share them
+                ResolveValueAccessors(Columns);
+                var (catalog, orders) = GridColumnSettings.Merge(columnCatalog, Columns, columnOrders);
+                columnCatalog = catalog;
                 for (var i = 0; i < columnCatalog.Length; i++)
                 {
                     if ((i < ColumnDefinitions.Count) && !ReferenceEquals(ColumnDefinitions[i], columnCatalog[i]))
                     {
                         ColumnDefinitions[i] = columnCatalog[i];
                     }
+                }
+
+                if (!orders.SequenceEqual(columnOrders))
+                {
+                    columnOrders = orders;
+                    requestedOrders = orders;
+                    PublishColumnOrders();
                 }
             }
             else
@@ -184,6 +200,14 @@ public partial class ClamGridView
         }
 
         ResolveValueAccessors(columnCatalog);
+    }
+
+    // A dragged width is saved in the column orders, so the definitions keep their declared width
+    private void SetColumnWidth(string key, double width)
+    {
+        var orders = columnOrders.Select(order => order.Key == key ? order with { Width = width } : order).ToArray();
+        requestedOrders = orders;
+        SetColumnConfiguration(columnCatalog, orders);
     }
 
     // Writes the value back as a control side change so OneWay bindings survive and TwoWay bindings update the source

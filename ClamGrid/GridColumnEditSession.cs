@@ -11,7 +11,7 @@ public sealed class GridColumnEditSession
     public GridColumnEditSession(IEnumerable<GridColumnOption> columns)
     {
         ArgumentNullException.ThrowIfNull(columns);
-        var copy = columns.Select(static column => new GridColumnOption(column.Key, column.Header, column.IsVisible)).ToArray();
+        var copy = columns.Select(static column => new GridColumnOption(column.Key, column.Header, column.IsVisible) { Width = column.Width }).ToArray();
         GridColumnSettings.Normalize(copy.Select(static column => column.Key), null);
         Columns = [with(copy)];
     }
@@ -21,8 +21,8 @@ public sealed class GridColumnEditSession
     {
         ArgumentNullException.ThrowIfNull(columns);
         var headers = columns.ToDictionary(static column => column.Key, static column => column.Header, StringComparer.Ordinal);
-        return new GridColumnEditSession(GridColumnSettings.Normalize(headers.Keys, orders).Select(order => new GridColumnOption(order.Key, headers[order.Key], order.IsVisible)));
+        return new GridColumnEditSession(GridColumnSettings.Normalize(headers.Keys, orders).Select(order => new GridColumnOption(order.Key, headers[order.Key], order.IsVisible) { Width = order.Width }));
     }
 
-    public GridColumnOrder[] Export() => Columns.Select(static column => new GridColumnOrder(column.Key, column.IsVisible)).ToArray();
+    public GridColumnOrder[] Export() => Columns.Select(static column => new GridColumnOrder(column.Key, column.IsVisible) { Width = column.Width }).ToArray();
 }

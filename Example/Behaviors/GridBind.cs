@@ -133,7 +133,16 @@ public static class GridBind
 
         private void GridOnCellValueChanged(object? sender, GridCellValueEventArgs e) => controller?.HandleCellValueChanged(e);
 
-        private void GridOnColumnWidthChanged(object? sender, GridColumnWidthEventArgs e) => controller?.HandleColumnWidthChanged(e);
+        private void GridOnColumnWidthChanged(object? sender, GridColumnWidthEventArgs e)
+        {
+            if ((controller is not null) && (AssociatedObject is { } grid))
+            {
+                // The dragged width is saved in the column orders
+                controller.ColumnOrders = grid.ColumnOrders;
+            }
+
+            controller?.HandleColumnWidthChanged(e);
+        }
 
         private void GridOnRowMoved(object? sender, GridRowMoveEventArgs e) => controller?.HandleRowMoved(e);
 

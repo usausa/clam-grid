@@ -127,6 +127,8 @@ public sealed partial class InputVerifier
         grid.ApplyColumnOrders(decoded);
         var encoded = ColumnSettingsCodec.Write(grid.ColumnOrders);
         Check("legacy ColumnOrder JSON round trips without reflection", grid.ColumnOrders.SequenceEqual(ColumnSettingsCodec.Read(encoded)!) && grid.Columns.Count == 1 && encoded.Contains("ColumnName", StringComparison.Ordinal));
+        var widened = ColumnSettingsCodec.Read(ColumnSettingsCodec.Write([new GridColumnOrder("name", true) { Width = 210 }]));
+        Check("saved width round trips and is omitted when unset", widened![0].Width.Equals(210d) && !encoded.Contains("Width", StringComparison.Ordinal));
         grid.ConfigureColumns([boolean, name, address, new GridColumn("new", "追加", name.ValueAccessor)], grid.ColumnOrders);
         Check("new catalog column is appended hidden", grid.ColumnOrders[^1] == new GridColumnOrder("new", false) && grid.Columns.Count == 1);
     }

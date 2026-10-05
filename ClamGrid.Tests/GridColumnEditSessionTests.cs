@@ -66,4 +66,25 @@ public sealed class GridColumnEditSessionTests
         Assert.Equal(session.Export(), fromArgs.Export());
         Assert.Equal([new("a", true), new("b", true), new GridColumnOrder("c", true)], GridColumnEditSession.Create(columns).Export());
     }
+
+    [Fact]
+    public void SavedWidthsRoundTripAndCanBeReset()
+    {
+        // Arrange
+        var accessor = new GridValueAccessor<object, string>(static _ => String.Empty);
+        GridColumn[] columns = [new("a", "A", accessor), new("b", "B", accessor)];
+        var session = GridColumnEditSession.Create(columns, [new("a", true) { Width = 120 }, new("b", false) { Width = 90 }]);
+        var notifications = 0;
+        session.Columns[0].PropertyChanged += (_, _) => notifications++;
+
+        // Act
+        var copy = new GridColumnEditSession(session.Columns);
+        session.Columns[0].Width = null;
+        session.Columns[0].Width = null;
+
+        // Assert
+        Assert.Equal([new("a", true), new GridColumnOrder("b", false) { Width = 90 }], session.Export());
+        Assert.Equal(120, copy.Columns[0].Width);
+        Assert.Equal(1, notifications);
+    }
 }
