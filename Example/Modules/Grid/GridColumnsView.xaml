@@ -11,8 +11,10 @@
              s:BindingContextResolver.Type="{x:Type module:GridColumnsViewModel}"
              shell:ShellProperty.Title="列設定"
              shell:ShellProperty.Function1Text="Cancel"
+             shell:ShellProperty.Function3Text="Width"
              shell:ShellProperty.Function4Text="Apply"
              shell:ShellProperty.Function1Enabled="True"
+             shell:ShellProperty.Function3Enabled="True"
              shell:ShellProperty.Function4Enabled="True">
 
     <Grid Style="{StaticResource FillGrid}"

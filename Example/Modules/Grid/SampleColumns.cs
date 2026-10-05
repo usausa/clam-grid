@@ -33,8 +33,10 @@ internal static class SampleColumns
 
     public static GridColumn[] CreateColumnSettings() =>
     [
-        new GridColumn("visible", "発注", new GridValueAccessor<GridColumnOption, bool>(static x => x.IsVisible, static (x, value) => x.IsVisible = value)) { Width = GridColumnWidth.Auto, IsBoolean = true, IsReadOnly = false, AllowSorting = false, AllowResizing = false, Alignment = TextAlignment.Center },
-        new GridColumn("header", "項目名", new GridValueAccessor<GridColumnOption, string>(static x => x.Header)) { Width = GridColumnWidth.Star(), MinWidth = 120, AllowSorting = false, AllowResizing = false }
+        new GridColumn("visible", "表示", new GridValueAccessor<GridColumnOption, bool>(static x => x.IsVisible, static (x, value) => x.IsVisible = value)) { Width = GridColumnWidth.Auto, IsBoolean = true, IsReadOnly = false, AllowSorting = false, AllowResizing = false, Alignment = TextAlignment.Center },
+        new GridColumn("header", "項目名", new GridValueAccessor<GridColumnOption, string>(static x => x.Header)) { Width = GridColumnWidth.Star(), MinWidth = 120, AllowSorting = false, AllowResizing = false },
+        // Saved width in DIP; empty when the declared width is used
+        new GridColumn("width", "幅", new GridValueAccessor<GridColumnOption, double?>(static x => x.Width)) { Width = GridColumnWidth.Absolute(80), Alignment = TextAlignment.End, Format = "N0", AllowSorting = false, AllowResizing = false }
     ];
 
     public static void RegisterSorts(GridDataView<SampleRow> rows)
