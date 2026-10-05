@@ -111,10 +111,11 @@ public sealed class GridLayoutTests
     public void BoundariesUnderTheFrozenColumnsAreNotGrabbable()
     {
         // Arrange
-        var layout = new GridLayout([100, 100, 100, 100], 10, 40, 40, 40, 300, 440, 1);
+        var layout = new GridLayout([100, 100, 100, 100, 100], 10, 40, 40, 40, 300, 440, 1);
         layout.ScrollTo(150, 0);
 
         // Act & Assert
+        Assert.Equal(150, layout.ScrollX);
         Assert.Equal(0, layout.HitTestColumnBoundary(140, 10));
         Assert.Equal(-1, layout.HitTestColumnBoundary(90, 10));
         Assert.Equal(2, layout.HitTestColumnBoundary(190, 10));
