@@ -16,6 +16,8 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
     private readonly HashSet<object> selected;
     private Dictionary<T, object> keysByItem = [with(ReferenceEqualityComparer.Instance)];
     private IEnumerable source;
+    // Every source row in display order, rows hidden by the filter included
+    private T[] allRows = [];
     private T[] items = [];
     private object[] keys = [];
     private Dictionary<object, int> indices;
@@ -44,6 +46,9 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
     public event EventHandler<GridSortFailedEventArgs>? SortFailed;
 
     public int Count => items.Length;
+
+    // Rows in the source before the filter is applied
+    public int SourceCount => allRows.Length;
 
     public T this[int index] => items[index];
 
@@ -80,6 +85,32 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
             field = value;
             var next = keys.Where(selected.Contains).Take(value == GridSelectionMode.None ? 0 : value == GridSelectionMode.SingleToggle ? 1 : Count);
             ApplySelection(new HashSet<object>(next, RowKeyComparer), true);
+        }
+    }
+
+    // Rows the predicate rejects are hidden and lose their selection; it runs again on every source and row change
+    public Func<T, bool>? Filter
+    {
+        get;
+        set
+        {
+            RequireMutation();
+            var previous = field;
+            field = value;
+            Version++;
+            var version = Version;
+            try
+            {
+                Synchronize(GridDataChangeKind.Filter, false);
+            }
+            catch when (Version == version)
+            {
+                // Nothing was committed, so the previous filter stays in effect
+                field = previous;
+                throw;
+            }
+
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Filter)));
         }
     }
 
@@ -330,7 +361,8 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
             T[] ordered;
             try
             {
-                ordered = SortItems(nextOrders.Count == 0 ? SnapshotSource() : items, nextOrders);
+                // Clearing the sort reads the source again to restore its order
+                ordered = SortItems(nextOrders.Count == 0 ? SnapshotSource() : allRows, nextOrders);
             }
             catch (Exception error) when (error is InvalidOperationException or ArgumentException)
             {
@@ -338,12 +370,13 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
                 return new GridSortResult(GridSortStatus.Failed, ignoredKeys, error);
             }
 
+            var replacement = ApplyFilter(ordered);
             if (version != Version)
             {
                 return new GridSortResult(GridSortStatus.Superseded, ignoredKeys);
             }
 
-            Commit(ordered, GridDataChangeKind.Sort, false, nextOrders);
+            Commit(ordered, replacement, GridDataChangeKind.Sort, false, nextOrders);
             return new GridSortResult(GridSortStatus.Applied, ignoredKeys);
         }
         finally
@@ -459,6 +492,8 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
 
     private T[] SnapshotSource() => Snapshot(source);
 
+    private T[] ApplyFilter(T[] rows) => Filter is { } filter ? rows.Where(filter).ToArray() : rows;
+
     private object[] ValidateKeys(T[] rows)
     {
         var result = new object[rows.Length];
@@ -564,13 +599,14 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
         try
         {
             var version = Version;
-            var replacement = snapshot ?? (kind == GridDataChangeKind.Item ? items : SnapshotSource());
-            ValidateKeys(replacement);
+            // Row and filter changes reuse the rows in display order, so ties of the previous sort keep their order
+            var ordered = snapshot ?? ((kind is GridDataChangeKind.Item or GridDataChangeKind.Filter) ? allRows : SnapshotSource());
+            ValidateKeys(ordered);
             if (SortOrders.Count > 0)
             {
                 try
                 {
-                    replacement = SortItems(replacement, SortOrders);
+                    ordered = SortItems(ordered, SortOrders);
                 }
                 catch (Exception error) when (error is InvalidOperationException or ArgumentException)
                 {
@@ -580,9 +616,10 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
                 }
             }
 
+            var replacement = ApplyFilter(ordered);
             if (version == Version)
             {
-                Commit(replacement, kind, reset);
+                Commit(ordered, replacement, kind, reset);
             }
         }
         finally
@@ -593,17 +630,24 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
         DrainChanges();
     }
 
-    private void Commit(T[] replacement, GridDataChangeKind kind, bool reset, IReadOnlyList<GridSortOrder>? orders = null)
+    // Ordered holds every row in display order and replacement the rows the filter keeps
+    private void Commit(T[] ordered, T[] replacement, GridDataChangeKind kind, bool reset, IReadOnlyList<GridSortOrder>? orders = null)
     {
-        var nextKeys = ValidateKeys(replacement);
-        var nextIndices = new Dictionary<object, int>(RowKeyComparer);
+        var orderedKeys = ValidateKeys(ordered);
         var nextKeysByItem = new Dictionary<T, object>(ReferenceEqualityComparer.Instance);
+        for (var i = 0; i < ordered.Length; i++)
+        {
+            nextKeysByItem.Add(ordered[i], orderedKeys[i]);
+        }
+
+        var nextKeys = new object[replacement.Length];
+        var nextIndices = new Dictionary<object, int>(RowKeyComparer);
         var keep = new HashSet<object>(RowKeyComparer);
         for (var i = 0; i < replacement.Length; i++)
         {
-            var key = nextKeys[i];
+            var key = nextKeysByItem[replacement[i]];
+            nextKeys[i] = key;
             nextIndices.Add(key, i);
-            nextKeysByItem.Add(replacement[i], key);
             if (!reset && indices.TryGetValue(key, out var oldIndex) && ReferenceEquals(items[oldIndex], replacement[i]) && !removedItems.Contains(replacement[i]) && selected.Contains(key))
             {
                 keep.Add(key);
@@ -612,6 +656,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
 
         var orderChanged = !items.SequenceEqual(replacement, ReferenceEqualityComparer.Instance);
         var selectionChanged = !selected.SetEquals(keep);
+        allRows = ordered;
         items = replacement;
         Items = Array.AsReadOnly(replacement);
         keys = nextKeys;
@@ -649,6 +694,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
             if (args.Kind != GridDataChangeKind.Selection)
             {
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Count)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SourceCount)));
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Items)));
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
                 if (args.OrderChanged || (args.Kind == GridDataChangeKind.Reset))
@@ -746,9 +792,10 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
         ObserveItems();
     }
 
+    // Hidden rows are observed too, so a change can bring them back through the filter
     private void ObserveItems()
     {
-        var current = new HashSet<INotifyPropertyChanged>(items.OfType<INotifyPropertyChanged>(), ReferenceEqualityComparer.Instance);
+        var current = new HashSet<INotifyPropertyChanged>(allRows.OfType<INotifyPropertyChanged>(), ReferenceEqualityComparer.Instance);
         foreach (var item in observedItems.Where(item => !current.Contains(item)).ToArray())
         {
             item.PropertyChanged -= OnItemChanged;

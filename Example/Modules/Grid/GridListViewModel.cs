@@ -232,7 +232,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
     private async Task ExecuteActionAsync()
     {
         var operation = await actionSheet.ShowAsync("操作例", CancelText,
-            "全選択", "選択解除", "列設定を初期化", "行を追加", "先頭行を末尾へ移動", "選択行を削除", "同じIDの別データに置換", "名前と状態を更新", "発注チェックを外部から変更", "販売中だけを選択", "外部からID42を選択", "ソート順を保存", "ソート順を復元", "再読込（選択解除）", "性能計測");
+            "全選択", "選択解除", "列設定を初期化", "行を追加", "先頭行を末尾へ移動", "選択行を削除", "同じIDの別データに置換", "名前と状態を更新", "発注チェックを外部から変更", "販売中だけを選択", "販売中だけを表示", "絞り込みを解除", "外部からID42を選択", "ソート順を保存", "ソート順を復元", "再読込（選択解除）", "性能計測");
         if ((operation is null) || IsDisposed)
         {
             return;
@@ -303,6 +303,14 @@ public sealed partial class GridListViewModel : AppViewModelBase
                 Rows.UpdateSelection(static item => !item.IsDiscontinued);
                 Status = "販売中の行を選択しました。";
                 break;
+            case "販売中だけを表示":
+                Rows.Filter = static item => !item.IsDiscontinued;
+                Status = "販売中の行だけを表示しました。廃番にした行はその場で非表示になります。";
+                break;
+            case "絞り込みを解除":
+                Rows.Filter = null;
+                Status = "絞り込みを解除しました。";
+                break;
             case "外部からID42を選択":
                 SelectByKey(41);
                 break;
@@ -341,7 +349,8 @@ public sealed partial class GridListViewModel : AppViewModelBase
     private void UpdateSelectionText()
     {
         var ids = Rows.Where((_, index) => Rows.IsSelected(index)).Take(3).Select(static x => x.Id + 1);
-        SelectionText = $"選択 {Rows.SelectedCount:N0} / {Rows.Count:N0}件  ID: {String.Join(", ", ids)}";
+        var count = Rows.Filter is null ? $"{Rows.Count:N0}件" : $"{Rows.Count:N0} / 全{Rows.SourceCount:N0}件";
+        SelectionText = $"選択 {Rows.SelectedCount:N0} / {count}  ID: {String.Join(", ", ids)}";
     }
 
     //--------------------------------------------------------------------------------

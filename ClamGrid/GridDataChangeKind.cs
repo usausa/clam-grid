@@ -10,5 +10,6 @@ public enum GridDataChangeKind
     Item,
     Refresh,
     Sort,
-    Selection
+    Selection,
+    Filter
 }

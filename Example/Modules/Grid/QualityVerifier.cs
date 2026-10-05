@@ -35,6 +35,7 @@ public sealed partial class QualityVerifier : IDisposable
         Log($"ENV model={deviceModel};sdk={sdk};processor_count={Environment.ProcessorCount};runtime={Environment.Version}");
         await VerifyScenariosAsync().ConfigureAwait(true);
         await VerifyBindingAsync().ConfigureAwait(true);
+        await VerifyViewAsync().ConfigureAwait(true);
         await VerifyColorsAsync().ConfigureAwait(true);
         await VerifyLifecycleAsync().ConfigureAwait(true);
         foreach (var (rows, columns) in new[] { (1000, 18), (10000, 18), (50000, 30) })

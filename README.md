@@ -144,7 +144,7 @@ public sealed class TicketListViewModel : ObservableObject
 
 | Task | Binding |
 |---|---|
-| Rows | `ItemsSource` bound to a `GridDataView<T>`, which owns rows, selection and sort state |
+| Rows | `ItemsSource` bound to a `GridDataView<T>`, which owns rows, filter, selection and sort state |
 | Columns | `GridColumn` children in XAML and `ValueAccessors` bound to a static `GridValueAccessorCollection<T>` |
 | Column settings | `ColumnOrders` (TwoWay) and `ColumnConfigurationCommand`, whose argument creates the edit session for a settings page |
 | Sort state | `SortOrders` (TwoWay) with the keys registered on the data view, and `SortCycle` for the header tap sequence |
@@ -161,7 +161,7 @@ Messaging, navigation and screen controllers belong to the application.
 |---|---|
 | **Columns** | Auto / Absolute / Star width, minimum width, alignment, format string and value converter, frozen leading columns, static header and cell colors |
 | **Column settings** | Visibility and order, edit session for a settings screen, drag to resize |
-| **Data** | `INotifyCollectionChanged` / `INotifyPropertyChanged` tracking, stable row keys |
+| **Data** | `INotifyCollectionChanged` / `INotifyPropertyChanged` tracking, stable row keys, filtering |
 | **Sorting** | Multi-key sort with history, direction aware comparers, sort callback, configurable tap cycle |
 | **Selection** | None / single / multiple toggle, select all, selection by key |
 | **Editing** | Boolean cell toggle |

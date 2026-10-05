@@ -148,7 +148,8 @@ GridFonts.Fallbacks = [SKTypeface.FromStream(await FileSystem.OpenAppPackageFile
 | Member | Description |
 |---|---|
 | `GridDataView(IEnumerable source, Func<T, object?>? keySelector)` | Wraps the rows; the key keeps the selection stable across sorting and refreshes, and `INotifyCollectionChanged` / `INotifyPropertyChanged` sources are tracked |
-| `Count`, `this[int]`, `SelectedCount`, `SelectedItems`, `SortOrders`, `SelectionMode` | State for binding and logic |
+| `Count`, `this[int]`, `SourceCount`, `SelectedCount`, `SelectedItems`, `SortOrders`, `SelectionMode` | State for binding and logic; `Count` and the indexes cover the rows the filter keeps, `SourceCount` all rows |
+| `Filter` | `Func<T, bool>?` that hides the rows it rejects; it runs again on source and row changes, hidden rows lose their selection, and it survives `SetSource` like the sort. Hidden rows keep their place in the sort, so sort callbacks receive them as well |
 | `SetSelected`, `TryToggleSelection`, `SelectAll`, `ClearSelection`, `UpdateSelection(predicate)` | Selection API |
 | `RegisterSort(key, selector, comparer)`, `RegisterComparer(key, comparison)`, `SetSortCallback(keys, callback)` | Sort key registration; the callback variant delegates the sorting itself, for example to a database query |
 | `SortBy(key, cycle)`, `RestoreSortOrders(orders)`, `SaveSortOrders()` | Sort by a key following a `GridSortCycle` (ascending then descending when omitted) and persist the sort state |
