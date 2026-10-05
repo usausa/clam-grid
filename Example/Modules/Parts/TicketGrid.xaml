@@ -96,7 +96,7 @@
                      Width="100"
                      HeaderBackground="{StaticResource GridSortableColor}" />
     <clam:GridColumn Key="StartedDate"
-                     Header="対応開始日"
+                     Header="対応&#10;開始日"
                      Width="80"
                      Format="MM/dd"
                      Alignment="End"

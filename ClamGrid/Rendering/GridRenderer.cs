@@ -29,7 +29,9 @@ internal sealed class GridRenderer : IDisposable
     public int Measurements { get; private set; }
 
     // Includes every font resolved so far, so fonts found while measuring the headers and sample rows widen the automatic height
-    public double AutoRowHeight
+    public double AutoRowHeight => GetAutoHeight(1);
+
+    private float TextLineHeight
     {
         get
         {
@@ -39,7 +41,7 @@ internal sealed class GridRenderer : IDisposable
                 height = Math.Max(height, LineHeight(fonts));
             }
 
-            return Math.Ceiling(height + (style.VerticalPadding * 2));
+            return height;
         }
     }
 
@@ -66,7 +68,8 @@ internal sealed class GridRenderer : IDisposable
         for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++)
         {
             var column = columns[columnIndex];
-            var width = Measure(GetHeaderText(style, column, dataView), true);
+            var mark = GetHeaderMark(style, column, dataView);
+            var width = GetHeaderLines(column.Header).Max(line => Measure(style.SortMarkPosition == GridSortMarkPosition.End ? line + mark : mark + line, true));
             if (column.Width.Unit == GridColumnWidthUnit.Auto)
             {
                 for (var row = 0; row < Math.Min(sampleSize, items.Count); row++)
@@ -80,6 +83,9 @@ internal sealed class GridRenderer : IDisposable
 
         return GridColumnSizer.Resolve(specs, availableWidth);
     }
+
+    // Text lines with the vertical padding; a single line gives the automatic row height
+    public double GetAutoHeight(int lines) => Math.Ceiling((TextLineHeight * Math.Max(1, lines)) + (style.VerticalPadding * 2));
 
     public int Render(SKCanvas canvas, GridLayout layout, IReadOnlyList<GridColumn> columns, IReadOnlyList<object> items, IGridDataView? dataView, bool showRowHandles)
     {
@@ -112,7 +118,7 @@ internal sealed class GridRenderer : IDisposable
             var colors = new GridColors(selected ? style.SelectedTextColor : style.TextColor, selected ? style.SelectedBackground : style.RowHeaderBackground);
             colors = colors.Apply(style.RowHeaderColors?.Invoke(new GridRowHeaderColorContext(items[row], row, selected, colors)) ?? default);
             Fill(canvas, rect, colors.Background!);
-            DrawText(canvas, rect, GetRowHeaderText(style, items[row], row, selected), style.RowHeaderAlignment, false, colors.TextColor!);
+            DrawText(canvas, rect, GetRowHeaderText(style, items[row], row, selected), style.RowHeaderAlignment, colors.TextColor!);
             if (showRowHandles)
             {
                 paint.Color = colors.TextColor!.ToSKColor();
@@ -130,7 +136,7 @@ internal sealed class GridRenderer : IDisposable
         canvas.Restore();
         var corner = new GridRect(0, 0, layout.RowHeaderWidth, layout.HeaderHeight);
         Fill(canvas, corner, style.HeaderBackground);
-        DrawText(canvas, corner, style.CornerText, TextAlignment.Center, true, style.HeaderTextColor);
+        DrawHeaderText(canvas, corner, style.CornerText, String.Empty, style.HeaderTextColor);
         DrawLines(canvas, corner);
         DrawFrozenLine(canvas, layout);
         DrawScrollbars(canvas, layout);
@@ -170,7 +176,7 @@ internal sealed class GridRenderer : IDisposable
                 }
                 else
                 {
-                    DrawText(canvas, rect, GetCellText(definition, value), definition.Alignment, false, colors.TextColor!);
+                    DrawText(canvas, rect, GetCellText(definition, value), definition.Alignment, colors.TextColor!);
                 }
 
                 DrawLines(canvas, rect);
@@ -206,7 +212,7 @@ internal sealed class GridRenderer : IDisposable
             var colors = new GridColors(definition.HeaderTextColor ?? style.HeaderTextColor, background);
             colors = colors.Apply(style.ColumnHeaderColors?.Invoke(new GridColumnHeaderColorContext(definition, column, order, priority, colors)) ?? default);
             Fill(canvas, rect, colors.Background!);
-            DrawHeader(canvas, rect, definition, dataView, colors.TextColor!);
+            DrawHeaderText(canvas, rect, definition.Header, GetHeaderMark(style, definition, dataView), colors.TextColor!);
             DrawLines(canvas, rect);
         }
 
@@ -251,16 +257,20 @@ internal sealed class GridRenderer : IDisposable
     internal static string GetRowHeaderText(GridStyle style, object item, int rowIndex, bool selected) =>
         style.RowHeaderText?.Invoke(new GridRowHeaderTextContext(item, rowIndex, selected)) ?? (rowIndex + 1).ToString(CultureInfo.InvariantCulture);
 
-    internal static string GetHeaderText(GridStyle style, GridColumn column, IGridDataView? view)
+    // The sort mark with the space that separates it from the header text, or an empty string
+    internal static string GetHeaderMark(GridStyle style, GridColumn column, IGridDataView? view)
     {
         var mark = GetSortMark(style, column, view);
         if (String.IsNullOrEmpty(mark))
         {
-            return column.Header;
+            return String.Empty;
         }
 
-        return style.SortMarkPosition == GridSortMarkPosition.End ? $"{column.Header} {mark}" : $"{mark} {column.Header}";
+        return style.SortMarkPosition == GridSortMarkPosition.End ? " " + mark : mark + " ";
     }
+
+    // Header and corner texts break at every line break; body cells stay on one line
+    internal static string[] GetHeaderLines(string text) => text.ReplaceLineEndings("\n").Split('\n');
 
     // The primary key always gets a mark; secondary keys get a mark with their priority only with ShowSortPriority
     private static string GetSortMark(GridStyle style, GridColumn column, IGridDataView? view)
@@ -476,7 +486,7 @@ internal sealed class GridRenderer : IDisposable
         return result;
     }
 
-    private void DrawText(SKCanvas canvas, GridRect rect, string text, TextAlignment alignment, bool header, Color color)
+    private void DrawText(SKCanvas canvas, GridRect rect, string text, TextAlignment alignment, Color color)
     {
         var available = (float)rect.Width - (style.HorizontalPadding * 2);
         if (rect.IsEmpty || (available <= 0) || (text.Length == 0))
@@ -484,7 +494,7 @@ internal sealed class GridRenderer : IDisposable
             return;
         }
 
-        var run = GetText(Sanitize(text), available, header);
+        var run = GetText(Sanitize(text), available, false);
         if (run.Parts.Count == 0)
         {
             return;
@@ -498,39 +508,39 @@ internal sealed class GridRenderer : IDisposable
         };
         canvas.Save();
         canvas.ClipRect(ToSkRect(rect));
-        DrawRun(canvas, rect, run, x, header, color);
+        DrawRun(canvas, rect, run, x, false, color);
         canvas.Restore();
     }
 
-    // The sort mark is kept and only the header text is truncated when the header does not fit
-    private void DrawHeader(SKCanvas canvas, GridRect rect, GridColumn column, IGridDataView? view, Color color)
+    // Lines are centered one under another and truncated on their own; the sort mark stays whole beside them at the vertical center
+    private void DrawHeaderText(SKCanvas canvas, GridRect rect, string text, string mark, Color color)
     {
-        var mark = GetSortMark(style, column, view);
-        if (String.IsNullOrEmpty(mark))
-        {
-            DrawText(canvas, rect, column.Header, TextAlignment.Center, true, color);
-            return;
-        }
-
         var available = (float)rect.Width - (style.HorizontalPadding * 2);
         if (rect.IsEmpty || (available <= 0))
         {
             return;
         }
 
+        var markRun = mark.Length == 0 ? EmptyRun : GetText(mark, available, true);
+        var lines = markRun.Width < available ? GetHeaderLines(text).Select(line => line.Length == 0 ? EmptyRun : GetText(line, available - markRun.Width, true)).ToArray() : [];
+        var textWidth = lines.Length == 0 ? 0 : lines.Max(static line => line.Width);
         var end = style.SortMarkPosition == GridSortMarkPosition.End;
-        var markRun = GetText(end ? " " + mark : mark + " ", available, true);
-        var textRun = (markRun.Width < available) && (column.Header.Length > 0) ? GetText(Sanitize(column.Header), available - markRun.Width, true) : EmptyRun;
-        var first = end ? textRun : markRun;
-        var second = end ? markRun : textRun;
+        var left = rect.X + ((rect.Width - markRun.Width - textWidth) / 2);
+        var textLeft = end ? left : left + markRun.Width;
+        var lineHeight = (double)TextLineHeight;
+        var top = rect.Y + ((rect.Height - (lineHeight * lines.Length)) / 2);
         canvas.Save();
         canvas.ClipRect(ToSkRect(rect));
-        var x = DrawRun(canvas, rect, first, rect.X + ((rect.Width - first.Width - second.Width) / 2), true, color);
-        DrawRun(canvas, rect, second, x, true, color);
+        DrawRun(canvas, rect, markRun, end ? left + textWidth : left, true, color);
+        for (var i = 0; i < lines.Length; i++)
+        {
+            DrawRun(canvas, new GridRect(rect.X, top + (lineHeight * i), rect.Width, lineHeight), lines[i], textLeft + ((textWidth - lines[i].Width) / 2), true, color);
+        }
+
         canvas.Restore();
     }
 
-    private double DrawRun(SKCanvas canvas, GridRect rect, TextRun run, double x, bool header, Color color)
+    private void DrawRun(SKCanvas canvas, GridRect rect, TextRun run, double x, bool header, Color color)
     {
         var metrics = (header ? primary.HeaderFont : primary.Font).Metrics;
         var baseline = rect.Y + ((rect.Height - (metrics.Descent - metrics.Ascent)) / 2) - metrics.Ascent;
@@ -541,8 +551,6 @@ internal sealed class GridRenderer : IDisposable
             canvas.DrawText(part.Text, (float)x, (float)baseline, SKTextAlign.Left, part.Font, paint);
             x += part.Width;
         }
-
-        return x;
     }
 
     private void Fill(SKCanvas canvas, GridRect rect, Color color)

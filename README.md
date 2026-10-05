@@ -159,7 +159,7 @@ Messaging, navigation and screen controllers belong to the application.
 
 | Category | Detail |
 |---|---|
-| **Columns** | Auto / Absolute / Star width, minimum width, alignment, format string and value converter, frozen leading columns, static header and cell colors |
+| **Columns** | Auto / Absolute / Star width, minimum width, alignment, multi-line headers, format string and value converter, frozen leading columns, static header and cell colors |
 | **Column settings** | Visibility, order and saved widths, edit session for a settings screen, drag to resize |
 | **Data** | `INotifyCollectionChanged` / `INotifyPropertyChanged` tracking, stable row keys, filtering |
 | **Sorting** | Multi-key sort with history, direction aware comparers, sort callback, configurable tap cycle |

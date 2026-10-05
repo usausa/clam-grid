@@ -88,7 +88,7 @@ Scroll requests made before the grid has a size are kept, the latest one is appl
 | Name | Type | Default | Description |
 |---|---|---|---|
 | `Key` | `string` | `""` | Unique identifier used by `ColumnOrders`, `ValueAccessors` and sorting |
-| `Header` | `string` | `""` | Header text |
+| `Header` | `string` | `""` | Header text; line breaks (`&#10;` in XAML) split it into lines that are centered and truncated one by one |
 | `ValueAccessor` | `IGridValueAccessor` | unresolved | Typed getter and optional setter; resolved by `Key` from `ValueAccessors` when omitted |
 | `Width` | `GridColumnWidth` | `Auto` | `Auto`, `Absolute(dip)` or `Star(weight)`; in XAML `Auto`, `85`, `*` or `2*` |
 | `MinWidth` | `double` | `40` | Lower bound for resizing and star distribution |
@@ -125,10 +125,10 @@ The default colors follow the Material palette: Blue 700 header, Cyan 700 and Or
 | `FontFamily` | `string` | `monospace` | Primary font; missing characters are resolved through `GridFonts` |
 | `FontSize` | `float` | `16` | Font size in DIP |
 | `HorizontalPadding`, `VerticalPadding` | `float` | `8` | Cell padding in DIP |
-| `RowHeight`, `HeaderHeight` | `double?` | `null` | `null` derives the height from the primary font and the fallback fonts resolved while measuring |
+| `RowHeight`, `HeaderHeight` | `double?` | `null` | `null` derives the height from the primary font and the fallback fonts resolved while measuring; the header also counts the most lines among all column headers, hidden ones included, and the corner text |
 | `RowHeaderWidth` | `double` | `48` | Width of the row header |
 | `ShowColumnHeaders`, `ShowRowHeaders`, `ShowVerticalLines` | `bool` | `true` | Visibility of the headers and vertical lines |
-| `CornerText` | `string` | `#` | Text of the corner cell above the row headers |
+| `CornerText` | `string` | `#` | Text of the corner cell above the row headers; line breaks work as in column headers |
 | `RowHeaderAlignment` | `TextAlignment` | `End` | Alignment of the row header text |
 | `TextColor`, `Background`, `HeaderBackground`, `HeaderTextColor`, `RowHeaderBackground`, `GridLineColor`, `SelectedBackground`, `SelectedTextColor` | `Color` | | Base colors |
 | `AlternatingRowBackground` | `Color?` | `null` | Background of every second row in display order; the selection, `RowBackground` and the column background win, row headers keep their own color |

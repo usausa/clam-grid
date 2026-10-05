@@ -52,18 +52,18 @@ public sealed class GridRendererTests
         var style = new GridStyle();
 
         // Act
-        var primary = GridRenderer.GetHeaderText(style, Column("a"), view);
-        var secondary = GridRenderer.GetHeaderText(style, Column("b"), view);
-        var unsorted = GridRenderer.GetHeaderText(style, Column("c"), view);
-        var disabled = GridRenderer.GetHeaderText(style, Column("a") with { AllowSorting = false }, view);
-        var unbound = GridRenderer.GetHeaderText(style, Column("a"), null);
+        var primary = GridRenderer.GetHeaderMark(style, Column("a"), view);
+        var secondary = GridRenderer.GetHeaderMark(style, Column("b"), view);
+        var unsorted = GridRenderer.GetHeaderMark(style, Column("c"), view);
+        var disabled = GridRenderer.GetHeaderMark(style, Column("a") with { AllowSorting = false }, view);
+        var unbound = GridRenderer.GetHeaderMark(style, Column("a"), null);
 
         // Assert
-        Assert.Equal("↓ A", primary);
-        Assert.Equal("B", secondary);
-        Assert.Equal("C", unsorted);
-        Assert.Equal("A", disabled);
-        Assert.Equal("A", unbound);
+        Assert.Equal("↓ ", primary);
+        Assert.Equal(String.Empty, secondary);
+        Assert.Equal(String.Empty, unsorted);
+        Assert.Equal(String.Empty, disabled);
+        Assert.Equal(String.Empty, unbound);
     }
 
     [Fact]
@@ -74,14 +74,14 @@ public sealed class GridRendererTests
         var style = new GridStyle { AscendingSortMark = "▲", DescendingSortMark = "▼", SortMarkPosition = GridSortMarkPosition.End, ShowSortPriority = true };
 
         // Act
-        var primary = GridRenderer.GetHeaderText(style, Column("a"), view);
-        var secondary = GridRenderer.GetHeaderText(style, Column("b"), view);
-        var aliased = GridRenderer.GetHeaderText(style, Column("d") with { SortKey = "a" }, view);
+        var primary = GridRenderer.GetHeaderMark(style, Column("a"), view);
+        var secondary = GridRenderer.GetHeaderMark(style, Column("b"), view);
+        var aliased = GridRenderer.GetHeaderMark(style, Column("d") with { SortKey = "a" }, view);
 
         // Assert
-        Assert.Equal("A ▼1", primary);
-        Assert.Equal("B ▲2", secondary);
-        Assert.Equal("D ▼1", aliased);
+        Assert.Equal(" ▼1", primary);
+        Assert.Equal(" ▲2", secondary);
+        Assert.Equal(" ▼1", aliased);
     }
 
     [Fact]
@@ -92,24 +92,67 @@ public sealed class GridRendererTests
         var style = new GridStyle { AscendingSortMark = "▲", ShowSortPriority = true };
 
         // Act
-        var header = GridRenderer.GetHeaderText(style, Column("b"), view);
+        var mark = GridRenderer.GetHeaderMark(style, Column("b"), view);
 
         // Assert
-        Assert.Equal("▲ B", header);
+        Assert.Equal("▲ ", mark);
     }
 
     [Fact]
-    public void EmptyMarkLeavesTheHeaderUnchanged()
+    public void EmptyMarkAddsNoSpace()
     {
         // Arrange
         using var view = CreateView([new("a")]);
         var style = new GridStyle { AscendingSortMark = String.Empty };
 
         // Act
-        var header = GridRenderer.GetHeaderText(style, Column("a"), view);
+        var mark = GridRenderer.GetHeaderMark(style, Column("a"), view);
 
         // Assert
-        Assert.Equal("A", header);
+        Assert.Equal(String.Empty, mark);
+    }
+
+    [Fact]
+    public void HeaderLinesBreakAtEveryLineBreak()
+    {
+        // Act & Assert
+        Assert.Equal(["対応", "開始日"], GridRenderer.GetHeaderLines("対応\n開始日"));
+        Assert.Equal(["A", "B", "C"], GridRenderer.GetHeaderLines("A\r\nB\rC"));
+        Assert.Equal(["A", String.Empty], GridRenderer.GetHeaderLines("A\n"));
+        Assert.Equal([String.Empty], GridRenderer.GetHeaderLines(String.Empty));
+    }
+
+    [Fact]
+    public void MultiLineHeaderIsMeasuredByItsWidestLine()
+    {
+        // Arrange
+        using var renderer = new GridRenderer(new GridStyle());
+        var single = Column("a") with { Header = "WWWWWWWW" };
+
+        // Act
+        var widths = renderer.MeasureColumns([single, single with { Header = "W\nWWWWWWWW" }, single with { Header = "WWWWWWWW\nW" }], [], 1000, 0, null);
+
+        // Assert
+        Assert.True(widths[0] > single.MinWidth);
+        Assert.Equal(widths[0], widths[1]);
+        Assert.Equal(widths[0], widths[2]);
+    }
+
+    [Fact]
+    public void AutomaticHeightGrowsWithTheLines()
+    {
+        // Arrange
+        using var renderer = new GridRenderer(new GridStyle());
+
+        // Act
+        var one = renderer.GetAutoHeight(1);
+        var two = renderer.GetAutoHeight(2);
+
+        // Assert
+        Assert.Equal(renderer.AutoRowHeight, one);
+        Assert.Equal(one, renderer.GetAutoHeight(0));
+        Assert.True(two > one);
+        Assert.True(two < one * 2);
     }
 
     [Fact]

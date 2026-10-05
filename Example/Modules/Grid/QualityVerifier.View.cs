@@ -4,7 +4,7 @@ public sealed partial class QualityVerifier
 {
     private async Task VerifyViewAsync()
     {
-        report("表示検証: 絞り込み・スクロール位置・保存した列幅");
+        report("表示検証: 絞り込み・スクロール位置・保存した列幅・複数行の見出し");
         grid.ItemsSource = null;
         data?.Dispose();
         var scenario = ListScenario.All[0];
@@ -43,6 +43,14 @@ public sealed partial class QualityVerifier
         await NextFrameAsync(() => grid.ColumnOrders = null).ConfigureAwait(true);
         Check("widths: default orders restore the declared width", grid.Columns[1].Width.Equals(declared) && grid.ColumnOrders.All(static order => order.Width is null));
 
+        var lastKey = grid.ColumnDefinitions[^1].Key;
+        var single = HeaderBottom();
+        await NextFrameAsync(() => grid.ColumnDefinitions[^1] = grid.ColumnDefinitions[^1] with { Header = "二行の\n見出し" }).ConfigureAwait(true);
+        var doubled = HeaderBottom();
+        Check("header: two lines make the header taller", doubled > single);
+        await NextFrameAsync(() => grid.ColumnOrders = grid.ColumnOrders.Select(order => order.Key == lastKey ? order with { IsVisible = false } : order).ToArray()).ConfigureAwait(true);
+        Check("header: a hidden two line header keeps the height", HeaderBottom() == doubled);
+
         host.Content = null;
         grid.Dispose();
         grid.Handler?.DisconnectHandler();
@@ -52,5 +60,8 @@ public sealed partial class QualityVerifier
         Check("scroll: request before the first layout is accepted", grid.ScrollIntoView(400, null, ScrollToPosition.Start) && grid.ScrollY.Equals(0d));
         frame = await NextFrameAsync(() => host.Content = grid).ConfigureAwait(true);
         Check("scroll: kept request is applied by the first layout", frame.Rows.Start == 400);
+        return;
+
+        int HeaderBottom() => Enumerable.Range(0, 400).First(y => grid.HitTest(10, y).CellType != GridCellType.ColumnHeader);
     }
 }
