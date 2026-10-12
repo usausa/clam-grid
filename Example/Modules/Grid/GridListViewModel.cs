@@ -122,7 +122,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
         ColumnConfigurationCommand = MakeAsyncCommand<GridColumnConfigurationEventArgs>(_ => OpenColumnSettingsAsync(), _ => IsIdle);
         ScrollTopCommand = MakeDelegateCommand(() => Grid.ScrollIntoView(0, 0), () => IsIdle);
         ScrollEndCommand = MakeDelegateCommand(() => Grid.ScrollIntoView(Rows.Count - 1, Grid.VisibleColumnCount - 1), () => IsIdle);
-        FontCommand = MakeDelegateCommand(() => GridStyle = CreateStyle(GridStyle.FontSize.Equals(16f) ? 22 : 16), () => IsIdle);
+        FontCommand = MakeDelegateCommand(() => GridStyle = CreateStyle(GridStyle.FontSize.Equals(16d) ? 22 : 16), () => IsIdle);
         ActionCommand = MakeAsyncCommand(ExecuteActionAsync, () => IsIdle);
 
         Load();
@@ -203,7 +203,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
     // Operation
     //--------------------------------------------------------------------------------
 
-    private static GridStyle CreateStyle(float fontSize) => new()
+    private static GridStyle CreateStyle(double fontSize) => new()
     {
         FontSize = fontSize,
         RowHeaderWidth = fontSize > 16 ? 88 : 72,

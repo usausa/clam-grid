@@ -5,11 +5,11 @@ public sealed record GridStyle
 {
     public string FontFamily { get; set; } = "monospace";
 
-    public float FontSize { get; set; } = 16;
+    public double FontSize { get; set; } = 16;
 
-    public float HorizontalPadding { get; set; } = 8;
+    public double HorizontalPadding { get; set; } = 8;
 
-    public float VerticalPadding { get; set; } = 8;
+    public double VerticalPadding { get; set; } = 8;
 
     public double? RowHeight { get; set; }
 
@@ -82,7 +82,7 @@ public sealed record GridStyle
 
     internal void Validate()
     {
-        if (!Single.IsFinite(FontSize) || (FontSize <= 0) || !Single.IsFinite(HorizontalPadding) || (HorizontalPadding < 0) || !Single.IsFinite(VerticalPadding) || (VerticalPadding < 0))
+        if (!Double.IsFinite(FontSize) || (FontSize <= 0) || !Double.IsFinite(HorizontalPadding) || (HorizontalPadding < 0) || !Double.IsFinite(VerticalPadding) || (VerticalPadding < 0))
         {
             throw new ArgumentException("Font size and padding must be valid finite values.");
         }

@@ -45,7 +45,7 @@ public sealed partial class GridColorViewModel : AppViewModelBase
 
     protected override Task OnNotifyFunction2()
     {
-        GridStyle = CreateStyle(GridStyle.FontSize.Equals(16f) ? 22 : 16);
+        GridStyle = CreateStyle(GridStyle.FontSize.Equals(16d) ? 22 : 16);
         Status = $"文字サイズ: {GridStyle.FontSize}";
         return Task.CompletedTask;
     }
@@ -69,7 +69,7 @@ public sealed partial class GridColorViewModel : AppViewModelBase
     // Style
     //--------------------------------------------------------------------------------
 
-    private GridStyle CreateStyle(float fontSize) => new()
+    private GridStyle CreateStyle(double fontSize) => new()
     {
         FontSize = fontSize,
         RowHeaderWidth = fontSize > 16 ? 64 : 48,

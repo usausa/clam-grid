@@ -16,7 +16,7 @@ public sealed class GridStyleTests
         // Act & Assert
         Assert.Throws<ArgumentNullException>(static () => GridStyle.ValidateValue(null));
         Assert.Throws<ArgumentException>(static () => GridStyle.ValidateValue(new GridStyle { FontSize = 0 }));
-        Assert.Throws<ArgumentException>(static () => GridStyle.ValidateValue(new GridStyle { VerticalPadding = Single.NaN }));
+        Assert.Throws<ArgumentException>(static () => GridStyle.ValidateValue(new GridStyle { VerticalPadding = Double.NaN }));
         Assert.Throws<ArgumentException>(static () => GridStyle.ValidateValue(new GridStyle { RowHeight = 0 }));
         Assert.Throws<ArgumentException>(static () => GridStyle.ValidateValue(new GridStyle { HeaderHeight = Double.PositiveInfinity }));
         Assert.Throws<ArgumentException>(static () => GridStyle.ValidateValue(new GridStyle { RowHeaderWidth = -1 }));
@@ -26,7 +26,7 @@ public sealed class GridStyleTests
     public void InvalidSizesAreRejectedWhenTheRendererIsCreated()
     {
         // Act & Assert
-        Assert.Throws<ArgumentException>(static () => new GridRenderer(new GridStyle { FontSize = Single.NaN }));
+        Assert.Throws<ArgumentException>(static () => new GridRenderer(new GridStyle { FontSize = Double.NaN }));
         Assert.Throws<ArgumentException>(static () => new GridRenderer(new GridStyle { RowHeight = -1 }));
     }
 }

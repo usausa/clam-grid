@@ -125,8 +125,8 @@ The default colors follow the Material palette: Blue 700 header, Cyan 700 and Or
 | Name | Type | Default | Description |
 |---|---|---|---|
 | `FontFamily` | `string` | `monospace` | Primary font; missing characters are resolved through `FallbackFonts` of SkiaExtension |
-| `FontSize` | `float` | `16` | Font size in DIP |
-| `HorizontalPadding`, `VerticalPadding` | `float` | `8` | Cell padding in DIP |
+| `FontSize` | `double` | `16` | Font size in DIP |
+| `HorizontalPadding`, `VerticalPadding` | `double` | `8` | Cell padding in DIP |
 | `RowHeight`, `HeaderHeight` | `double?` | `null` | `null` derives the height from the primary font and the fallback fonts resolved while measuring; the header also counts the most lines among all column headers, hidden ones included, and the corner text |
 | `RowHeaderWidth` | `double` | `48` | Width of the row header |
 | `ColumnHeadersVisible`, `RowHeadersVisible`, `VerticalLinesVisible` | `bool` | `true` | Visibility of the headers and vertical lines |

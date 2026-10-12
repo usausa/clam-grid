@@ -15,6 +15,7 @@ internal sealed class GridRenderer : IDisposable
 
     private readonly GridStyle style;
     private readonly FontResolver fonts;
+    private readonly float fontSize;
     private readonly SKPaint paint = new() { IsAntialias = true };
     private readonly Dictionary<string, string[]> headerLines = [with(StringComparer.Ordinal)];
     private readonly Dictionary<(bool Descending, int Number), string> headerMarks = [];
@@ -26,13 +27,14 @@ internal sealed class GridRenderer : IDisposable
     // Includes every font resolved so far, so fonts found while measuring the headers and sample rows widen the automatic height
     public double AutoRowHeight => GetAutoHeight(1);
 
-    private float TextLineHeight => fonts.GetMaxLineHeight(style.FontSize, false);
+    private float TextLineHeight => fonts.GetMaxLineHeight(fontSize, false);
 
     public GridRenderer(GridStyle style)
     {
         style.Validate();
         this.style = style;
         fonts = new FontResolver(style.FontFamily);
+        fontSize = (float)style.FontSize;
     }
 
     public static string GetCellText(GridColumn column, object? value) =>
@@ -285,17 +287,17 @@ internal sealed class GridRenderer : IDisposable
 
     private static SKRect ToSkRect(GridRect rect) => new((float)rect.X, (float)rect.Y, (float)rect.Right, (float)rect.Bottom);
 
-    private float Measure(string text, bool header) => fonts.CreateText(text, style.FontSize, header).Width;
+    private float Measure(string text, bool header) => fonts.CreateText(text, fontSize, header).Width;
 
     private void DrawText(SKCanvas canvas, GridRect rect, string text, TextAlignment alignment, Color color)
     {
-        var available = (float)rect.Width - (style.HorizontalPadding * 2);
+        var available = (float)(rect.Width - (style.HorizontalPadding * 2));
         if (rect.IsEmpty || (available <= 0) || (text.Length == 0))
         {
             return;
         }
 
-        var drawableText = fonts.CreateText(text, style.FontSize, false, available);
+        var drawableText = fonts.CreateText(text, fontSize, false, available);
         if (drawableText.Segments.Count == 0)
         {
             return;
@@ -307,7 +309,7 @@ internal sealed class GridRenderer : IDisposable
             TextAlignment.End => (rect.Right - style.HorizontalPadding, SKTextAlign.Right),
             _ => (rect.X + style.HorizontalPadding, SKTextAlign.Left)
         };
-        var baseline = fonts.GetMetrics(style.FontSize, false).GetCenterBaseline((float)rect.CenterY);
+        var baseline = fonts.GetMetrics(fontSize, false).GetCenterBaseline((float)rect.CenterY);
         paint.Style = SKPaintStyle.Fill;
         paint.Color = color.ToSKColor();
         canvas.Save();
@@ -319,19 +321,19 @@ internal sealed class GridRenderer : IDisposable
     // Lines are centered one under another and truncated on their own; the sort mark stays whole beside them at the vertical center
     private void DrawHeaderText(SKCanvas canvas, GridRect rect, string text, string mark, Color color)
     {
-        var available = (float)rect.Width - (style.HorizontalPadding * 2);
+        var available = (float)(rect.Width - (style.HorizontalPadding * 2));
         if (rect.IsEmpty || (available <= 0))
         {
             return;
         }
 
-        var markText = fonts.CreateText(mark, style.FontSize, true, available);
+        var markText = fonts.CreateText(mark, fontSize, true, available);
         var lines = markText.Width < available ? GetCachedHeaderLines(text) : [];
         var lineWidth = available - markText.Width;
         var textWidth = 0f;
         foreach (var line in lines)
         {
-            textWidth = Math.Max(textWidth, fonts.CreateText(line, style.FontSize, true, lineWidth).Width);
+            textWidth = Math.Max(textWidth, fonts.CreateText(line, fontSize, true, lineWidth).Width);
         }
 
         var end = style.SortMarkPosition == GridSortMarkPosition.End;
@@ -339,7 +341,7 @@ internal sealed class GridRenderer : IDisposable
         var textLeft = end ? left : left + markText.Width;
         var lineHeight = (double)TextLineHeight;
         var top = rect.Y + ((rect.Height - (lineHeight * lines.Length)) / 2);
-        var metrics = fonts.GetMetrics(style.FontSize, true);
+        var metrics = fonts.GetMetrics(fontSize, true);
         paint.Style = SKPaintStyle.Fill;
         paint.Color = color.ToSKColor();
         canvas.Save();
@@ -347,7 +349,7 @@ internal sealed class GridRenderer : IDisposable
         canvas.DrawText(markText, (float)(end ? left + textWidth : left), metrics.GetCenterBaseline((float)rect.CenterY), SKTextAlign.Left, paint);
         for (var i = 0; i < lines.Length; i++)
         {
-            canvas.DrawText(fonts.CreateText(lines[i], style.FontSize, true, lineWidth), (float)(textLeft + (textWidth / 2)), metrics.GetCenterBaseline((float)(top + (lineHeight * (i + 0.5)))), SKTextAlign.Center, paint);
+            canvas.DrawText(fonts.CreateText(lines[i], fontSize, true, lineWidth), (float)(textLeft + (textWidth / 2)), metrics.GetCenterBaseline((float)(top + (lineHeight * (i + 0.5)))), SKTextAlign.Center, paint);
         }
 
         canvas.Restore();
