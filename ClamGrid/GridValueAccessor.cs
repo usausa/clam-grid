@@ -3,10 +3,6 @@ namespace ClamGrid;
 public sealed class GridValueAccessor<TItem, TValue> : IGridValueAccessor
     where TItem : class
 {
-    private static readonly object BoxedTrue = true;
-
-    private static readonly object BoxedFalse = false;
-
     private readonly Func<TItem, TValue> getter;
 
     private readonly Action<TItem, TValue>? setter;
@@ -29,7 +25,7 @@ public sealed class GridValueAccessor<TItem, TValue> : IGridValueAccessor
         var value = getter(RequireItem(item));
         if (typeof(TValue) == typeof(bool))
         {
-            return (bool)(object)value! ? BoxedTrue : BoxedFalse;
+            return GridBooleanBox.Box((bool)(object)value!);
         }
 
         return value;
