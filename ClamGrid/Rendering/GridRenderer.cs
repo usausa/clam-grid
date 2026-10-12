@@ -25,6 +25,7 @@ internal sealed class GridRenderer : IDisposable
     private readonly Dictionary<int, FontSet> fallbackByCodepoint = [];
     private readonly SKPaint paint = new() { IsAntialias = true };
     private readonly Dictionary<(string Text, float Width, bool Header), TextRun> textCache = [];
+    private readonly Dictionary<string, GridTextFormat> textFormats = [with(StringComparer.Ordinal)];
 
     public int Measurements { get; private set; }
 
@@ -54,13 +55,24 @@ internal sealed class GridRenderer : IDisposable
         fallbacks = GridFonts.Fallbacks.Select(typeface => new FontSet(typeface, style.FontSize, false)).ToArray();
     }
 
-    public static string FormatValue(object? value, string? format) =>
-        !String.IsNullOrEmpty(format) && (value is IFormattable formattable)
-            ? formattable.ToString(format, CultureInfo.CurrentCulture)
-            : Convert.ToString(value, CultureInfo.CurrentCulture) ?? String.Empty;
+    public static string GetCellText(GridColumn column, GridTextFormat format, object? value) =>
+        format.Format(column.Converter is { } converter ? converter.Convert(value, typeof(string), null, CultureInfo.CurrentCulture) : value, CultureInfo.CurrentCulture);
 
-    public static string GetCellText(GridColumn column, object? value) =>
-        FormatValue(column.Converter is { } converter ? converter.Convert(value, typeof(string), null, CultureInfo.CurrentCulture) : value, column.Format);
+    public GridTextFormat GetFormat(string? format)
+    {
+        if (String.IsNullOrEmpty(format))
+        {
+            return GridTextFormat.Default;
+        }
+
+        if (!textFormats.TryGetValue(format, out var parsed))
+        {
+            parsed = GridTextFormat.Parse(format);
+            textFormats[format] = parsed;
+        }
+
+        return parsed;
+    }
 
     public double[] MeasureColumns(IReadOnlyList<GridColumn> columns, IReadOnlyList<object> items, double availableWidth, int sampleSize, IGridDataView? dataView)
     {
@@ -72,9 +84,10 @@ internal sealed class GridRenderer : IDisposable
             var width = GetHeaderLines(column.Header).Max(line => Measure(style.SortMarkPosition == GridSortMarkPosition.End ? line + mark : mark + line, true));
             if (column.Width.Unit == GridColumnWidthUnit.Auto)
             {
+                var format = GetFormat(column.Format);
                 for (var row = 0; row < Math.Min(sampleSize, items.Count); row++)
                 {
-                    width = Math.Max(width, column.IsBoolean ? 24 : Measure(GetCellText(column, column.ValueAccessor.GetValue(items[row])), false));
+                    width = Math.Max(width, column.IsBoolean ? 24 : Measure(GetCellText(column, format, column.ValueAccessor.GetValue(items[row])), false));
                 }
             }
 
@@ -151,6 +164,12 @@ internal sealed class GridRenderer : IDisposable
             return 0;
         }
 
+        var formats = new GridTextFormat[range.Count];
+        for (var column = range.Start; column < range.End; column++)
+        {
+            formats[column - range.Start] = GetFormat(columns[column].Format);
+        }
+
         var rendered = 0;
         canvas.Save();
         canvas.ClipRect(ToSkRect(clip));
@@ -176,7 +195,7 @@ internal sealed class GridRenderer : IDisposable
                 }
                 else
                 {
-                    DrawText(canvas, rect, GetCellText(definition, value), definition.Alignment, colors.TextColor!);
+                    DrawText(canvas, rect, GetCellText(definition, formats[column - range.Start], value), definition.Alignment, colors.TextColor!);
                 }
 
                 DrawLines(canvas, rect);
@@ -272,17 +291,17 @@ internal sealed class GridRenderer : IDisposable
     // Header and corner texts break at every line break; body cells stay on one line
     internal static string[] GetHeaderLines(string text) => text.ReplaceLineEndings("\n").Split('\n');
 
-    // The primary key always gets a mark; secondary keys get a mark with their priority only with ShowSortPriority
+    // The primary key always gets a mark; secondary keys get a mark with their priority only with SortPriorityVisible
     private static string GetSortMark(GridStyle style, GridColumn column, IGridDataView? view)
     {
         var priority = GetSortPriority(column, view);
-        if ((priority < 0) || ((priority > 0) && !style.ShowSortPriority))
+        if ((priority < 0) || ((priority > 0) && !style.SortPriorityVisible))
         {
             return String.Empty;
         }
 
         var mark = view!.SortOrders[priority].Descending ? style.DescendingSortMark : style.AscendingSortMark;
-        return style.ShowSortPriority && (view.SortOrders.Count > 1) ? mark + (priority + 1).ToString(CultureInfo.InvariantCulture) : mark;
+        return style.SortPriorityVisible && (view.SortOrders.Count > 1) ? mark + (priority + 1).ToString(CultureInfo.InvariantCulture) : mark;
     }
 
     private static SKRect ToSkRect(GridRect rect) => new((float)rect.X, (float)rect.Y, (float)rect.Right, (float)rect.Bottom);
@@ -581,7 +600,7 @@ internal sealed class GridRenderer : IDisposable
         paint.StrokeWidth = 0.5f;
         paint.Color = style.GridLineColor.ToSKColor();
         canvas.DrawLine((float)rect.X, (float)rect.Bottom, (float)rect.Right, (float)rect.Bottom, paint);
-        if (style.ShowVerticalLines)
+        if (style.VerticalLinesVisible)
         {
             canvas.DrawLine((float)rect.Right, (float)rect.Y, (float)rect.Right, (float)rect.Bottom, paint);
         }

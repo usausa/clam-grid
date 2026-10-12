@@ -4,7 +4,7 @@ internal static class ScenarioGridFactory
 {
     public static GridStyle CreateStyle(ListScenario scenario) => new()
     {
-        ShowRowHeaders = false,
+        RowHeadersVisible = false,
         FontFamily = "monospace",
         TextColor = Colors.Black,
         HeaderTextColor = Colors.White,

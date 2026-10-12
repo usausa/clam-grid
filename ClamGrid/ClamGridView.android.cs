@@ -8,7 +8,7 @@ public partial class ClamGridView
     {
         if (!disposed && (Handler?.PlatformView is Android.Views.View view))
         {
-            platform = new GridPlatformBridge(view, this);
+            platform = new GridPlatformBridge(view, () => CancelInput(true));
         }
     }
 }

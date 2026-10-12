@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-                    xmlns:clam="clr-namespace:ClamGrid;assembly=ClamGrid"
-                    xmlns:helpers="clr-namespace:Example.Modules.Helpers">
+                    xmlns:helpers="clr-namespace:Example.Modules.Helpers"
+                    xmlns:clam="clr-namespace:ClamGrid;assembly=ClamGrid">
 
     <!-- ================================================================================ -->
     <!-- Value -->
@@ -338,27 +338,19 @@
     <!-- Grid -->
     <!-- ================================================================================ -->
 
-    <!-- 一覧グリッドの描画スタイル。部品側で GridStyle="{StaticResource ListGridStyle}" として指定する -->
+    <!-- Grid style declared as a resource; the list grids refer to it with GridStyle="{StaticResource ListGridStyle}" -->
     <clam:GridStyle x:Key="ListGridStyle"
                     FontFamily="monospace"
-                    ShowRowHeaders="False"
                     TextColor="Black"
-                    Background="White"
-                    HeaderTextColor="White"
-                    HeaderBackground="#424242"
-                    GridLineColor="Gray"
-                    AscendingHeaderBackground="#1565C0"
-                    DescendingHeaderBackground="#EF6C00"
-                    AscendingSortMark="▲"
-                    DescendingSortMark="▼" />
+                    AscendingHeaderBackground="#1565C0" AscendingSortMark="▲" Background="White" DescendingHeaderBackground="#EF6C00"
+                    DescendingSortMark="▼" GridLineColor="Gray" HeaderBackground="#424242" HeaderTextColor="White"
+                    RowHeadersVisible="False" />
 
-    <!-- 行の状態色 -->
+    <!-- Row colors by status -->
     <helpers:StatusColorSelector x:Key="StatusColorSelector"
-                                         PendingColor="#B3E5FC"
-                                         ActiveColor="#FFF59D"
-                                         CompletedColor="#F8BBD0" />
+                                 ActiveColor="#FFF59D" CompletedColor="#F8BBD0" PendingColor="#B3E5FC" />
 
-    <!-- 一覧グリッドの共通設定 -->
+    <!-- Common settings of the list grids -->
     <Style x:Key="ListGrid"
            TargetType="clam:ClamGridView">
         <Setter Property="IsReadOnly" Value="True" />

@@ -5,13 +5,13 @@ using Android.Views;
 internal sealed class GridPlatformBridge : IGridPlatformBridge
 {
     private readonly View view;
-    private readonly ClamGridView grid;
+    private readonly Action cancel;
     private ViewTreeObserver? windowObserver;
 
-    public GridPlatformBridge(View view, ClamGridView grid)
+    public GridPlatformBridge(View view, Action cancel)
     {
         this.view = view;
-        this.grid = grid;
+        this.cancel = cancel;
         view.ViewAttachedToWindow += OnAttached;
         view.ViewDetachedFromWindow += OnDetached;
         if (view.IsAttachedToWindow)
@@ -34,7 +34,7 @@ internal sealed class GridPlatformBridge : IGridPlatformBridge
     private void OnDetached(object? sender, View.ViewDetachedFromWindowEventArgs e)
     {
         DetachWindowObserver();
-        grid.CancelInput(true);
+        cancel();
     }
 
     private void AttachWindowObserver()
@@ -62,7 +62,7 @@ internal sealed class GridPlatformBridge : IGridPlatformBridge
     {
         if (!e.HasFocus)
         {
-            grid.CancelInput(true);
+            cancel();
         }
     }
 }

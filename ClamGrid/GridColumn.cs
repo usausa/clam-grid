@@ -15,7 +15,7 @@ public sealed record GridColumn
 
     public TextAlignment Alignment { get; set; }
 
-    // Format string applied to IFormattable values such as "N0" or "yyyy/MM/dd"; strings and booleans are not affected
+    // Composite format applied to any value when it contains '{' such as "{0:N0} pcs", otherwise a format string applied to IFormattable values such as "N0" or "yyyy/MM/dd"
     public string? Format { get; set; }
 
     public IValueConverter? Converter { get; set; }

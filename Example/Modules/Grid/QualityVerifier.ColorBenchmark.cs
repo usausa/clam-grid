@@ -5,7 +5,7 @@ public sealed partial class QualityVerifier
     private async Task BenchmarkColorsAsync()
     {
         report("50,000行: 条件色コールバックの描画負荷");
-        var baseline = grid.GridStyle with { ShowRowHeaders = true, RowHeaderWidth = 48 };
+        var baseline = grid.GridStyle with { RowHeadersVisible = true, RowHeaderWidth = 48 };
         var warning = new GridColors(Colors.DarkRed, Colors.MistyRose);
         var header = new GridColors(Colors.Yellow, Colors.DarkSlateBlue);
         foreach (var enabled in new[] { false, true })

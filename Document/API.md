@@ -59,6 +59,7 @@
 | `ScrollIntoViewByKey(object key, ScrollToPosition position = MakeVisible)` | `bool` | Scrolls only vertically to the row with the key; `false` when no shown row has it |
 | `HitTest(double x, double y)` | `GridHit` | Resolves the cell at the position in DIP |
 | `CancelInteraction()` | `void` | Stops the current gesture and inertia |
+| `Invalidate()` | `void` | Recreates the renderer and the layout and redraws after the content of `GridStyle` was changed in place |
 | `InvalidateSurface()` | `void` | Redraws the grid |
 | `Dispose()` | `void` | Releases the data view subscriptions, timers and native resources |
 
@@ -93,7 +94,7 @@ Scroll requests made before the grid has a size are kept, the latest one is appl
 | `Width` | `GridColumnWidth` | `Auto` | `Auto`, `Absolute(dip)` or `Star(weight)`; in XAML `Auto`, `85`, `*` or `2*` |
 | `MinWidth` | `double` | `40` | Lower bound for resizing and star distribution |
 | `Alignment` | `TextAlignment` | `Start` | Cell text alignment |
-| `Format` | `string?` | `null` | .NET format string applied to `IFormattable` values (`N0`, `D6`, `yyyy/MM/dd`) |
+| `Format` | `string?` | `null` | Composite format applied to any value when it contains `{` (`{0:N0} pcs`, `{0} san`), otherwise a .NET format string applied to `IFormattable` values (`N0`, `D6`, `yyyy/MM/dd`) |
 | `Converter` | `IValueConverter?` | `null` | Runs on the cell value before `Format` when a text cell is painted; boolean cells, sorting and editing use the raw value |
 | `HeaderBackground`, `HeaderTextColor`, `TextColor`, `Background` | `Color?` | `null` | Static colors; `null` falls back to `GridStyle` |
 | `IsBoolean` | `bool` | `false` | Draws a check box and toggles the value on tap |
@@ -117,7 +118,8 @@ Editing `Columns` directly changes the definitions; an edit that changes the wid
 ## 🎨 GridStyle
 
 A style can be a XAML resource.  
-Treat it as immutable once assigned and replace it with a `with` expression to change it.  
+Treat it as immutable once assigned and replace it with a `with` expression to change it, or call `Invalidate()` after changing it in place.  
+Invalid sizes throw `ArgumentException` when the style is assigned or `Invalidate()` is called, and `null` throws `ArgumentNullException`.  
 The default colors follow the Material palette: Blue 700 header, Cyan 700 and Orange 700 for the sorted column, Blue 100 selection and Gray tints.  
 
 | Name | Type | Default | Description |
@@ -127,7 +129,7 @@ The default colors follow the Material palette: Blue 700 header, Cyan 700 and Or
 | `HorizontalPadding`, `VerticalPadding` | `float` | `8` | Cell padding in DIP |
 | `RowHeight`, `HeaderHeight` | `double?` | `null` | `null` derives the height from the primary font and the fallback fonts resolved while measuring; the header also counts the most lines among all column headers, hidden ones included, and the corner text |
 | `RowHeaderWidth` | `double` | `48` | Width of the row header |
-| `ShowColumnHeaders`, `ShowRowHeaders`, `ShowVerticalLines` | `bool` | `true` | Visibility of the headers and vertical lines |
+| `ColumnHeadersVisible`, `RowHeadersVisible`, `VerticalLinesVisible` | `bool` | `true` | Visibility of the headers and vertical lines |
 | `CornerText` | `string` | `#` | Text of the corner cell above the row headers; line breaks work as in column headers |
 | `RowHeaderAlignment` | `TextAlignment` | `End` | Alignment of the row header text |
 | `TextColor`, `Background`, `HeaderBackground`, `HeaderTextColor`, `RowHeaderBackground`, `GridLineColor`, `SelectedBackground`, `SelectedTextColor` | `Color` | | Base colors |
@@ -136,7 +138,7 @@ The default colors follow the Material palette: Blue 700 header, Cyan 700 and Or
 | `AscendingHeaderBackground`, `DescendingHeaderBackground` | `Color` | | Header background of the primary sort key |
 | `AscendingSortMark`, `DescendingSortMark` | `string` | `↑`, `↓` | Text drawn next to the header of a sorted column; kept when the header text is truncated |
 | `SortMarkPosition` | `GridSortMarkPosition` | `Start` | `Start` draws the mark before the header text, `End` after it |
-| `ShowSortPriority` | `bool` | `false` | With several sort keys, marks the secondary keys too and appends the priority (`▲2`) |
+| `SortPriorityVisible` | `bool` | `false` | With several sort keys, marks the secondary keys too and appends the priority (`▲2`) |
 | `RowBackground` | `Func<object, Color?>?` | `null` | Row background by item |
 | `RowHeaderText` | `Func<GridRowHeaderTextContext, string?>?` | `null` | Row header text by item and selection state; `null` falls back to the row number |
 | `CellColors`, `ColumnHeaderColors`, `RowHeaderColors` | callback | `null` | Per cell and per header colors with the item, column, sort state and default colors in the context |

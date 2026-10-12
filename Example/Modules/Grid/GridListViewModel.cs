@@ -210,7 +210,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
         AscendingSortMark = "▲",
         DescendingSortMark = "▼",
         SortMarkPosition = GridSortMarkPosition.End,
-        ShowSortPriority = true,
+        SortPriorityVisible = true,
         CornerText = "No.",
         RowHeaderText = static context => context.IsSelected ? "✓" : null,
         RowBackground = static x => x is SampleRow { IsDiscontinued: true } ? SampleColumns.DiscontinuedBackground : null,

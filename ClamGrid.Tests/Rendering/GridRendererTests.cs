@@ -6,14 +6,15 @@ public sealed class GridRendererTests
     public void FormatStringAppliesToFormattableValuesOnly()
     {
         // Arrange
+        var column = Column("a");
         var date = new DateTime(2026, 9, 13, 8, 5, 0);
 
         // Act
-        var number = GridRenderer.FormatValue(1234, "D6");
-        var formattedDate = GridRenderer.FormatValue(date, "yyyyMMdd");
-        var text = GridRenderer.FormatValue("text", "D6");
-        var nothing = GridRenderer.FormatValue(null, "D6");
-        var unformatted = GridRenderer.FormatValue(1234, null);
+        var number = GridRenderer.GetCellText(column, GridTextFormat.Parse("D6"), 1234);
+        var formattedDate = GridRenderer.GetCellText(column, GridTextFormat.Parse("yyyyMMdd"), date);
+        var text = GridRenderer.GetCellText(column, GridTextFormat.Parse("D6"), "text");
+        var nothing = GridRenderer.GetCellText(column, GridTextFormat.Parse("D6"), null);
+        var unformatted = GridRenderer.GetCellText(column, GridTextFormat.Default, 1234);
 
         // Assert
         Assert.Equal("001234", number);
@@ -24,18 +25,37 @@ public sealed class GridRendererTests
     }
 
     [Fact]
+    public void FormatsAreParsedOncePerRenderer()
+    {
+        // Arrange
+        using var renderer = new GridRenderer(new GridStyle());
+
+        // Act
+        var first = renderer.GetFormat("{0:N0} pcs");
+        var second = renderer.GetFormat("{0:N0} pcs");
+        var other = renderer.GetFormat("N0");
+
+        // Assert
+        Assert.Same(first, second);
+        Assert.NotSame(first, other);
+        Assert.Same(GridTextFormat.Default, renderer.GetFormat(null));
+        Assert.Same(GridTextFormat.Default, renderer.GetFormat(String.Empty));
+    }
+
+    [Fact]
     public void ConverterRunsBeforeTheFormatString()
     {
         // Arrange
         var plain = Column("a") with { Format = "D6" };
         var scaled = plain with { Converter = new ScaleConverter() };
         var marked = plain with { Converter = new MarkConverter() };
+        var format = GridTextFormat.Parse(plain.Format);
 
         // Act
-        var formatted = GridRenderer.GetCellText(plain, 12);
-        var converted = GridRenderer.GetCellText(scaled, 12);
-        var text = GridRenderer.GetCellText(marked, 12);
-        var nothing = GridRenderer.GetCellText(marked, null);
+        var formatted = GridRenderer.GetCellText(plain, format, 12);
+        var converted = GridRenderer.GetCellText(scaled, format, 12);
+        var text = GridRenderer.GetCellText(marked, format, 12);
+        var nothing = GridRenderer.GetCellText(marked, format, null);
 
         // Assert
         Assert.Equal("000012", formatted);
@@ -71,7 +91,7 @@ public sealed class GridRendererTests
     {
         // Arrange
         using var view = CreateView([new("a", true), new("b")]);
-        var style = new GridStyle { AscendingSortMark = "▲", DescendingSortMark = "▼", SortMarkPosition = GridSortMarkPosition.End, ShowSortPriority = true };
+        var style = new GridStyle { AscendingSortMark = "▲", DescendingSortMark = "▼", SortMarkPosition = GridSortMarkPosition.End, SortPriorityVisible = true };
 
         // Act
         var primary = GridRenderer.GetHeaderMark(style, Column("a"), view);
@@ -89,7 +109,7 @@ public sealed class GridRendererTests
     {
         // Arrange
         using var view = CreateView([new("b")]);
-        var style = new GridStyle { AscendingSortMark = "▲", ShowSortPriority = true };
+        var style = new GridStyle { AscendingSortMark = "▲", SortPriorityVisible = true };
 
         // Act
         var mark = GridRenderer.GetHeaderMark(style, Column("b"), view);

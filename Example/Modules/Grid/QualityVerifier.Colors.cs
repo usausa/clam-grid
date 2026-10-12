@@ -198,7 +198,7 @@ public sealed partial class QualityVerifier
             Check("colors: offscreen rows not evaluated", cells.Count == probe.LastFrame!.RenderedCells && cells.Min(static context => context.RowIndex) > 0 && rowHeaders.Count == probe.LastFrame.Rows.Count);
         }
 
-        await NextFrameAsync(() => probe.GridStyle = probe.GridStyle with { ShowColumnHeaders = false, ShowRowHeaders = false }).ConfigureAwait(true);
+        await NextFrameAsync(() => probe.GridStyle = probe.GridStyle with { ColumnHeadersVisible = false, RowHeadersVisible = false }).ConfigureAwait(true);
         using (RenderBitmap())
         {
             Check("colors: hidden headers not evaluated", headers.Count == 0 && rowHeaders.Count == 0 && cells.Count > 0);
@@ -206,7 +206,7 @@ public sealed partial class QualityVerifier
 
         await NextFrameAsync(() =>
         {
-            probe.GridStyle = probe.GridStyle with { ShowColumnHeaders = true, ShowRowHeaders = true };
+            probe.GridStyle = probe.GridStyle with { ColumnHeadersVisible = true, RowHeadersVisible = true };
             view.SetSource(Array.Empty<SampleRow>());
         }).ConfigureAwait(true);
         using (RenderBitmap())

@@ -17,11 +17,11 @@ public sealed record GridStyle
 
     public double RowHeaderWidth { get; set; } = 48;
 
-    public bool ShowColumnHeaders { get; set; } = true;
+    public bool ColumnHeadersVisible { get; set; } = true;
 
-    public bool ShowRowHeaders { get; set; } = true;
+    public bool RowHeadersVisible { get; set; } = true;
 
-    public bool ShowVerticalLines { get; set; } = true;
+    public bool VerticalLinesVisible { get; set; } = true;
 
     public string CornerText { get; set; } = "#";
 
@@ -53,14 +53,14 @@ public sealed record GridStyle
 
     public Color DescendingHeaderBackground { get; set; } = Color.FromArgb("#F57C00");
 
-    // Sort marks are drawn next to the header text; ShowSortPriority also marks secondary keys with their priority
+    // Sort marks are drawn next to the header text; SortPriorityVisible also marks secondary keys with their priority
     public string AscendingSortMark { get; set; } = "↑";
 
     public string DescendingSortMark { get; set; } = "↓";
 
     public GridSortMarkPosition SortMarkPosition { get; set; }
 
-    public bool ShowSortPriority { get; set; }
+    public bool SortPriorityVisible { get; set; }
 
     public Func<object, Color?>? RowBackground { get; set; }
 
@@ -73,11 +73,25 @@ public sealed record GridStyle
     // Row header text by item; null falls back to the row number
     public Func<GridRowHeaderTextContext, string?>? RowHeaderText { get; set; }
 
+    internal static bool ValidateValue(object? value)
+    {
+        ArgumentNullException.ThrowIfNull(value, nameof(GridStyle));
+        ((GridStyle)value).Validate();
+        return true;
+    }
+
     internal void Validate()
     {
         if (!Single.IsFinite(FontSize) || (FontSize <= 0) || !Single.IsFinite(HorizontalPadding) || (HorizontalPadding < 0) || !Single.IsFinite(VerticalPadding) || (VerticalPadding < 0))
         {
             throw new ArgumentException("Font size and padding must be valid finite values.");
         }
+
+        if (!IsNullOrPositive(RowHeight) || !IsNullOrPositive(HeaderHeight) || !Double.IsFinite(RowHeaderWidth) || (RowHeaderWidth < 0))
+        {
+            throw new ArgumentException("Row and header heights must be positive finite values and the row header width must be a finite value of zero or more.");
+        }
     }
+
+    private static bool IsNullOrPositive(double? value) => (value is not { } number) || (Double.IsFinite(number) && (number > 0));
 }

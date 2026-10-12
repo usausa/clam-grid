@@ -14,7 +14,7 @@ public sealed partial class GridQualityViewModel : AppViewModelBase
     // Verification
     //--------------------------------------------------------------------------------
 
-    [SuppressMessage("Design", "CA1031", Justification = "自動検証の失敗をログと画面へ記録するため、検証の最上位で例外を捕捉する。")]
+#pragma warning disable CA1031
     public async Task RunAsync(QualityVerifier target)
     {
         verifier?.Dispose();
@@ -39,6 +39,7 @@ public sealed partial class GridQualityViewModel : AppViewModelBase
             IsRunning = false;
         }
     }
+#pragma warning restore CA1031
 
     protected override void Dispose(bool disposing)
     {

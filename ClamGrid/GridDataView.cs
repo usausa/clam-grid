@@ -3,7 +3,6 @@ namespace ClamGrid;
 using System.Collections;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 
 public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCollectionChanged, IDisposable
     where T : class
@@ -548,7 +547,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
         return positions.Select(index => rows[index]).ToArray();
     }
 
-    [SuppressMessage("Design", "CA1031", Justification = "User sort code and lazy enumeration failures take the same failure path as the standard sort so the committed view is kept")]
+#pragma warning disable CA1031
     private static T[] SortWithCallback(T[] rows, IReadOnlyList<GridSortOrder> orders, GridSortCallback<T> callback)
     {
         try
@@ -581,6 +580,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
             throw new InvalidOperationException("The sort callback failed or returned an invalid row sequence.", error);
         }
     }
+#pragma warning restore CA1031
 
     private void ApplySelection(HashSet<object> next, bool modeChanged = false)
     {

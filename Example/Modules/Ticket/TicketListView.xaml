@@ -3,8 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:s="http://smart/maui"
              xmlns:shell="clr-namespace:Example.Shell"
-             xmlns:parts="clr-namespace:Example.Modules.Parts"
              xmlns:module="clr-namespace:Example.Modules.Ticket"
+             xmlns:parts="clr-namespace:Example.Modules.Parts"
              x:Class="Example.Modules.Ticket.TicketListView"
              x:DataType="{x:Type module:TicketListViewModel}"
              s:BindingContextResolver.Type="{x:Type module:TicketListViewModel}"
@@ -36,8 +36,8 @@
         </Grid>
 
         <parts:TicketGrid Grid.Row="1"
-                              Style="{StaticResource ListGrid}"
-                              ItemsSource="{Binding Items}" />
+                          Style="{StaticResource ListGrid}"
+                          ItemsSource="{Binding Items}" />
 
         <Label Grid.Row="2"
                Style="{StaticResource StatusLabel}"
