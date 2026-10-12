@@ -1,5 +1,7 @@
 namespace ClamGrid;
 
+using ClamGrid.Rendering;
+
 // Has a parameterless constructor for XAML; a column without ValueAccessor is resolved by key from ClamGridView.ValueAccessors
 public sealed record GridColumn
 {
@@ -16,7 +18,15 @@ public sealed record GridColumn
     public TextAlignment Alignment { get; set; }
 
     // Composite format applied to any value when it contains '{' such as "{0:N0} pcs", otherwise a format string applied to IFormattable values such as "N0" or "yyyy/MM/dd"
-    public string? Format { get; set; }
+    public string? Format
+    {
+        get;
+        set
+        {
+            TextFormat = GridTextFormat.Parse(value);
+            field = value;
+        }
+    }
 
     public IValueConverter? Converter { get; set; }
 
@@ -39,6 +49,8 @@ public sealed record GridColumn
     public bool AllowResizing { get; set; } = true;
 
     internal bool IsResolved => !ReferenceEquals(ValueAccessor, GridUnresolvedValueAccessor.Instance);
+
+    internal GridTextFormat TextFormat { get; private set; } = GridTextFormat.Default;
 
     public GridColumn()
     {

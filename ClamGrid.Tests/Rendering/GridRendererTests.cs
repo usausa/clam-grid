@@ -10,11 +10,11 @@ public sealed class GridRendererTests
         var date = new DateTime(2026, 9, 13, 8, 5, 0);
 
         // Act
-        var number = GridRenderer.GetCellText(column, GridTextFormat.Parse("D6"), 1234);
-        var formattedDate = GridRenderer.GetCellText(column, GridTextFormat.Parse("yyyyMMdd"), date);
-        var text = GridRenderer.GetCellText(column, GridTextFormat.Parse("D6"), "text");
-        var nothing = GridRenderer.GetCellText(column, GridTextFormat.Parse("D6"), null);
-        var unformatted = GridRenderer.GetCellText(column, GridTextFormat.Default, 1234);
+        var number = GridRenderer.GetCellText(column with { Format = "D6" }, 1234);
+        var formattedDate = GridRenderer.GetCellText(column with { Format = "yyyyMMdd" }, date);
+        var text = GridRenderer.GetCellText(column with { Format = "D6" }, "text");
+        var nothing = GridRenderer.GetCellText(column with { Format = "D6" }, null);
+        var unformatted = GridRenderer.GetCellText(column, 1234);
 
         // Assert
         Assert.Equal("001234", number);
@@ -25,21 +25,25 @@ public sealed class GridRendererTests
     }
 
     [Fact]
-    public void FormatsAreParsedOncePerRenderer()
+    public void ColumnFormatIsParsedWhenItIsSet()
     {
         // Arrange
-        using var renderer = new GridRenderer(new GridStyle());
+        var column = Column("a") with { Format = "{0:N0} pcs" };
 
         // Act
-        var first = renderer.GetFormat("{0:N0} pcs");
-        var second = renderer.GetFormat("{0:N0} pcs");
-        var other = renderer.GetFormat("N0");
+        var renamed = column with { Header = "B" };
+        var reformatted = column with { Format = "N0" };
+        var cleared = column with { Format = null };
 
         // Assert
-        Assert.Same(first, second);
-        Assert.NotSame(first, other);
-        Assert.Same(GridTextFormat.Default, renderer.GetFormat(null));
-        Assert.Same(GridTextFormat.Default, renderer.GetFormat(String.Empty));
+        Assert.Same(column.TextFormat, renamed.TextFormat);
+        Assert.Equal("1,234 pcs", column.TextFormat.Format(1234, CultureInfo.InvariantCulture));
+        Assert.Equal("1,234", reformatted.TextFormat.Format(1234, CultureInfo.InvariantCulture));
+        Assert.Same(GridTextFormat.Default, cleared.TextFormat);
+        Assert.Same(GridTextFormat.Default, Column("a").TextFormat);
+        Assert.Equal(reformatted, column with { Format = "N0" });
+        Assert.NotEqual(column, reformatted);
+        Assert.Throws<FormatException>(static () => Column("a") with { Format = "{0:N0" });
     }
 
     [Fact]
@@ -49,13 +53,12 @@ public sealed class GridRendererTests
         var plain = Column("a") with { Format = "D6" };
         var scaled = plain with { Converter = new ScaleConverter() };
         var marked = plain with { Converter = new MarkConverter() };
-        var format = GridTextFormat.Parse(plain.Format);
 
         // Act
-        var formatted = GridRenderer.GetCellText(plain, format, 12);
-        var converted = GridRenderer.GetCellText(scaled, format, 12);
-        var text = GridRenderer.GetCellText(marked, format, 12);
-        var nothing = GridRenderer.GetCellText(marked, format, null);
+        var formatted = GridRenderer.GetCellText(plain, 12);
+        var converted = GridRenderer.GetCellText(scaled, 12);
+        var text = GridRenderer.GetCellText(marked, 12);
+        var nothing = GridRenderer.GetCellText(marked, null);
 
         // Assert
         Assert.Equal("000012", formatted);
@@ -69,14 +72,14 @@ public sealed class GridRendererTests
     {
         // Arrange
         using var view = CreateView([new("a", true), new("b")]);
-        var style = new GridStyle();
+        using var renderer = new GridRenderer(new GridStyle());
 
         // Act
-        var primary = GridRenderer.GetHeaderMark(style, Column("a"), view);
-        var secondary = GridRenderer.GetHeaderMark(style, Column("b"), view);
-        var unsorted = GridRenderer.GetHeaderMark(style, Column("c"), view);
-        var disabled = GridRenderer.GetHeaderMark(style, Column("a") with { AllowSorting = false }, view);
-        var unbound = GridRenderer.GetHeaderMark(style, Column("a"), null);
+        var primary = renderer.GetHeaderMark(Column("a"), view);
+        var secondary = renderer.GetHeaderMark(Column("b"), view);
+        var unsorted = renderer.GetHeaderMark(Column("c"), view);
+        var disabled = renderer.GetHeaderMark(Column("a") with { AllowSorting = false }, view);
+        var unbound = renderer.GetHeaderMark(Column("a"), null);
 
         // Assert
         Assert.Equal("↓ ", primary);
@@ -91,17 +94,17 @@ public sealed class GridRendererTests
     {
         // Arrange
         using var view = CreateView([new("a", true), new("b")]);
-        var style = new GridStyle { AscendingSortMark = "▲", DescendingSortMark = "▼", SortMarkPosition = GridSortMarkPosition.End, SortPriorityVisible = true };
+        using var renderer = new GridRenderer(new GridStyle { AscendingSortMark = "▲", DescendingSortMark = "▼", SortMarkPosition = GridSortMarkPosition.End, SortPriorityVisible = true });
 
         // Act
-        var primary = GridRenderer.GetHeaderMark(style, Column("a"), view);
-        var secondary = GridRenderer.GetHeaderMark(style, Column("b"), view);
-        var aliased = GridRenderer.GetHeaderMark(style, Column("d") with { SortKey = "a" }, view);
+        var primary = renderer.GetHeaderMark(Column("a"), view);
+        var secondary = renderer.GetHeaderMark(Column("b"), view);
+        var aliased = renderer.GetHeaderMark(Column("d") with { SortKey = "a" }, view);
 
         // Assert
         Assert.Equal(" ▼1", primary);
         Assert.Equal(" ▲2", secondary);
-        Assert.Equal(" ▼1", aliased);
+        Assert.Same(primary, aliased);
     }
 
     [Fact]
@@ -109,10 +112,10 @@ public sealed class GridRendererTests
     {
         // Arrange
         using var view = CreateView([new("b")]);
-        var style = new GridStyle { AscendingSortMark = "▲", SortPriorityVisible = true };
+        using var renderer = new GridRenderer(new GridStyle { AscendingSortMark = "▲", SortPriorityVisible = true });
 
         // Act
-        var mark = GridRenderer.GetHeaderMark(style, Column("b"), view);
+        var mark = renderer.GetHeaderMark(Column("b"), view);
 
         // Assert
         Assert.Equal("▲ ", mark);
@@ -123,10 +126,10 @@ public sealed class GridRendererTests
     {
         // Arrange
         using var view = CreateView([new("a")]);
-        var style = new GridStyle { AscendingSortMark = String.Empty };
+        using var renderer = new GridRenderer(new GridStyle { AscendingSortMark = String.Empty });
 
         // Act
-        var mark = GridRenderer.GetHeaderMark(style, Column("a"), view);
+        var mark = renderer.GetHeaderMark(Column("a"), view);
 
         // Assert
         Assert.Equal(String.Empty, mark);
@@ -195,18 +198,22 @@ public sealed class GridRendererTests
     public void RowHeaderTextCallbackOverridesTheRowNumber()
     {
         // Arrange
-        var style = new GridStyle { RowHeaderText = static context => context.IsSelected ? "S" : null };
+        using var renderer = new GridRenderer(new GridStyle { RowHeaderText = static context => context.IsSelected ? "S" : null });
+        using var plainRenderer = new GridRenderer(new GridStyle());
         var item = new Item(1);
 
         // Act
-        var selected = GridRenderer.GetRowHeaderText(style, item, 4, true);
-        var unselected = GridRenderer.GetRowHeaderText(style, item, 4, false);
-        var plain = GridRenderer.GetRowHeaderText(new GridStyle(), item, 4, true);
+        var selected = renderer.GetRowHeaderText(item, 4, true);
+        var unselected = renderer.GetRowHeaderText(item, 4, false);
+        var plain = plainRenderer.GetRowHeaderText(item, 4, true);
+        var large = plainRenderer.GetRowHeaderText(item, 999, false);
 
         // Assert
         Assert.Equal("S", selected);
         Assert.Equal("5", unselected);
         Assert.Equal("5", plain);
+        Assert.Equal("1000", large);
+        Assert.Same(large, plainRenderer.GetRowHeaderText(item, 999, true));
     }
 
     [Fact]

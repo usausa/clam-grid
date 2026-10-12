@@ -3,6 +3,10 @@ namespace ClamGrid;
 public sealed class GridValueAccessor<TItem, TValue> : IGridValueAccessor
     where TItem : class
 {
+    private static readonly object BoxedTrue = true;
+
+    private static readonly object BoxedFalse = false;
+
     private readonly Func<TItem, TValue> getter;
 
     private readonly Action<TItem, TValue>? setter;
@@ -20,7 +24,16 @@ public sealed class GridValueAccessor<TItem, TValue> : IGridValueAccessor
         this.setter = setter;
     }
 
-    public object? GetValue(object item) => getter(RequireItem(item));
+    public object? GetValue(object item)
+    {
+        var value = getter(RequireItem(item));
+        if (typeof(TValue) == typeof(bool))
+        {
+            return (bool)(object)value! ? BoxedTrue : BoxedFalse;
+        }
+
+        return value;
+    }
 
     public void SetValue(object item, object? value)
     {

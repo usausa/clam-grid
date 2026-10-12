@@ -1,78 +1,42 @@
 namespace ClamGrid.Rendering;
 
-using System.Buffers;
 using System.Globalization;
-using System.Text;
 
 using ClamGrid.Layout;
+
+using SkiaExtension;
 
 using SkiaSharp;
 using SkiaSharp.Views.Maui;
 
 internal sealed class GridRenderer : IDisposable
 {
-    private const int EmojiFlag = 1 << 24;
-
-    private static readonly string[] EmojiLanguages = ["und-Zsye"];
-    private static readonly SearchValues<char> Selectors = SearchValues.Create("\uFE0E\uFE0F\u200D");
-    private static readonly TextRun EmptyRun = new(Array.Empty<TextRun.Part>(), 0);
+    private const int RowNumberCacheLimit = 2048;
 
     private readonly GridStyle style;
-    private readonly FontSet primary;
-    private readonly string[]? languages;
-    private readonly FontSet[] fallbacks;
-    private readonly Dictionary<string, FontSet> fallbackByFamily = [with(StringComparer.Ordinal)];
-    private readonly Dictionary<int, FontSet> fallbackByCodepoint = [];
+    private readonly FontResolver fonts;
     private readonly SKPaint paint = new() { IsAntialias = true };
-    private readonly Dictionary<(string Text, float Width, bool Header), TextRun> textCache = [];
-    private readonly Dictionary<string, GridTextFormat> textFormats = [with(StringComparer.Ordinal)];
+    private readonly Dictionary<string, string[]> headerLines = [with(StringComparer.Ordinal)];
+    private readonly Dictionary<(bool Descending, int Number), string> headerMarks = [];
+    private readonly Dictionary<int, string> rowNumbers = [];
+    private RowState[] rowStates = [];
 
-    public int Measurements { get; private set; }
+    public int Measurements => fonts.Measurements;
 
     // Includes every font resolved so far, so fonts found while measuring the headers and sample rows widen the automatic height
     public double AutoRowHeight => GetAutoHeight(1);
 
-    private float TextLineHeight
-    {
-        get
-        {
-            var height = LineHeight(primary);
-            foreach (var fonts in fallbacks.Concat(fallbackByFamily.Values))
-            {
-                height = Math.Max(height, LineHeight(fonts));
-            }
-
-            return height;
-        }
-    }
+    private float TextLineHeight => fonts.GetMaxLineHeight(style.FontSize, false);
 
     public GridRenderer(GridStyle style)
     {
         style.Validate();
         this.style = style;
-        primary = new FontSet(SKTypeface.FromFamilyName(style.FontFamily), style.FontSize);
-        languages = GridFonts.Languages.Count > 0 ? GridFonts.Languages.ToArray() : null;
-        fallbacks = GridFonts.Fallbacks.Select(typeface => new FontSet(typeface, style.FontSize, false)).ToArray();
+        fonts = new FontResolver(style.FontFamily);
     }
 
-    public static string GetCellText(GridColumn column, GridTextFormat format, object? value) =>
-        format.Format(column.Converter is { } converter ? converter.Convert(value, typeof(string), null, CultureInfo.CurrentCulture) : value, CultureInfo.CurrentCulture);
-
-    public GridTextFormat GetFormat(string? format)
-    {
-        if (String.IsNullOrEmpty(format))
-        {
-            return GridTextFormat.Default;
-        }
-
-        if (!textFormats.TryGetValue(format, out var parsed))
-        {
-            parsed = GridTextFormat.Parse(format);
-            textFormats[format] = parsed;
-        }
-
-        return parsed;
-    }
+    public static string GetCellText(GridColumn column, object? value) =>
+        column.TextFormat.Format(column.Converter is { } converter ? converter.Convert(value, typeof(string), null, CultureInfo.CurrentCulture) : value, CultureInfo.CurrentCulture);
 
     public double[] MeasureColumns(IReadOnlyList<GridColumn> columns, IReadOnlyList<object> items, double availableWidth, int sampleSize, IGridDataView? dataView)
     {
@@ -80,14 +44,13 @@ internal sealed class GridRenderer : IDisposable
         for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++)
         {
             var column = columns[columnIndex];
-            var mark = GetHeaderMark(style, column, dataView);
+            var mark = GetHeaderMark(column, dataView);
             var width = GetHeaderLines(column.Header).Max(line => Measure(style.SortMarkPosition == GridSortMarkPosition.End ? line + mark : mark + line, true));
             if (column.Width.Unit == GridColumnWidthUnit.Auto)
             {
-                var format = GetFormat(column.Format);
                 for (var row = 0; row < Math.Min(sampleSize, items.Count); row++)
                 {
-                    width = Math.Max(width, column.IsBoolean ? 24 : Measure(GetCellText(column, format, column.ValueAccessor.GetValue(items[row])), false));
+                    width = Math.Max(width, column.IsBoolean ? 24 : Measure(GetCellText(column, column.ValueAccessor.GetValue(items[row])), false));
                 }
             }
 
@@ -103,7 +66,12 @@ internal sealed class GridRenderer : IDisposable
     public int Render(SKCanvas canvas, GridLayout layout, IReadOnlyList<GridColumn> columns, IReadOnlyList<object> items, IGridDataView? dataView, bool showRowHandles)
     {
         var rows = layout.VisibleRows;
-        var states = new RowState[rows.Count];
+        if (rowStates.Length < rows.Count)
+        {
+            rowStates = new RowState[rows.Count];
+        }
+
+        var states = rowStates;
         for (var row = rows.Start; row < rows.End; row++)
         {
             var selected = dataView?.IsSelected(row) ?? false;
@@ -131,7 +99,7 @@ internal sealed class GridRenderer : IDisposable
             var colors = new GridColors(selected ? style.SelectedTextColor : style.TextColor, selected ? style.SelectedBackground : style.RowHeaderBackground);
             colors = colors.Apply(style.RowHeaderColors?.Invoke(new GridRowHeaderColorContext(items[row], row, selected, colors)) ?? default);
             Fill(canvas, rect, colors.Background!);
-            DrawText(canvas, rect, GetRowHeaderText(style, items[row], row, selected), style.RowHeaderAlignment, colors.TextColor!);
+            DrawText(canvas, rect, GetRowHeaderText(items[row], row, selected), style.RowHeaderAlignment, colors.TextColor!);
             if (showRowHandles)
             {
                 paint.Color = colors.TextColor!.ToSKColor();
@@ -164,12 +132,6 @@ internal sealed class GridRenderer : IDisposable
             return 0;
         }
 
-        var formats = new GridTextFormat[range.Count];
-        for (var column = range.Start; column < range.End; column++)
-        {
-            formats[column - range.Start] = GetFormat(columns[column].Format);
-        }
-
         var rendered = 0;
         canvas.Save();
         canvas.ClipRect(ToSkRect(clip));
@@ -195,7 +157,7 @@ internal sealed class GridRenderer : IDisposable
                 }
                 else
                 {
-                    DrawText(canvas, rect, GetCellText(definition, formats[column - range.Start], value), definition.Alignment, colors.TextColor!);
+                    DrawText(canvas, rect, GetCellText(definition, value), definition.Alignment, colors.TextColor!);
                 }
 
                 DrawLines(canvas, rect);
@@ -231,26 +193,23 @@ internal sealed class GridRenderer : IDisposable
             var colors = new GridColors(definition.HeaderTextColor ?? style.HeaderTextColor, background);
             colors = colors.Apply(style.ColumnHeaderColors?.Invoke(new GridColumnHeaderColorContext(definition, column, order, priority, colors)) ?? default);
             Fill(canvas, rect, colors.Background!);
-            DrawHeaderText(canvas, rect, definition.Header, GetHeaderMark(style, definition, dataView), colors.TextColor!);
+            DrawHeaderText(canvas, rect, definition.Header, GetHeaderMark(definition, dataView), colors.TextColor!);
             DrawLines(canvas, rect);
         }
 
         canvas.Restore();
     }
 
-    public void ClearCache() => textCache.Clear();
+    public void ClearCache()
+    {
+        fonts.ClearCache();
+        headerLines.Clear();
+    }
 
     public void Dispose()
     {
         paint.Dispose();
-        primary.Dispose();
-        foreach (var fonts in fallbacks.Concat(fallbackByFamily.Values))
-        {
-            fonts.Dispose();
-        }
-
-        fallbackByFamily.Clear();
-        fallbackByCodepoint.Clear();
+        fonts.Dispose();
     }
 
     private static int GetSortPriority(GridColumn column, IGridDataView? view)
@@ -273,13 +232,49 @@ internal sealed class GridRenderer : IDisposable
     internal static Color GetCellBackground(GridStyle style, GridColumn column, int rowIndex, Color? rowBackground) =>
         rowBackground ?? column.Background ?? ((rowIndex % 2) == 1 ? style.AlternatingRowBackground : null) ?? style.Background;
 
-    internal static string GetRowHeaderText(GridStyle style, object item, int rowIndex, bool selected) =>
-        style.RowHeaderText?.Invoke(new GridRowHeaderTextContext(item, rowIndex, selected)) ?? (rowIndex + 1).ToString(CultureInfo.InvariantCulture);
+    // Header and corner texts break at every line break; body cells stay on one line
+    internal static string[] GetHeaderLines(string text) => text.ReplaceLineEndings("\n").Split('\n');
+
+    internal string GetRowHeaderText(object item, int rowIndex, bool selected) =>
+        style.RowHeaderText?.Invoke(new GridRowHeaderTextContext(item, rowIndex, selected)) ?? GetRowNumber(rowIndex);
 
     // The sort mark with the space that separates it from the header text, or an empty string
-    internal static string GetHeaderMark(GridStyle style, GridColumn column, IGridDataView? view)
+    internal string GetHeaderMark(GridColumn column, IGridDataView? view)
     {
-        var mark = GetSortMark(style, column, view);
+        if (GetSortMarkKey(style, column, view) is not { } key)
+        {
+            return String.Empty;
+        }
+
+        if (!headerMarks.TryGetValue(key, out var mark))
+        {
+            mark = FormatHeaderMark(style, key.Descending, key.Number);
+            headerMarks[key] = mark;
+        }
+
+        return mark;
+    }
+
+    // The primary key always gets a mark; secondary keys get a mark with their priority only with SortPriorityVisible
+    private static (bool Descending, int Number)? GetSortMarkKey(GridStyle style, GridColumn column, IGridDataView? view)
+    {
+        var priority = GetSortPriority(column, view);
+        if ((priority < 0) || ((priority > 0) && !style.SortPriorityVisible))
+        {
+            return null;
+        }
+
+        return (view!.SortOrders[priority].Descending, style.SortPriorityVisible && (view.SortOrders.Count > 1) ? priority + 1 : 0);
+    }
+
+    private static string FormatHeaderMark(GridStyle style, bool descending, int number)
+    {
+        var mark = descending ? style.DescendingSortMark : style.AscendingSortMark;
+        if (number > 0)
+        {
+            mark += number.ToString(CultureInfo.InvariantCulture);
+        }
+
         if (String.IsNullOrEmpty(mark))
         {
             return String.Empty;
@@ -288,222 +283,9 @@ internal sealed class GridRenderer : IDisposable
         return style.SortMarkPosition == GridSortMarkPosition.End ? " " + mark : mark + " ";
     }
 
-    // Header and corner texts break at every line break; body cells stay on one line
-    internal static string[] GetHeaderLines(string text) => text.ReplaceLineEndings("\n").Split('\n');
-
-    // The primary key always gets a mark; secondary keys get a mark with their priority only with SortPriorityVisible
-    private static string GetSortMark(GridStyle style, GridColumn column, IGridDataView? view)
-    {
-        var priority = GetSortPriority(column, view);
-        if ((priority < 0) || ((priority > 0) && !style.SortPriorityVisible))
-        {
-            return String.Empty;
-        }
-
-        var mark = view!.SortOrders[priority].Descending ? style.DescendingSortMark : style.AscendingSortMark;
-        return style.SortPriorityVisible && (view.SortOrders.Count > 1) ? mark + (priority + 1).ToString(CultureInfo.InvariantCulture) : mark;
-    }
-
     private static SKRect ToSkRect(GridRect rect) => new((float)rect.X, (float)rect.Y, (float)rect.Right, (float)rect.Bottom);
 
-    private static string Sanitize(string text) => text.Replace('\r', ' ').Replace('\n', ' ');
-
-    private static float LineHeight(FontSet fonts) => fonts.Font.Metrics.Descent - fonts.Font.Metrics.Ascent;
-
-    // Variation selectors and joiners have no glyph without shaping, so they only steer the font choice and are not drawn
-    private static string StripSelectors(string text) => text.AsSpan().IndexOfAny(Selectors) < 0 ? text : text.Replace("\uFE0F", String.Empty, StringComparison.Ordinal).Replace("\uFE0E", String.Empty, StringComparison.Ordinal).Replace("\u200D", String.Empty, StringComparison.Ordinal);
-
-    private FontSet ResolveFonts(int codepoint, bool emoji)
-    {
-        if ((codepoint <= 127) && !emoji)
-        {
-            return primary;
-        }
-
-        var key = emoji ? codepoint | EmojiFlag : codepoint;
-        if (fallbackByCodepoint.TryGetValue(key, out var fonts))
-        {
-            return fonts;
-        }
-
-        // An emoji presentation sequence asks the system for the emoji font before the primary font is considered
-        fonts = emoji ? MatchSystemFont(codepoint, EmojiLanguages) : null;
-        if (fonts is null)
-        {
-            fonts = primary;
-            if (!primary.Font.ContainsGlyph(codepoint))
-            {
-                // Configured fallback fonts come first, then the system fonts are searched per character with the language hints
-                fonts = Array.Find(fallbacks, fallback => fallback.Font.ContainsGlyph(codepoint)) ?? MatchSystemFont(codepoint, languages) ?? primary;
-            }
-        }
-
-        fallbackByCodepoint[key] = fonts;
-        return fonts;
-    }
-
-    private FontSet? MatchSystemFont(int codepoint, string[]? hints)
-    {
-        var typeface = SKFontManager.Default.MatchCharacter(style.FontFamily, SKFontStyle.Normal, hints, codepoint);
-        if (typeface is null)
-        {
-            return null;
-        }
-
-        if (fallbackByFamily.TryGetValue(typeface.FamilyName, out var existing))
-        {
-            typeface.Dispose();
-            return existing;
-        }
-
-        var fonts = new FontSet(typeface, style.FontSize);
-        fallbackByFamily[typeface.FamilyName] = fonts;
-        return fonts;
-    }
-
-    // Picks a font per text element (combining marks and surrogate pairs included) and merges runs that share a font
-    private List<TextSegment> Segment(string text, bool header)
-    {
-        var segments = new List<TextSegment>();
-        var boundaries = StringInfo.ParseCombiningCharacters(text);
-        FontSet? current = null;
-        var start = 0;
-        for (var i = 0; i < boundaries.Length; i++)
-        {
-            var index = boundaries[i];
-            var end = i + 1 < boundaries.Length ? boundaries[i + 1] : text.Length;
-            var emoji = text.AsSpan(index, end - index).Contains('\uFE0F');
-            var fonts = Rune.TryGetRuneAt(text, index, out var rune) ? ResolveFonts(rune.Value, emoji) : primary;
-            if (ReferenceEquals(fonts, current))
-            {
-                continue;
-            }
-
-            if (current is not null)
-            {
-                segments.Add(new TextSegment(StripSelectors(text[start..index]), header ? current.HeaderFont : current.Font));
-            }
-
-            current = fonts;
-            start = index;
-        }
-
-        if (current is not null)
-        {
-            segments.Add(new TextSegment(StripSelectors(text[start..]), header ? current.HeaderFont : current.Font));
-        }
-
-        return segments;
-    }
-
-    private float Measure(string text, bool header)
-    {
-        var width = 0f;
-        foreach (var segment in Segment(text, header))
-        {
-            Measurements++;
-            width += segment.Font.MeasureText(segment.Text);
-        }
-
-        return width;
-    }
-
-    private TextRun GetText(string text, float availableWidth, bool header)
-    {
-        var key = (text, availableWidth, header);
-        if (textCache.TryGetValue(key, out var cached))
-        {
-            return cached;
-        }
-
-        var segments = Segment(text, header);
-        var widths = new float[segments.Count];
-        var width = 0f;
-        for (var i = 0; i < segments.Count; i++)
-        {
-            Measurements++;
-            widths[i] = segments[i].Font.MeasureText(segments[i].Text);
-            width += widths[i];
-        }
-
-        var runs = new List<TextRun.Part>(segments.Count + 1);
-        if (width <= availableWidth)
-        {
-            for (var i = 0; i < segments.Count; i++)
-            {
-                runs.Add(new TextRun.Part(segments[i].Text, widths[i], segments[i].Font));
-            }
-        }
-        else
-        {
-            // Binary search on text element boundaries for the longest prefix that fits together with the ellipsis
-            var ellipsisFont = header ? primary.HeaderFont : primary.Font;
-            Measurements++;
-            var ellipsisWidth = ellipsisFont.MeasureText("…");
-            width = 0f;
-            var fits = ellipsisWidth <= availableWidth;
-            for (var i = 0; fits && (i < segments.Count); i++)
-            {
-                if (width + widths[i] + ellipsisWidth <= availableWidth)
-                {
-                    runs.Add(new TextRun.Part(segments[i].Text, widths[i], segments[i].Font));
-                    width += widths[i];
-                    continue;
-                }
-
-                var segmentText = segments[i].Text;
-                var boundaries = StringInfo.ParseCombiningCharacters(segmentText);
-                var low = 0;
-                var high = boundaries.Length;
-                var lowWidth = 0f;
-                while (low < high)
-                {
-                    var middle = low + ((high - low + 1) / 2);
-                    var end = middle == boundaries.Length ? segmentText.Length : boundaries[middle];
-                    Measurements++;
-                    var prefixWidth = segments[i].Font.MeasureText(segmentText.AsSpan(0, end));
-                    if (width + prefixWidth + ellipsisWidth <= availableWidth)
-                    {
-                        low = middle;
-                        lowWidth = prefixWidth;
-                    }
-                    else
-                    {
-                        high = middle - 1;
-                    }
-                }
-
-                if (low > 0)
-                {
-                    var end = low == boundaries.Length ? segmentText.Length : boundaries[low];
-                    runs.Add(new TextRun.Part(segmentText[..end], lowWidth, segments[i].Font));
-                    width += lowWidth;
-                }
-
-                break;
-            }
-
-            if (fits)
-            {
-                runs.Add(new TextRun.Part("…", ellipsisWidth, ellipsisFont));
-                width += ellipsisWidth;
-            }
-            else
-            {
-                runs.Clear();
-                width = 0f;
-            }
-        }
-
-        if (textCache.Count >= 2048)
-        {
-            textCache.Clear();
-        }
-
-        var result = new TextRun(runs, width);
-        textCache[key] = result;
-        return result;
-    }
+    private float Measure(string text, bool header) => fonts.CreateText(text, style.FontSize, header).Width;
 
     private void DrawText(SKCanvas canvas, GridRect rect, string text, TextAlignment alignment, Color color)
     {
@@ -513,21 +295,24 @@ internal sealed class GridRenderer : IDisposable
             return;
         }
 
-        var run = GetText(Sanitize(text), available, false);
-        if (run.Parts.Count == 0)
+        var drawableText = fonts.CreateText(text, style.FontSize, false, available);
+        if (drawableText.Segments.Count == 0)
         {
             return;
         }
 
-        var x = alignment switch
+        var (x, textAlign) = alignment switch
         {
-            TextAlignment.Center => rect.X + ((rect.Width - run.Width) / 2),
-            TextAlignment.End => rect.Right - style.HorizontalPadding - run.Width,
-            _ => rect.X + style.HorizontalPadding
+            TextAlignment.Center => (rect.CenterX, SKTextAlign.Center),
+            TextAlignment.End => (rect.Right - style.HorizontalPadding, SKTextAlign.Right),
+            _ => (rect.X + style.HorizontalPadding, SKTextAlign.Left)
         };
+        var baseline = fonts.GetMetrics(style.FontSize, false).GetCenterBaseline((float)rect.CenterY);
+        paint.Style = SKPaintStyle.Fill;
+        paint.Color = color.ToSKColor();
         canvas.Save();
         canvas.ClipRect(ToSkRect(rect));
-        DrawRun(canvas, rect, run, x, false, color);
+        canvas.DrawText(drawableText, (float)x, baseline, textAlign, paint);
         canvas.Restore();
     }
 
@@ -540,36 +325,59 @@ internal sealed class GridRenderer : IDisposable
             return;
         }
 
-        var markRun = mark.Length == 0 ? EmptyRun : GetText(mark, available, true);
-        var lines = markRun.Width < available ? GetHeaderLines(text).Select(line => line.Length == 0 ? EmptyRun : GetText(line, available - markRun.Width, true)).ToArray() : [];
-        var textWidth = lines.Length == 0 ? 0 : lines.Max(static line => line.Width);
+        var markText = fonts.CreateText(mark, style.FontSize, true, available);
+        var lines = markText.Width < available ? GetCachedHeaderLines(text) : [];
+        var lineWidth = available - markText.Width;
+        var textWidth = 0f;
+        foreach (var line in lines)
+        {
+            textWidth = Math.Max(textWidth, fonts.CreateText(line, style.FontSize, true, lineWidth).Width);
+        }
+
         var end = style.SortMarkPosition == GridSortMarkPosition.End;
-        var left = rect.X + ((rect.Width - markRun.Width - textWidth) / 2);
-        var textLeft = end ? left : left + markRun.Width;
+        var left = rect.X + ((rect.Width - markText.Width - textWidth) / 2);
+        var textLeft = end ? left : left + markText.Width;
         var lineHeight = (double)TextLineHeight;
         var top = rect.Y + ((rect.Height - (lineHeight * lines.Length)) / 2);
+        var metrics = fonts.GetMetrics(style.FontSize, true);
+        paint.Style = SKPaintStyle.Fill;
+        paint.Color = color.ToSKColor();
         canvas.Save();
         canvas.ClipRect(ToSkRect(rect));
-        DrawRun(canvas, rect, markRun, end ? left + textWidth : left, true, color);
+        canvas.DrawText(markText, (float)(end ? left + textWidth : left), metrics.GetCenterBaseline((float)rect.CenterY), SKTextAlign.Left, paint);
         for (var i = 0; i < lines.Length; i++)
         {
-            DrawRun(canvas, new GridRect(rect.X, top + (lineHeight * i), rect.Width, lineHeight), lines[i], textLeft + ((textWidth - lines[i].Width) / 2), true, color);
+            canvas.DrawText(fonts.CreateText(lines[i], style.FontSize, true, lineWidth), (float)(textLeft + (textWidth / 2)), metrics.GetCenterBaseline((float)(top + (lineHeight * (i + 0.5)))), SKTextAlign.Center, paint);
         }
 
         canvas.Restore();
     }
 
-    private void DrawRun(SKCanvas canvas, GridRect rect, TextRun run, double x, bool header, Color color)
+    private string[] GetCachedHeaderLines(string text)
     {
-        var metrics = (header ? primary.HeaderFont : primary.Font).Metrics;
-        var baseline = rect.Y + ((rect.Height - (metrics.Descent - metrics.Ascent)) / 2) - metrics.Ascent;
-        paint.Style = SKPaintStyle.Fill;
-        paint.Color = color.ToSKColor();
-        foreach (var part in run.Parts)
+        if (!headerLines.TryGetValue(text, out var lines))
         {
-            canvas.DrawText(part.Text, (float)x, (float)baseline, SKTextAlign.Left, part.Font, paint);
-            x += part.Width;
+            lines = GetHeaderLines(text);
+            headerLines[text] = lines;
         }
+
+        return lines;
+    }
+
+    private string GetRowNumber(int rowIndex)
+    {
+        if (!rowNumbers.TryGetValue(rowIndex, out var number))
+        {
+            if (rowNumbers.Count >= RowNumberCacheLimit)
+            {
+                rowNumbers.Clear();
+            }
+
+            number = (rowIndex + 1).ToString(CultureInfo.InvariantCulture);
+            rowNumbers[rowIndex] = number;
+        }
+
+        return number;
     }
 
     private void Fill(SKCanvas canvas, GridRect rect, Color color)
@@ -650,40 +458,4 @@ internal sealed class GridRenderer : IDisposable
     }
 
     private readonly record struct RowState(bool Selected, Color? Background);
-
-    private sealed record TextSegment(string Text, SKFont Font);
-
-    private sealed record TextRun(IReadOnlyList<TextRun.Part> Parts, float Width)
-    {
-        public sealed record Part(string Text, float Width, SKFont Font);
-    }
-
-    private sealed class FontSet : IDisposable
-    {
-        private readonly bool ownsTypeface;
-
-        public SKTypeface Typeface { get; }
-
-        public SKFont Font { get; }
-
-        public SKFont HeaderFont { get; }
-
-        public FontSet(SKTypeface typeface, float size, bool ownsTypeface = true)
-        {
-            this.ownsTypeface = ownsTypeface;
-            Typeface = typeface;
-            Font = new SKFont(typeface, size);
-            HeaderFont = new SKFont(typeface, size) { Embolden = true };
-        }
-
-        public void Dispose()
-        {
-            HeaderFont.Dispose();
-            Font.Dispose();
-            if (ownsTypeface)
-            {
-                Typeface.Dispose();
-            }
-        }
-    }
 }

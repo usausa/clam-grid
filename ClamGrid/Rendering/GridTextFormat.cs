@@ -2,7 +2,7 @@ namespace ClamGrid.Rendering;
 
 using System.Text;
 
-internal sealed class GridTextFormat
+internal sealed class GridTextFormat : IEquatable<GridTextFormat>
 {
     private readonly string? format;
     private readonly CompositeFormat? composite;
@@ -45,4 +45,10 @@ internal sealed class GridTextFormat
 
         return value is IFormattable formattable ? formattable.ToString(format, provider) : Convert.ToString(value, provider) ?? String.Empty;
     }
+
+    public bool Equals(GridTextFormat? other) => (other is not null) && (format == other.format) && (composite?.Format == other.composite?.Format);
+
+    public override bool Equals(object? obj) => (obj is GridTextFormat other) && Equals(other);
+
+    public override int GetHashCode() => HashCode.Combine(format, composite?.Format);
 }

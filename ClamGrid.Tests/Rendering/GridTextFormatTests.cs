@@ -43,4 +43,16 @@ public sealed class GridTextFormatTests
         // Act & Assert
         Assert.Throws<FormatException>(static () => GridTextFormat.Parse("{0:N0"));
     }
+
+    [Fact]
+    public void FormatsParsedFromTheSameTextAreEqual()
+    {
+        // Act & Assert
+        Assert.Equal(GridTextFormat.Parse("{0:N0} pcs"), GridTextFormat.Parse("{0:N0} pcs"));
+        Assert.Equal(GridTextFormat.Parse("{0:N0} pcs").GetHashCode(), GridTextFormat.Parse("{0:N0} pcs").GetHashCode());
+        Assert.Equal(GridTextFormat.Parse("N0"), GridTextFormat.Parse("N0"));
+        Assert.NotEqual(GridTextFormat.Parse("N0"), GridTextFormat.Parse("N1"));
+        Assert.NotEqual(GridTextFormat.Parse("{0:N0}"), GridTextFormat.Parse("N0"));
+        Assert.NotEqual(GridTextFormat.Default, GridTextFormat.Parse("N0"));
+    }
 }

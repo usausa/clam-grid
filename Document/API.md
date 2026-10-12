@@ -94,7 +94,7 @@ Scroll requests made before the grid has a size are kept, the latest one is appl
 | `Width` | `GridColumnWidth` | `Auto` | `Auto`, `Absolute(dip)` or `Star(weight)`; in XAML `Auto`, `85`, `*` or `2*` |
 | `MinWidth` | `double` | `40` | Lower bound for resizing and star distribution |
 | `Alignment` | `TextAlignment` | `Start` | Cell text alignment |
-| `Format` | `string?` | `null` | Composite format applied to any value when it contains `{` (`{0:N0} pcs`, `{0} san`), otherwise a .NET format string applied to `IFormattable` values (`N0`, `D6`, `yyyy/MM/dd`) |
+| `Format` | `string?` | `null` | Composite format applied to any value when it contains `{` (`{0:N0} pcs`, `{0} san`), otherwise a .NET format string applied to `IFormattable` values (`N0`, `D6`, `yyyy/MM/dd`); parsed when assigned, so an invalid composite format throws `FormatException` there |
 | `Converter` | `IValueConverter?` | `null` | Runs on the cell value before `Format` when a text cell is painted; boolean cells, sorting and editing use the raw value |
 | `HeaderBackground`, `HeaderTextColor`, `TextColor`, `Background` | `Color?` | `null` | Static colors; `null` falls back to `GridStyle` |
 | `IsBoolean` | `bool` | `false` | Draws a check box and toggles the value on tap |
@@ -124,7 +124,7 @@ The default colors follow the Material palette: Blue 700 header, Cyan 700 and Or
 
 | Name | Type | Default | Description |
 |---|---|---|---|
-| `FontFamily` | `string` | `monospace` | Primary font; missing characters are resolved through `GridFonts` |
+| `FontFamily` | `string` | `monospace` | Primary font; missing characters are resolved through `FallbackFonts` of SkiaExtension |
 | `FontSize` | `float` | `16` | Font size in DIP |
 | `HorizontalPadding`, `VerticalPadding` | `float` | `8` | Cell padding in DIP |
 | `RowHeight`, `HeaderHeight` | `double?` | `null` | `null` derives the height from the primary font and the fallback fonts resolved while measuring; the header also counts the most lines among all column headers, hidden ones included, and the corner text |
@@ -143,21 +143,16 @@ The default colors follow the Material palette: Blue 700 header, Cyan 700 and Or
 | `RowHeaderText` | `Func<GridRowHeaderTextContext, string?>?` | `null` | Row header text by item and selection state; `null` falls back to the row number |
 | `CellColors`, `ColumnHeaderColors`, `RowHeaderColors` | callback | `null` | Per cell and per header colors with the item, column, sort state and default colors in the context |
 
-## 🔤 GridFonts
+## 🔤 Fonts
 
-Global font fallback settings, read when a grid creates its renderer.  
-Set them at startup, before the first grid is shown.  
-Emoji presentation sequences (a character followed by U+FE0F) are matched against the emoji font first.  
-Variation selectors and zero width joiners only steer the font choice and are not drawn.  
-
-| Name | Type | Default | Description |
-|---|---|---|---|
-| `Languages` | `IReadOnlyList<string>` | `["ja"]` | BCP-47 tags for the per character system font lookup; the tag selects the glyph variant of shared CJK ideographs |
-| `Fallbacks` | `IReadOnlyList<SKTypeface>` | `[]` | Typefaces tried before the system lookup, for example a bundled font; they also count toward the automatic row height and stay owned by the caller |
+Per character font fallback comes from [SkiaExtension](https://github.com/usausa/skia-extension).  
+Configure it with `FallbackFonts` in the `SkiaExtension` namespace at startup, before the first grid is shown.  
+`Languages` defaults to the UI language of the device.  
+The `Typefaces` also count toward the automatic row height.  
 
 ```csharp
-GridFonts.Languages = ["ja", "en"];
-GridFonts.Fallbacks = [SKTypeface.FromStream(await FileSystem.OpenAppPackageFileAsync("NotoSansJP-Regular.ttf"))];
+FallbackFonts.Languages = ["ja", "en"];
+FallbackFonts.Typefaces = [SKTypeface.FromStream(await FileSystem.OpenAppPackageFileAsync("NotoSansJP-Regular.ttf"))];
 ```
 
 ## 🗂 GridDataView&lt;T&gt;

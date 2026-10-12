@@ -168,7 +168,7 @@ Messaging, navigation and screen controllers belong to the application.
 | **Row dragging** | Reorder rows by dragging the row header |
 | **Input** | Tap, long press, pan with inertia, column resize, scrolling a row to a position, commands for MVVM |
 | **Styling** | Font, padding, colors, alternating rows, sort marks, row header text and conditional color callbacks |
-| **Fonts** | Per character fallback to `GridFonts` typefaces and system fonts, emoji sequences included |
+| **Fonts** | Per character fallback to the `FallbackFonts` typefaces of SkiaExtension and system fonts, emoji sequences included |
 
 ## 📖 API
 
