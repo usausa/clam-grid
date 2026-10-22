@@ -315,7 +315,7 @@ public sealed class GridSortCallbackTests
 
         // Assert
         Assert.Same(second, view[0]);
-        Assert.Empty(view.SelectedItems);
+        Assert.Same(first, Assert.Single(view.SelectedItems));
     }
 
     [Fact]

@@ -7,4 +7,6 @@ using BunnyTail.DependencyInjection;
 public sealed class AppSession
 {
     public IReadOnlyList<GridSortOrder>? SortOrders { get; set; }
+
+    public IReadOnlyList<object>? SelectedKeys { get; set; }
 }

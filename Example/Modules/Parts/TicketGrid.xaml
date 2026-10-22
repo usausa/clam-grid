@@ -11,6 +11,7 @@
                    FrozenColumnCount="2"
                    GridStyle="{StaticResource ListGridStyle}"
                    SelectAllCommand="{Binding SelectCommand}"
+                   SelectedKeys="{Binding SelectedKeys}"
                    SelectionMode="MultipleToggle" SortCycle="AscendingDescendingNone"
                    SortOrders="{Binding SortOrders}"
                    ValueAccessors="{x:Static models:TicketRowAccessors.Ticket}">

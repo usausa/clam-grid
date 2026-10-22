@@ -11,7 +11,6 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
     private readonly Func<T, object?>? keySelector;
     private readonly Dictionary<string, Func<T, T, bool, int>> comparers = [with(StringComparer.Ordinal)];
     private readonly HashSet<INotifyPropertyChanged> observedItems = [with(ReferenceEqualityComparer.Instance)];
-    private readonly HashSet<T> removedItems = [with(ReferenceEqualityComparer.Instance)];
     private readonly HashSet<object> selected;
     private Dictionary<T, object> keysByItem = [with(ReferenceEqualityComparer.Instance)];
     private IEnumerable source;
@@ -63,6 +62,8 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
 
     public IReadOnlyList<object> SelectedItems => Array.AsReadOnly(items.Where((_, index) => selected.Contains(keys[index])).Cast<object>().ToArray());
 
+    public IReadOnlyList<object> SelectedKeys => Array.AsReadOnly(keys.Where(selected.Contains).ToArray());
+
     public IReadOnlyList<GridSortOrder> SortOrders { get; private set; } = Array.Empty<GridSortOrder>();
 
     public GridSelectionMode SelectionMode
@@ -100,7 +101,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
             var version = Version;
             try
             {
-                Synchronize(GridDataChangeKind.Filter, false);
+                Synchronize(GridDataChangeKind.Filter);
             }
             catch when (Version == version)
             {
@@ -122,7 +123,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
         indices = [with(RowKeyComparer)];
         selected = [with(RowKeyComparer)];
         SelectionMode = GridSelectionMode.MultipleToggle;
-        Synchronize(GridDataChangeKind.Reset, true);
+        Synchronize(GridDataChangeKind.Reset);
         Connect();
     }
 
@@ -172,6 +173,39 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
         }
 
         isSelected = IsSelected(rowIndex);
+        return true;
+    }
+
+    public bool SetSelectedKeys(IEnumerable<object> rowKeys)
+    {
+        RequireAccess();
+        ArgumentNullException.ThrowIfNull(rowKeys);
+        if (sorting || synchronizing || publishing)
+        {
+            return false;
+        }
+
+        var requested = new HashSet<object>(RowKeyComparer);
+        foreach (var key in rowKeys)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+            requested.Add(key);
+        }
+
+        var next = new HashSet<object>(RowKeyComparer);
+        if (SelectionMode != GridSelectionMode.None)
+        {
+            foreach (var key in keys.Where(requested.Contains))
+            {
+                next.Add(key);
+                if (SelectionMode == GridSelectionMode.SingleToggle)
+                {
+                    break;
+                }
+            }
+        }
+
+        ApplySelection(next);
         return true;
     }
 
@@ -375,7 +409,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
                 return new GridSortResult(GridSortStatus.Superseded, ignoredKeys);
             }
 
-            Commit(ordered, replacement, GridDataChangeKind.Sort, false, nextOrders);
+            Commit(ordered, replacement, GridDataChangeKind.Sort, nextOrders);
             return new GridSortResult(GridSortStatus.Applied, ignoredKeys);
         }
         finally
@@ -401,7 +435,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
     {
         RequireMutation();
         Version++;
-        Synchronize(GridDataChangeKind.Refresh, false);
+        Synchronize(GridDataChangeKind.Refresh);
     }
 
     public void SetSource(IEnumerable value)
@@ -430,7 +464,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
         }
 
         Version++;
-        Synchronize(GridDataChangeKind.Reset, true, replacement);
+        Synchronize(GridDataChangeKind.Reset, replacement);
         Connect();
     }
 
@@ -450,7 +484,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
         }
 
         // Notifications may have been missed while disconnected, including Reset
-        Synchronize(GridDataChangeKind.Reset, true);
+        Synchronize(GridDataChangeKind.Reset);
         Connect();
     }
 
@@ -593,7 +627,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
         }
     }
 
-    private void Synchronize(GridDataChangeKind kind, bool reset, T[]? snapshot = null)
+    private void Synchronize(GridDataChangeKind kind, T[]? snapshot = null)
     {
         synchronizing = true;
         try
@@ -619,7 +653,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
             var replacement = ApplyFilter(ordered);
             if (version == Version)
             {
-                Commit(ordered, replacement, kind, reset);
+                Commit(ordered, replacement, kind);
             }
         }
         finally
@@ -631,7 +665,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
     }
 
     // Ordered holds every row in display order and replacement the rows the filter keeps
-    private void Commit(T[] ordered, T[] replacement, GridDataChangeKind kind, bool reset, IReadOnlyList<GridSortOrder>? orders = null)
+    private void Commit(T[] ordered, T[] replacement, GridDataChangeKind kind, IReadOnlyList<GridSortOrder>? orders = null)
     {
         var orderedKeys = ValidateKeys(ordered);
         var nextKeysByItem = new Dictionary<T, object>(ReferenceEqualityComparer.Instance);
@@ -648,7 +682,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
             var key = nextKeysByItem[replacement[i]];
             nextKeys[i] = key;
             nextIndices.Add(key, i);
-            if (!reset && indices.TryGetValue(key, out var oldIndex) && ReferenceEquals(items[oldIndex], replacement[i]) && !removedItems.Contains(replacement[i]) && selected.Contains(key))
+            if (selected.Contains(key))
             {
                 keep.Add(key);
             }
@@ -664,7 +698,6 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
         keysByItem = nextKeysByItem;
         selected.Clear();
         selected.UnionWith(keep);
-        removedItems.Clear();
         if (orders is not null)
         {
             SortOrders = orders;
@@ -707,6 +740,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
             {
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedCount)));
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedItems)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedKeys)));
             }
 
             if (args.SelectionChanged)
@@ -746,13 +780,6 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
             NotifyCollectionChangedAction.Replace => GridDataChangeKind.Replace,
             _ => GridDataChangeKind.Reset
         };
-        if (((e.Action == NotifyCollectionChangedAction.Remove) || (e.Action == NotifyCollectionChangedAction.Replace)) && (e.OldItems is not null))
-        {
-            foreach (var item in e.OldItems.OfType<T>())
-            {
-                removedItems.Add(item);
-            }
-        }
 
         DrainChanges();
     }
@@ -777,7 +804,7 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
             var reset = pendingReset;
             pendingChange = null;
             pendingReset = false;
-            Synchronize(reset ? GridDataChangeKind.Reset : kind, reset);
+            Synchronize(reset ? GridDataChangeKind.Reset : kind);
         }
     }
 

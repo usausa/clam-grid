@@ -37,7 +37,7 @@ public sealed class GridDataViewTests
         rows[2] = new Row(3, "replacement");
 
         // Assert
-        Assert.Equal(0, view.SelectedCount);
+        Assert.Same(rows[2], Assert.Single(view.SelectedItems));
 
         // Act
         rows.Insert(0, new Row(9, "added"));
@@ -47,7 +47,7 @@ public sealed class GridDataViewTests
     }
 
     [Fact]
-    public void ResetWithTheSameInstancesClearsSelectionButRefreshPreservesIt()
+    public void ResetAndRefreshBothKeepTheSelectionOfTheRowsThatRemain()
     {
         // Arrange
         var rows = Rows(4);
@@ -64,7 +64,7 @@ public sealed class GridDataViewTests
         view.SetSource(rows);
 
         // Assert
-        Assert.Empty(view.SelectedItems);
+        Assert.Same(rows[2], Assert.Single(view.SelectedItems));
 
         // Act
         view.SelectAll();
@@ -229,7 +229,7 @@ public sealed class GridDataViewTests
 
         // Assert
         Assert.Equal(3, view.Count);
-        Assert.Empty(view.SelectedItems);
+        Assert.Same(replacement[0], Assert.Single(view.SelectedItems));
 
         // Act
         view.Dispose();

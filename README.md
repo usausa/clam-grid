@@ -79,6 +79,7 @@ Every setting a view model needs is a bindable property or a command.
                    ValueAccessors="{x:Static models:TicketRowAccessors.Ticket}"
                    ColumnOrders="{Binding ColumnOrders}"
                    SortOrders="{Binding SortOrders}"
+                   SelectedKeys="{Binding SelectedKeys}"
                    FrozenColumnCount="1"
                    GridStyle="{StaticResource ListGridStyle}"
                    SelectionMode="MultipleToggle"
@@ -124,6 +125,17 @@ public sealed class TicketListViewModel : ObservableObject
         }
     }
 
+    // TwoWay bound keys of the selected rows; assigning them selects the rows, and they survive a reload of the rows
+    public IReadOnlyList<object>? SelectedKeys
+    {
+        get;
+        set
+        {
+            field = value;
+            OnPropertyChanged();
+        }
+    }
+
     public ICommand SelectCommand { get; }
 
     public ICommand ColumnEditCommand { get; }
@@ -148,7 +160,7 @@ public sealed class TicketListViewModel : ObservableObject
 | Columns | `GridColumn` children in XAML and `ValueAccessors` bound to a static `GridValueAccessorCollection<T>` |
 | Column settings | `ColumnOrders` (TwoWay, dragged widths included) and `ColumnConfigurationCommand`, whose argument creates the edit session for a settings page |
 | Sort state | `SortOrders` (TwoWay) with the keys registered on the data view, and `SortCycle` for the header tap sequence |
-| Selection | `SelectionMode`, `SelectAllCommand` and the selection methods of the data view |
+| Selection | `SelectionMode`, `SelectedKeys` (TwoWay), `SelectAllCommand` and the selection methods of the data view |
 | Editing | `IsReadOnly` and `CellValueChangedCommand` for boolean cells |
 | Colors | `GridStyle` as a resource with `RowBackground` and the color callbacks |
 | Other input | `CellTappedCommand`, `CellLongPressedCommand`, `ColumnWidthChangedCommand` and `RowMovedCommand` |
@@ -163,7 +175,7 @@ Messaging, navigation and screen controllers belong to the application.
 | **Column settings** | Visibility, order and saved widths, edit session for a settings screen, drag to resize |
 | **Data** | `INotifyCollectionChanged` / `INotifyPropertyChanged` tracking, stable row keys, filtering |
 | **Sorting** | Multi-key sort with history, direction aware comparers, sort callback, configurable tap cycle |
-| **Selection** | None / single / multiple toggle, select all, selection by key |
+| **Selection** | None / single / multiple toggle, select all, selection by key, two way bound keys that select the rows again after a reload |
 | **Editing** | Boolean cell toggle |
 | **Row dragging** | Reorder rows by dragging the row header |
 | **Input** | Tap, long press, pan with inertia, column resize, scrolling a row to a position, commands for MVVM |
@@ -177,5 +189,6 @@ See the [API reference](Document/API.md).
 ## 🌊 Clam family
 
 - [ClamCalendar](https://github.com/usausa/clam-calendar) - Calendar view
-- [ClamGrid](https://github.com/usausa/clam-grid) - Grid view
+- [ClamChart](https://github.com/usausa/clam-chart) - Charts
 - [ClamGauge](https://github.com/usausa/clam-gauge) - Circular gauge
+- [ClamGrid](https://github.com/usausa/clam-grid) - Grid view

@@ -521,6 +521,7 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         NotifyDataProperties();
         OnPropertyChanged(nameof(DataView));
         ApplyRequestedSortOrders();
+        ApplyRequestedSelectedKeys();
         SelectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -598,6 +599,7 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         InvalidateSurface();
         if (e.SelectionChanged)
         {
+            PublishSelectedKeys();
             SelectionChanged?.Invoke(this, EventArgs.Empty);
         }
     }

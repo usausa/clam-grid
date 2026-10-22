@@ -26,6 +26,8 @@ public interface IGridDataView : INotifyPropertyChanged
 
     IReadOnlyList<object> SelectedItems { get; }
 
+    IReadOnlyList<object> SelectedKeys { get; }
+
     GridSelectionMode SelectionMode { get; set; }
 
     IReadOnlyList<GridSortOrder> SortOrders { get; }
@@ -39,6 +41,8 @@ public interface IGridDataView : INotifyPropertyChanged
     bool SetSelected(int rowIndex, bool value);
 
     bool TryToggleSelection(int rowIndex, out bool isSelected);
+
+    bool SetSelectedKeys(IEnumerable<object> rowKeys);
 
     void SelectAll();
 

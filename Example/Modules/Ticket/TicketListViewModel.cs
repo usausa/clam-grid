@@ -71,6 +71,23 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
         }
     }
 
+    // Selected row keys, bound TwoWay and kept in the session; the grid selects the rows again after a reload
+    public IReadOnlyList<object>? SelectedKeys
+    {
+        get;
+        set
+        {
+            if (ReferenceEquals(field, value))
+            {
+                return;
+            }
+
+            field = value;
+            RaisePropertyChanged(nameof(SelectedKeys));
+            session.SelectedKeys = value;
+        }
+    }
+
     // Rows, selection and sort state in one object
     public GridDataView<TicketRow> Items { get; }
 
@@ -183,8 +200,11 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
 
     private void Load()
     {
+        // The keys are restored after the rows, because keys without a row are dropped
+        var selectedKeys = session.SelectedKeys;
         var rows = Enumerable.Range(0, RowCount).Select(static id => new TicketRow(id)).ToArray();
         Items.SetSource(rows);
+        SelectedKeys = selectedKeys;
         UpdateCounts();
         Status = "タップで選択、長押しで未完了を一括選択。見出しタップで並べ替え、見出し長押しで列設定。";
     }

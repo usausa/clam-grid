@@ -20,6 +20,7 @@
 | `RowCount` | `int` | | | Number of rows |
 | `SelectedCount` | `int` | | | Number of selected rows |
 | `SelectedItems` | `IReadOnlyList<object>` | | | Selected rows in display order |
+| `SelectedKeys` | `IReadOnlyList<object>` | `[]` | ✓ TwoWay | Keys of the selected rows in display order; applied to the data view and written back after every selection change, keys without a row are dropped, and `null` leaves the selection unchanged |
 | `IsReadOnly` | `bool` | `true` | ✓ | Default for boolean cell editing; `GridColumn.IsReadOnly` wins |
 | `AllowColumnResizing` | `bool` | `true` | ✓ | Drag the header boundary to resize |
 | `AllowColumnConfiguration` | `bool` | `true` | ✓ | Long press on a header requests the column configuration |
@@ -159,11 +160,11 @@ FallbackFonts.Typefaces = [SKTypeface.FromStream(await FileSystem.OpenAppPackage
 
 | Member | Description |
 |---|---|
-| `GridDataView(IEnumerable source, Func<T, object?>? keySelector)` | Wraps the rows; the key keeps the selection stable across sorting and refreshes, and `INotifyCollectionChanged` / `INotifyPropertyChanged` sources are tracked |
-| `Count`, `this[int]`, `SourceCount`, `SelectedCount`, `SelectedItems`, `SortOrders`, `SelectionMode` | State for binding and logic; `Count` and the indexes cover the rows the filter keeps, `SourceCount` all rows |
+| `GridDataView(IEnumerable source, Func<T, object?>? keySelector)` | Wraps the rows; the selection follows the key, so it survives sorting, refreshes and a reload of the rows, and `INotifyCollectionChanged` / `INotifyPropertyChanged` sources are tracked |
+| `Count`, `this[int]`, `SourceCount`, `SelectedCount`, `SelectedItems`, `SelectedKeys`, `SortOrders`, `SelectionMode` | State for binding and logic; `Count` and the indexes cover the rows the filter keeps, `SourceCount` all rows |
 | `Filter` | `Func<T, bool>?` that hides the rows it rejects; it runs again on source and row changes, hidden rows lose their selection, and it survives `SetSource` like the sort. Hidden rows keep their place in the sort, so sort callbacks receive them as well |
-| `SetSelected`, `TryToggleSelection`, `SelectAll`, `ClearSelection`, `UpdateSelection(predicate)` | Selection API |
+| `SetSelected`, `TryToggleSelection`, `SetSelectedKeys(keys)`, `SelectAll`, `ClearSelection`, `UpdateSelection(predicate)` | Selection API; `SetSelectedKeys` replaces the selection with the rows of the given keys, drops the keys without a row, and returns `false` without applying anything while a notification is running |
 | `RegisterSort(key, selector, comparer)`, `RegisterComparer(key, comparison)`, `SetSortCallback(keys, callback)` | Sort key registration; the callback variant delegates the sorting itself, for example to a database query |
 | `SortBy(key, cycle)`, `RestoreSortOrders(orders)`, `SaveSortOrders()` | Sort by a key following a `GridSortCycle` (ascending then descending when omitted) and persist the sort state |
-| `SetSource(rows)`, `Refresh()`, `Suspend()` / `Resume()` | Replace the rows, rebuild them or batch changes |
+| `SetSource(rows)`, `Refresh()`, `Suspend()` / `Resume()` | Replace the rows, rebuild them or batch changes; the selection keeps every row whose key is still there, so reloading the rows as new instances of the same keys keeps it |
 | `Changed`, `SelectionChanged`, `SortRequested`, `SortChanged`, `SortFailed` | Events with the same meaning as on the view |
