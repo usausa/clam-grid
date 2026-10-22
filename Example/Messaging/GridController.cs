@@ -27,10 +27,26 @@ public sealed class GridScrollRequestEventArgs : EventArgs
     }
 }
 
+public sealed class GridColumnVisibilityRequestEventArgs : EventArgs
+{
+    public string Key { get; }
+
+    public bool IsVisible { get; }
+
+    public GridColumnVisibilityRequestEventArgs(string key, bool isVisible)
+    {
+        Key = key;
+        IsVisible = isVisible;
+    }
+}
+
 public sealed class GridController : NotificationObject
 {
     [EditorBrowsable(EditorBrowsableState.Never)]
     public event EventHandler<GridScrollRequestEventArgs>? ScrollRequest;
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public event EventHandler<GridColumnVisibilityRequestEventArgs>? ColumnVisibilityRequest;
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     public event EventHandler<EventArgs>? InvalidateRequest;
@@ -74,6 +90,11 @@ public sealed class GridController : NotificationObject
         var headers = Columns.ToDictionary(static x => x.Key, static x => x.Header, StringComparer.Ordinal);
         var orders = ColumnOrders ?? Columns.Select(static x => new GridColumnOrder(x.Key, true)).ToArray();
         return new GridColumnEditSession(orders.Where(x => headers.ContainsKey(x.Key)).Select(x => new GridColumnOption(x.Key, headers[x.Key], x.IsVisible) { Width = x.Width }));
+    }
+
+    public void SetColumnVisible(string key, bool value)
+    {
+        ColumnVisibilityRequest?.Invoke(this, new GridColumnVisibilityRequestEventArgs(key, value));
     }
 
     // Request

@@ -29,6 +29,7 @@
                            behaviors:GridBind.Controller="{Binding Grid}"
                            ItemsSource="{Binding Rows}"
                            ColumnConfigurationCommand="{Binding ColumnConfigurationCommand}"
+                           EmptyText="該当する行がありません"
                            GridStyle="{Binding GridStyle}"
                            IsReadOnly="False"
                            SelectAllCommand="{Binding SelectAllCommand}"

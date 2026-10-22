@@ -40,6 +40,39 @@ internal static class GridColumnSettings
         return result.ToArray();
     }
 
+    // Null when the key is unknown, the value is unchanged, or the last visible column would be hidden
+    public static GridColumnOrder[]? SetVisible(IReadOnlyList<GridColumnOrder> orders, string key, bool value)
+    {
+        var index = IndexOf(orders, key);
+        if ((index < 0) || (orders[index].IsVisible == value))
+        {
+            return null;
+        }
+
+        if (!value && (orders.Count(static order => order.IsVisible) <= 1))
+        {
+            return null;
+        }
+
+        var result = orders.ToArray();
+        result[index] = result[index] with { IsVisible = value };
+        return result;
+    }
+
+    // Null when the key is unknown or the width is unchanged; null width restores the declared width
+    public static GridColumnOrder[]? SetWidth(IReadOnlyList<GridColumnOrder> orders, string key, double? width)
+    {
+        var index = IndexOf(orders, key);
+        if ((index < 0) || Nullable.Equals(orders[index].Width, width))
+        {
+            return null;
+        }
+
+        var result = orders.ToArray();
+        result[index] = result[index] with { Width = width };
+        return result;
+    }
+
     // Visible columns in display order; a saved width replaces the declared width
     public static GridColumn[] Arrange(IReadOnlyList<GridColumn> catalog, IEnumerable<GridColumnOrder> orders)
     {
@@ -85,5 +118,18 @@ internal static class GridColumnSettings
 
         var nextOrders = orders.Select(order => dropped.Contains(order.Key) ? order with { Width = null } : order).ToArray();
         return (result, nextOrders);
+    }
+
+    private static int IndexOf(IReadOnlyList<GridColumnOrder> orders, string key)
+    {
+        for (var i = 0; i < orders.Count; i++)
+        {
+            if (String.Equals(orders[i].Key, key, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 }

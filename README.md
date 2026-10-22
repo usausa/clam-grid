@@ -172,15 +172,28 @@ Messaging, navigation and screen controllers belong to the application.
 | Category | Detail |
 |---|---|
 | **Columns** | Auto / Absolute / Star width, minimum width, alignment, multi-line headers, format string and value converter, frozen leading columns, static header and cell colors |
-| **Column settings** | Visibility, order and saved widths, edit session for a settings screen, drag to resize |
+| **Column settings** | Visibility, order and saved widths, edit session for a settings screen, drag to resize, show, hide or resize a single column by key |
 | **Data** | `INotifyCollectionChanged` / `INotifyPropertyChanged` tracking, stable row keys, filtering |
 | **Sorting** | Multi-key sort with history, direction aware comparers, sort callback, configurable tap cycle |
 | **Selection** | None / single / multiple toggle, select all, selection by key, two way bound keys that select the rows again after a reload |
 | **Editing** | Boolean cell toggle |
 | **Row dragging** | Reorder rows by dragging the row header |
 | **Input** | Tap, long press, pan with inertia, column resize, scrolling a row to a position, commands for MVVM |
-| **Styling** | Font, padding, colors, alternating rows, sort marks, row header text and conditional color callbacks |
+| **Styling** | Font, padding, colors, alternating rows, sort marks, row header text, scroll bars, text for the empty state and conditional color callbacks |
 | **Fonts** | Per character fallback to the `FallbackFonts` typefaces of SkiaExtension and system fonts, emoji sequences included |
+
+## 🧵 Threading
+
+The grid must be used on the UI thread, and a `GridDataView<T>` on the thread that created it, which in practice is the same thread.  
+Setting properties, calling methods and changing the bound collection all have to happen there; the members that change the grid or the data view check this and throw `InvalidOperationException` at once instead of leaving them in a state that breaks later.  
+
+```csharp
+var rows = await LoadRowsAsync();
+await MainThread.InvokeOnMainThreadAsync(() => view.SetSource(rows));
+```
+
+A change made from inside one of the data view events is refused as well, so make it after the notification returns.  
+`Suspend()` and `Resume()` of the data view fold a long series of changes into one rebuild.  
 
 ## 📖 API
 

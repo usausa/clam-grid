@@ -16,6 +16,7 @@
 | `SortOrders` | `IReadOnlyList<GridSortOrder>` | `[]` | ✓ TwoWay | Sort keys and directions; applied to the data view and written back after every sort, an empty list clears the sort and `null` leaves the view unchanged |
 | `SortCycle` | `GridSortCycle` | `AscendingDescending` | ✓ | Direction sequence of repeated header taps; the `None` variants remove the key on the third tap |
 | `GridStyle` | `GridStyle` | `new()` | ✓ | Font, sizes and colors |
+| `EmptyText` | `string?` | `null` | ✓ | Text drawn in the center of the body when there is no row; the headers stay, and `null` or an empty string draws nothing |
 | `SelectionMode` | `GridSelectionMode` | `MultipleToggle` | ✓ | Selection behavior |
 | `RowCount` | `int` | | | Number of rows |
 | `SelectedCount` | `int` | | | Number of selected rows |
@@ -45,6 +46,8 @@
 | `ConfigureColumns(IEnumerable<GridColumn> definitions, IEnumerable<GridColumnOrder>? orders = null)` | `void` | Replaces all column definitions and applies the saved visibility and order |
 | `ApplyColumnOrders(IEnumerable<GridColumnOrder>? orders)` | `void` | Applies visibility and order to the current definitions; `null` restores the default |
 | `CreateColumnEditSession()` | `GridColumnEditSession` | Creates an editable copy of the column settings; `GridColumnEditSession.Create(columns, orders)` does the same without the view |
+| `SetColumnVisible(string key, bool value)` | `bool` | Shows or hides one column and writes the result to `ColumnOrders`; `false` when the key is unknown, the value is unchanged or it would hide the last visible column, and nothing is changed then |
+| `SetColumnWidth(string key, double? width)` | `bool` | Saves an absolute width for one column, or restores the declared width with `null`; `false` when the key is unknown or the width is unchanged. A saved width is clamped to `MinWidth` when the column is drawn, the same as a dragged one |
 | `IsSelected(int rowIndex)` | `bool` | Whether the row is selected |
 | `SetSelected(int rowIndex, bool value)` | `bool` | Selects or clears the row |
 | `TryToggleSelection(int rowIndex, out bool isSelected)` | `bool` | Toggles the row selection |
@@ -65,6 +68,8 @@
 | `Dispose()` | `void` | Releases the data view subscriptions, timers and native resources |
 
 Scroll requests made before the grid has a size are kept, the latest one is applied by the first layout and the `ScrollIntoView` methods return `true` for them.  
+
+The grid is used on the UI thread; the members that change it throw `InvalidOperationException` when they are called from another thread and `ObjectDisposedException` after `Dispose()`.  
 
 ### 📣 Events
 
@@ -131,11 +136,13 @@ The default colors follow the Material palette: Blue 700 header, Cyan 700 and Or
 | `RowHeight`, `HeaderHeight` | `double?` | `null` | `null` derives the height from the primary font and the fallback fonts resolved while measuring; the header also counts the most lines among all column headers, hidden ones included, and the corner text |
 | `RowHeaderWidth` | `double` | `48` | Width of the row header |
 | `ColumnHeadersVisible`, `RowHeadersVisible`, `VerticalLinesVisible` | `bool` | `true` | Visibility of the headers and vertical lines |
+| `ScrollBarVisible`, `ScrollBarThickness`, `ScrollBarColor` | `bool`, `double`, `Color` | `true`, `4`, `#8C64748B` | Scroll bars drawn over the right and bottom edges while the content overflows; the corner radius is half the thickness and the bar keeps a gap of one DIP from the edge |
 | `CornerText` | `string` | `#` | Text of the corner cell above the row headers; line breaks work as in column headers |
 | `RowHeaderAlignment` | `TextAlignment` | `End` | Alignment of the row header text |
 | `TextColor`, `Background`, `HeaderBackground`, `HeaderTextColor`, `RowHeaderBackground`, `GridLineColor`, `SelectedBackground`, `SelectedTextColor` | `Color` | | Base colors |
 | `AlternatingRowBackground` | `Color?` | `null` | Background of every second row in display order; the selection, `RowBackground` and the column background win, row headers keep their own color |
 | `FrozenLineColor` | `Color` | `#9E9E9E` | Separator on the right edge of the frozen columns |
+| `EmptyTextColor` | `Color` | `#9E9E9E` | Color of `ClamGridView.EmptyText` |
 | `AscendingHeaderBackground`, `DescendingHeaderBackground` | `Color` | | Header background of the primary sort key |
 | `AscendingSortMark`, `DescendingSortMark` | `string` | `↑`, `↓` | Text drawn next to the header of a sorted column; kept when the header text is truncated |
 | `SortMarkPosition` | `GridSortMarkPosition` | `Start` | `Start` draws the mark before the header text, `End` after it |
@@ -168,3 +175,6 @@ FallbackFonts.Typefaces = [SKTypeface.FromStream(await FileSystem.OpenAppPackage
 | `SortBy(key, cycle)`, `RestoreSortOrders(orders)`, `SaveSortOrders()` | Sort by a key following a `GridSortCycle` (ascending then descending when omitted) and persist the sort state |
 | `SetSource(rows)`, `Refresh()`, `Suspend()` / `Resume()` | Replace the rows, rebuild them or batch changes; the selection keeps every row whose key is still there, so reloading the rows as new instances of the same keys keeps it |
 | `Changed`, `SelectionChanged`, `SortRequested`, `SortChanged`, `SortFailed` | Events with the same meaning as on the view |
+
+The data view belongs to the thread that created it, and that is where the bound collection has to be changed as well; the members that change it throw `InvalidOperationException` when they are called from another thread and `ObjectDisposedException` after `Dispose()`.  
+A change made from inside one of its own events is refused as well: most members throw `InvalidOperationException`, while `SetSelectedKeys` returns `false` and `RestoreSortOrders` returns a `Rejected` result. Defer it until the notification returns.  

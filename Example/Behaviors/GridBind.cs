@@ -56,6 +56,7 @@ public static class GridBind
                 controller.ColumnOrders = bindable.ColumnOrders;
                 controller.PropertyChanged += ControllerOnPropertyChanged;
                 controller.ScrollRequest += ControllerOnScrollRequest;
+                controller.ColumnVisibilityRequest += ControllerOnColumnVisibilityRequest;
                 controller.InvalidateRequest += ControllerOnInvalidateRequest;
             }
 
@@ -73,6 +74,7 @@ public static class GridBind
             {
                 controller.PropertyChanged -= ControllerOnPropertyChanged;
                 controller.ScrollRequest -= ControllerOnScrollRequest;
+                controller.ColumnVisibilityRequest -= ControllerOnColumnVisibilityRequest;
                 controller.InvalidateRequest -= ControllerOnInvalidateRequest;
             }
 
@@ -119,6 +121,14 @@ public static class GridBind
             else
             {
                 grid.ScrollBy(e.DeltaX, e.DeltaY);
+            }
+        }
+
+        private void ControllerOnColumnVisibilityRequest(object? sender, GridColumnVisibilityRequestEventArgs e)
+        {
+            if ((controller is not null) && (AssociatedObject is { } grid) && grid.SetColumnVisible(e.Key, e.IsVisible))
+            {
+                controller.ColumnOrders = grid.ColumnOrders;
             }
         }
 

@@ -122,9 +122,11 @@ internal sealed class GridRenderer : IDisposable
         DrawHeaderText(canvas, corner, style.CornerText, String.Empty, style.HeaderTextColor);
         DrawLines(canvas, corner);
         DrawFrozenLine(canvas, layout);
-        DrawScrollbars(canvas, layout);
+        DrawScrollBars(canvas, layout);
         return rendered;
     }
+
+    public void DrawEmptyText(SKCanvas canvas, string value, GridLayout layout) => DrawText(canvas, layout.BodyBounds, value, TextAlignment.Center, style.EmptyTextColor);
 
     // Scrolling and frozen columns are painted in separate passes with their own clip so frozen cells cover scrolled ones
     private int RenderCells(SKCanvas canvas, GridLayout layout, GridRect clip, GridIndexRange range, IReadOnlyList<GridColumn> columns, IReadOnlyList<object> items, GridIndexRange rows, RowState[] states)
@@ -438,16 +440,24 @@ internal sealed class GridRenderer : IDisposable
         }
     }
 
-    private void DrawScrollbars(SKCanvas canvas, GridLayout layout)
+    private void DrawScrollBars(SKCanvas canvas, GridLayout layout)
     {
+        if (!style.ScrollBarVisible)
+        {
+            return;
+        }
+
+        var thickness = (float)style.ScrollBarThickness;
+        var radius = thickness / 2;
+        var offset = thickness + 1;
         var body = layout.BodyBounds;
         paint.Style = SKPaintStyle.Fill;
-        paint.Color = new SKColor(0x64, 0x74, 0x8B, 140);
+        paint.Color = style.ScrollBarColor.ToSKColor();
         if ((layout.MaximumScrollY > 0) && !body.IsEmpty)
         {
             var height = Math.Min(body.Height, Math.Max(24, body.Height * body.Height / layout.ContentHeight));
             var y = body.Y + ((body.Height - height) * layout.ScrollY / layout.MaximumScrollY);
-            canvas.DrawRoundRect(SKRect.Create((float)body.Right - 5, (float)y, 4, (float)height), 2, 2, paint);
+            canvas.DrawRoundRect(SKRect.Create((float)body.Right - offset, (float)y, thickness, (float)height), radius, radius, paint);
         }
 
         var area = layout.ScrollArea;
@@ -455,7 +465,7 @@ internal sealed class GridRenderer : IDisposable
         {
             var width = Math.Min(area.Width, Math.Max(24, area.Width * area.Width / (layout.ContentWidth - layout.FrozenWidth)));
             var x = area.X + ((area.Width - width) * layout.ScrollX / layout.MaximumScrollX);
-            canvas.DrawRoundRect(SKRect.Create((float)x, (float)area.Bottom - 5, (float)width, 4), 2, 2, paint);
+            canvas.DrawRoundRect(SKRect.Create((float)x, (float)area.Bottom - offset, (float)width, thickness), radius, radius, paint);
         }
     }
 

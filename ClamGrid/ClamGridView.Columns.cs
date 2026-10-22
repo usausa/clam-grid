@@ -73,6 +73,18 @@ public partial class ClamGridView
         return GridColumnEditSession.Create(columnCatalog, columnOrders);
     }
 
+    public bool SetColumnVisible(string key, bool value)
+    {
+        RequireUiThread();
+        return TryApplyColumnOrders(GridColumnSettings.SetVisible(columnOrders, key, value));
+    }
+
+    public bool SetColumnWidth(string key, double? width)
+    {
+        RequireUiThread();
+        return TryApplyColumnOrders(GridColumnSettings.SetWidth(columnOrders, key, width));
+    }
+
     private static void OnColumnOrdersChanged(BindableObject bindable, object? oldValue, object? newValue)
     {
         var grid = (ClamGridView)bindable;
@@ -202,12 +214,16 @@ public partial class ClamGridView
         ResolveValueAccessors(columnCatalog);
     }
 
-    // A dragged width is saved in the column orders, so the definitions keep their declared width
-    private void SetColumnWidth(string key, double width)
+    private bool TryApplyColumnOrders(GridColumnOrder[]? orders)
     {
-        var orders = columnOrders.Select(order => order.Key == key ? order with { Width = width } : order).ToArray();
+        if (orders is null)
+        {
+            return false;
+        }
+
         requestedOrders = orders;
         SetColumnConfiguration(columnCatalog, orders);
+        return true;
     }
 
     // Writes the value back as a control side change so OneWay bindings survive and TwoWay bindings update the source

@@ -217,6 +217,14 @@ public sealed partial class GridListViewModel : AppViewModelBase
         AlternatingRowBackground = SampleColumns.AlternatingBackground
     };
 
+    private void ToggleSecondColumn()
+    {
+        var key = Grid.Columns[1].Key;
+        var visible = Grid.ColumnOrders?.FirstOrDefault(order => order.Key == key)?.IsVisible ?? true;
+        Grid.SetColumnVisible(key, !visible);
+        Status = $"{key} 列を{(visible ? "隠しました" : "表示しました")}。";
+    }
+
     private void Load()
     {
         Rows.RestoreSortOrders([]);
@@ -232,7 +240,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
     private async Task ExecuteActionAsync()
     {
         var operation = await actionSheet.ShowAsync("操作例", CancelText,
-            "全選択", "選択解除", "列設定を初期化", "行を追加", "先頭行を末尾へ移動", "選択行を削除", "同じIDの別データに置換", "名前と状態を更新", "発注チェックを外部から変更", "販売中だけを選択", "販売中だけを表示", "絞り込みを解除", "外部からID42を選択", "ソート順を保存", "ソート順を復元", "再読込（選択解除）", "性能計測");
+            "全選択", "選択解除", "列設定を初期化", "行を追加", "先頭行を末尾へ移動", "選択行を削除", "同じIDの別データに置換", "名前と状態を更新", "発注チェックを外部から変更", "販売中だけを選択", "販売中だけを表示", "該当なしで絞り込む", "絞り込みを解除", "2列目の表示を切り替え", "外部からID42を選択", "ソート順を保存", "ソート順を復元", "再読込", "性能計測");
         if ((operation is null) || IsDisposed)
         {
             return;
@@ -307,9 +315,16 @@ public sealed partial class GridListViewModel : AppViewModelBase
                 Rows.Filter = static item => !item.IsDiscontinued;
                 Status = "販売中の行だけを表示しました。廃番にした行はその場で非表示になります。";
                 break;
+            case "該当なしで絞り込む":
+                Rows.Filter = static _ => false;
+                Status = "該当する行が無い状態にしました。";
+                break;
             case "絞り込みを解除":
                 Rows.Filter = null;
                 Status = "絞り込みを解除しました。";
+                break;
+            case "2列目の表示を切り替え":
+                ToggleSecondColumn();
                 break;
             case "外部からID42を選択":
                 SelectByKey(41);
@@ -321,10 +336,10 @@ public sealed partial class GridListViewModel : AppViewModelBase
             case "ソート順を復元":
                 Status = $"ソート復元: {Rows.RestoreSortOrders(savedSortOrders).Status}";
                 break;
-            case "再読込（選択解除）":
+            case "再読込":
                 Source = SampleData.CreateSource(Source.Count);
                 Rows.SetSource(Source);
-                Status = "再読込で選択を解除しました。";
+                Status = "再読込しました。キーが同じ行の選択は残ります。";
                 break;
             case "性能計測":
                 await BenchmarkAsync().ConfigureAwait(true);

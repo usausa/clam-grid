@@ -17,11 +17,15 @@ public sealed record GridStyle
 
     public double RowHeaderWidth { get; set; } = 48;
 
+    public double ScrollBarThickness { get; set; } = 4;
+
     public bool ColumnHeadersVisible { get; set; } = true;
 
     public bool RowHeadersVisible { get; set; } = true;
 
     public bool VerticalLinesVisible { get; set; } = true;
+
+    public bool ScrollBarVisible { get; set; } = true;
 
     public string CornerText { get; set; } = "#";
 
@@ -29,6 +33,8 @@ public sealed record GridStyle
 
     // Default colors follow the Material palette: Blue 700 header, Cyan 700 and Orange 700 for the sorted column, Blue 100 selection and Gray tints
     public Color TextColor { get; set; } = Color.FromArgb("#212121");
+
+    public Color EmptyTextColor { get; set; } = Color.FromArgb("#9E9E9E");
 
     public Color Background { get; set; } = Colors.White;
 
@@ -44,6 +50,8 @@ public sealed record GridStyle
     public Color GridLineColor { get; set; } = Color.FromArgb("#E0E0E0");
 
     public Color FrozenLineColor { get; set; } = Color.FromArgb("#9E9E9E");
+
+    public Color ScrollBarColor { get; set; } = Color.FromArgb("#8C64748B");
 
     public Color SelectedBackground { get; set; } = Color.FromArgb("#BBDEFB");
 
@@ -90,6 +98,11 @@ public sealed record GridStyle
         if (!IsNullOrPositive(RowHeight) || !IsNullOrPositive(HeaderHeight) || !Double.IsFinite(RowHeaderWidth) || (RowHeaderWidth < 0))
         {
             throw new ArgumentException("Row and header heights must be positive finite values and the row header width must be a finite value of zero or more.");
+        }
+
+        if (!Double.IsFinite(ScrollBarThickness) || (ScrollBarThickness <= 0))
+        {
+            throw new ArgumentException("The scroll bar thickness must be a positive finite value.");
         }
     }
 

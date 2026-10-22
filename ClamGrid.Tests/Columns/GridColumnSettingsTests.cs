@@ -106,5 +106,71 @@ public sealed class GridColumnSettingsTests
         Assert.Equal([new("a", true) { Width = 150 }, new("b", true), new GridColumnOrder("c", true)], editedOrders);
     }
 
+    [Fact]
+    public void VisibilityIsChangedOnlyForAKnownKeyWithANewValue()
+    {
+        // Arrange
+        GridColumnOrder[] orders = [new("a", true), new("b", false), new("c", true)];
+
+        // Act & Assert
+        Assert.Equal([new("a", true), new("b", true), new GridColumnOrder("c", true)], GridColumnSettings.SetVisible(orders, "b", true)!);
+        Assert.Equal([new("a", false), new("b", false), new GridColumnOrder("c", true)], GridColumnSettings.SetVisible(orders, "a", false)!);
+        Assert.Null(GridColumnSettings.SetVisible(orders, "unknown", true));
+        Assert.Null(GridColumnSettings.SetVisible(orders, "a", true));
+        Assert.Null(GridColumnSettings.SetVisible(orders, "b", false));
+    }
+
+    [Fact]
+    public void TheLastVisibleColumnIsNotHidden()
+    {
+        // Arrange
+        GridColumnOrder[] orders = [new("a", true), new("b", false)];
+
+        // Act & Assert
+        Assert.Null(GridColumnSettings.SetVisible(orders, "a", false));
+        Assert.Equal([new("a", true), new GridColumnOrder("b", true)], GridColumnSettings.SetVisible(orders, "b", true)!);
+    }
+
+    [Fact]
+    public void AHiddenColumnKeepsItsSavedWidth()
+    {
+        // Arrange
+        GridColumnOrder[] orders = [new("a", true) { Width = 120 }, new("b", true)];
+
+        // Act
+        var hidden = GridColumnSettings.SetVisible(orders, "a", false);
+
+        // Assert
+        Assert.Equal([new GridColumnOrder("a", false) { Width = 120 }, new("b", true)], hidden!);
+    }
+
+    [Fact]
+    public void WidthIsSavedRestoredAndIgnoredForAnUnknownKey()
+    {
+        // Arrange
+        GridColumnOrder[] orders = [new("a", true) { Width = 120 }, new("b", true)];
+
+        // Act & Assert
+        Assert.Equal([new GridColumnOrder("a", true) { Width = 120 }, new("b", true) { Width = 80 }], GridColumnSettings.SetWidth(orders, "b", 80)!);
+        Assert.Equal([new GridColumnOrder("a", true), new("b", true)], GridColumnSettings.SetWidth(orders, "a", null)!);
+        Assert.Null(GridColumnSettings.SetWidth(orders, "unknown", 80));
+        Assert.Null(GridColumnSettings.SetWidth(orders, "a", 120));
+        Assert.Null(GridColumnSettings.SetWidth(orders, "b", null));
+    }
+
+    [Fact]
+    public void AnInvalidSavedWidthIsDroppedByTheNextNormalize()
+    {
+        // Arrange
+        GridColumnOrder[] orders = [new("a", true), new("b", true)];
+
+        // Act
+        var saved = GridColumnSettings.SetWidth(orders, "a", -1);
+
+        // Assert
+        Assert.Equal([new GridColumnOrder("a", true) { Width = -1 }, new("b", true)], saved!);
+        Assert.Equal([new GridColumnOrder("a", true), new("b", true)], GridColumnSettings.Normalize(["a", "b"], saved));
+    }
+
     private static GridColumn Column(string key) => new(key, key.ToUpperInvariant(), new GridValueAccessor<object, string>(static _ => String.Empty));
 }

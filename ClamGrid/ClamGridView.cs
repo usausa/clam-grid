@@ -16,6 +16,7 @@ public partial class ClamGridView : SKCanvasView, IDisposable
     public static readonly BindableProperty ItemsSourceProperty = BindableProperty.Create(nameof(ItemsSource), typeof(IEnumerable), typeof(ClamGridView), propertyChanged: OnItemsSourceChanged);
     public static readonly BindableProperty GridStyleProperty = BindableProperty.Create(nameof(GridStyle), typeof(GridStyle), typeof(ClamGridView), defaultValueCreator: static _ => new GridStyle(), validateValue: static (_, value) => GridStyle.ValidateValue(value), propertyChanged: OnStyleChanged);
     public static readonly BindableProperty SelectionModeProperty = BindableProperty.Create(nameof(SelectionMode), typeof(GridSelectionMode), typeof(ClamGridView), GridSelectionMode.MultipleToggle, propertyChanged: OnSelectionModeChanged);
+    public static readonly BindableProperty EmptyTextProperty = BindableProperty.Create(nameof(EmptyText), typeof(string), typeof(ClamGridView), propertyChanged: OnEmptyTextChanged);
 
     private static readonly SKColor AccentColor = new(0x25, 0x63, 0xEB);
 
@@ -57,6 +58,12 @@ public partial class ClamGridView : SKCanvasView, IDisposable
     {
         get => DataView?.SelectionMode ?? (GridSelectionMode)GetValue(SelectionModeProperty);
         set => SetValue(SelectionModeProperty, value);
+    }
+
+    public string? EmptyText
+    {
+        get => (string?)GetValue(EmptyTextProperty);
+        set => SetValue(EmptyTextProperty, value);
     }
 
     public GridColumnCollection Columns { get; } = [];
@@ -350,6 +357,11 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         {
             canvas.Scale((float)(e.Info.Width / Width), (float)(e.Info.Height / Height));
             cells = currentRenderer.Render(canvas, current, Columns, Items, DataView, AllowRowDragging && (RowMover is not null));
+            if ((Items.Count == 0) && (EmptyText is { Length: > 0 } emptyText))
+            {
+                currentRenderer.DrawEmptyText(canvas, emptyText, current);
+            }
+
             DrawResizeIndicator(canvas, current);
             DrawRowDragIndicator(canvas, current);
         }
@@ -541,6 +553,8 @@ public partial class ClamGridView : SKCanvasView, IDisposable
             view.SelectionMode = (GridSelectionMode)newValue;
         }
     }
+
+    private static void OnEmptyTextChanged(BindableObject bindable, object oldValue, object newValue) => ((ClamGridView)bindable).InvalidateSurface();
 
     private static void OnStyleChanged(BindableObject bindable, object oldValue, object newValue)
     {
