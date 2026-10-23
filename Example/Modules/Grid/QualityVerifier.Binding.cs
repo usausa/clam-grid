@@ -2,7 +2,7 @@ namespace Example.Modules.Grid;
 
 public sealed partial class QualityVerifier
 {
-    // Verifies the XAML construction order (ColumnOrders, then definitions one by one, then ValueAccessors) and the TwoWay ColumnOrders binding
+    // Verifies the XAML construction order (ColumnStates, then definitions one by one, then ValueAccessors) and the TwoWay ColumnStates binding
     private async Task VerifyBindingAsync()
     {
         report("列定義と列設定バインディングの検証");
@@ -22,41 +22,42 @@ public sealed partial class QualityVerifier
         await NextFrameAsync(() =>
         {
             grid.ValueAccessors = null;
-            grid.ConfigureColumns([]);
+            grid.ColumnStates = null;
+            grid.ColumnDefinitions.Clear();
             grid.GridStyle = ScenarioGridFactory.CreateStyle(scenario);
             grid.ItemsSource = data;
             // Orders bound before the definitions are applied when the definitions are added
-            grid.SetBinding(ClamGridView.ColumnOrdersProperty, static (OrderSource source) => source.Orders, BindingMode.TwoWay, source: orders);
+            grid.SetBinding(ClamGridView.ColumnStatesProperty, static (OrderSource source) => source.Orders, BindingMode.TwoWay, source: orders);
             foreach (var column in scenario.Columns)
             {
                 grid.ColumnDefinitions.Add(new GridColumn { Key = column.Key, Header = column.Header, Width = GridColumnWidth.Absolute(column.Width), Format = "N0" });
             }
         }).ConfigureAwait(true);
-        Check("xaml: orders set before definitions are applied", (grid.Columns.Count == 1) && (grid.Columns[0].Key == "DeptCode") && (grid.ColumnDefinitions.Count == scenario.Columns.Count));
-        Check("xaml: unresolved column renders empty", grid.Columns[0].ValueAccessor.GetValue(data[0]) is null);
-        Check("binding: normalized orders are written back to the source", (orders.Orders?.Count == scenario.Columns.Count) && (orders.Orders[0] == new GridColumnOrder("DeptCode", true)) && orders.Orders.Skip(1).All(static order => !order.IsVisible) && ReferenceEquals(orders.Orders, grid.ColumnOrders));
+        Check("xaml: orders set before definitions are applied", (grid.VisibleColumns().Count == 1) && (grid.VisibleColumns()[0].Key == "DeptCode") && (grid.ColumnDefinitions.Count == scenario.Columns.Count));
+        Check("xaml: unresolved column renders empty", grid.VisibleColumns()[0].ValueAccessor.GetValue(data[0]) is null);
+        Check("binding: normalized orders are written back to the source", (orders.Orders?.Count == scenario.Columns.Count) && (orders.Orders[0] == new GridColumnState("DeptCode", true)) && orders.Orders.Skip(1).All(static order => !order.IsVisible) && ReferenceEquals(orders.Orders, grid.ColumnStates));
 
         var frame = await NextFrameAsync(() => grid.ValueAccessors = accessors).ConfigureAwait(true);
         Check("xaml: value accessors are resolved by key", (frame.RenderedCells > 0) && grid.ColumnDefinitions.All(column => column.ValueAccessor.GetValue(data[0]) is string));
-        Check("xaml: format survives accessor resolution", grid.Columns.All(static column => column.Format == "N0"));
+        Check("xaml: format survives accessor resolution", grid.VisibleColumns().All(static column => column.Format == "N0"));
 
         await NextFrameAsync(() => orders.Orders = [new("CustomerName", true), new("DeptCode", true)]).ConfigureAwait(true);
-        Check("binding: source change reorders columns", grid.Columns.Select(static column => column.Key).SequenceEqual(["CustomerName", "DeptCode"]));
+        Check("binding: source change reorders columns", grid.VisibleColumns().Select(static column => column.Key).SequenceEqual(["CustomerName", "DeptCode"]));
 
-        await NextFrameAsync(() => grid.ApplyColumnOrders(null)).ConfigureAwait(true);
-        Check("binding: grid side reset reaches the source", (grid.Columns.Count == scenario.Columns.Count) && (orders.Orders?.All(static order => order.IsVisible) ?? false));
+        await NextFrameAsync(() => grid.ColumnStates = null).ConfigureAwait(true);
+        Check("binding: grid side reset reaches the source", (grid.VisibleColumns().Count == scenario.Columns.Count) && (orders.Orders?.All(static order => order.IsVisible) ?? false));
 
         await NextFrameAsync(() => orders.Orders = [new("DeptCode", true)]).ConfigureAwait(true);
-        Check("binding: two way binding survives grid side updates", (grid.Columns.Count == 1) && (orders.Orders?.Count == scenario.Columns.Count));
+        Check("binding: two way binding survives grid side updates", (grid.VisibleColumns().Count == 1) && (orders.Orders?.Count == scenario.Columns.Count));
 
         var session = grid.CreateColumnEditSession();
-        var args = new GridColumnConfigurationEventArgs(grid.ColumnDefinitions.ToArray(), null, grid.ColumnOrders).CreateEditSession();
+        var args = new GridColumnConfigurationEventArgs(grid.ColumnDefinitions.ToArray(), null, grid.ColumnStates).CreateEditSession();
         Check("binding: edit session from definitions and orders", session.Columns.Select(static column => (column.Key, column.IsVisible)).SequenceEqual(args.Columns.Select(static column => (column.Key, column.IsVisible))) && (session.Columns[0].Key == "DeptCode") && session.Columns[0].IsVisible && !session.Columns[1].IsVisible);
 
         await NextFrameAsync(() => grid.ColumnDefinitions.Add(new GridColumn { Key = "GroupId", Header = "案件グループ" })).ConfigureAwait(true);
-        Check("xaml: added definition keeps orders and is hidden until enabled", (grid.Columns.Count == 1) && (orders.Orders?.Count == scenario.Columns.Count + 1) && (orders.Orders[^1] == new GridColumnOrder("GroupId", false)) && grid.ColumnDefinitions[^1].ValueAccessor.GetValue(data[0]) is string);
+        Check("xaml: added definition keeps orders and is hidden until enabled", (grid.VisibleColumns().Count == 1) && (orders.Orders?.Count == scenario.Columns.Count + 1) && (orders.Orders[^1] == new GridColumnState("GroupId", false)) && grid.ColumnDefinitions[^1].ValueAccessor.GetValue(data[0]) is string);
 
-        await NextFrameAsync(() => grid.Columns[0] = grid.Columns[0] with { Width = GridColumnWidth.Absolute(321) }).ConfigureAwait(true);
+        await NextFrameAsync(() => grid.ColumnDefinitions[0] = grid.ColumnDefinitions[0] with { Width = GridColumnWidth.Absolute(321) }).ConfigureAwait(true);
         Check("xaml: resized width is reflected to the definition", grid.ColumnDefinitions.First(static column => column.Key == "DeptCode").Width.Equals(GridColumnWidth.Absolute(321)) && (orders.Orders?.Count == scenario.Columns.Count + 1));
 
         var missing = false;
@@ -90,16 +91,16 @@ public sealed partial class QualityVerifier
         }).ConfigureAwait(true);
         Check("binding: sort orders follow a new data view", other.SortOrders.SequenceEqual([new GridSortOrder("DeptCode")]) && (data.SortOrders.Count == 1));
         grid.SortCycle = GridSortCycle.AscendingDescendingNone;
-        grid.SortByColumn(0);
+        grid.SortByColumn(grid.VisibleColumns()[0].Key);
         Check("cycle: second tap sorts descending", other.SortOrders[0] == new GridSortOrder("DeptCode", true));
-        grid.SortByColumn(0);
+        grid.SortByColumn(grid.VisibleColumns()[0].Key);
         Check("cycle: third tap removes the key and reaches the source", (other.SortOrders.Count == 0) && sorts.Sorts is { Count: 0 });
         grid.SortCycle = GridSortCycle.DescendingAscending;
-        grid.SortByColumn(0);
+        grid.SortByColumn(grid.VisibleColumns()[0].Key);
         Check("cycle: descending first", other.SortOrders[0] == new GridSortOrder("DeptCode", true));
         grid.SortCycle = GridSortCycle.AscendingDescending;
         grid.RemoveBinding(ClamGridView.SortOrdersProperty);
-        grid.RemoveBinding(ClamGridView.ColumnOrdersProperty);
+        grid.RemoveBinding(ClamGridView.ColumnStatesProperty);
         grid.ValueAccessors = null;
         grid.ItemsSource = null;
     }
@@ -108,7 +109,7 @@ public sealed partial class QualityVerifier
 // The Binding.Create source generator requires the lambda parameter type to be at least internal
 internal sealed class OrderSource : NotificationObject
 {
-    public IReadOnlyList<GridColumnOrder>? Orders
+    public IReadOnlyList<GridColumnState>? Orders
     {
         get;
         set => SetProperty(ref field, value);

@@ -139,7 +139,7 @@ public partial class ClamGridView
                     pressHit = HitTest(point.X, point.Y);
                     PrepareRowDrag();
                     resizeColumn = AllowColumnResizing ? CurrentLayout?.HitTestColumnBoundary(point.X, point.Y) ?? -1 : -1;
-                    if ((resizeColumn >= 0) && !Columns[resizeColumn].AllowResizing)
+                    if ((resizeColumn >= 0) && !ArrangedColumns[resizeColumn].AllowResizing)
                     {
                         resizeColumn = -1;
                     }
@@ -233,7 +233,7 @@ public partial class ClamGridView
         }
         else if ((result.Action == GridGestureAction.Resize) && (resizeColumn >= 0))
         {
-            previewWidth = Math.Max(Columns[resizeColumn].MinWidth, originalWidth + result.Delta.X);
+            previewWidth = Math.Max(ArrangedColumns[resizeColumn].MinWidth, originalWidth + result.Delta.X);
             InvalidateLayout();
             StopInputTimer();
         }
@@ -254,13 +254,13 @@ public partial class ClamGridView
 
     private void CommitResize(int column, double oldWidth, double newWidth)
     {
-        if ((column < 0) || (column >= Columns.Count) || (Math.Abs(oldWidth - newWidth) < 0.01))
+        if ((column < 0) || (column >= ArrangedColumns.Count) || (Math.Abs(oldWidth - newWidth) < 0.01))
         {
             return;
         }
 
         var generation = inputGeneration;
-        var args = new GridColumnWidthEventArgs(Columns[column].Key, column, oldWidth, newWidth);
+        var args = new GridColumnWidthEventArgs(ArrangedColumns[column].Key, column, oldWidth, newWidth);
         ColumnWidthChanging?.Invoke(this, args);
         if (args.Cancel || (generation != inputGeneration))
         {

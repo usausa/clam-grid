@@ -25,10 +25,11 @@ internal static class ScenarioGridFactory
             AllowSorting = column.AllowSorting
         }).ToArray();
 
-    public static void Configure(ClamGridView grid, ListScenario scenario, GridDataView<TicketRow> data, IEnumerable<GridColumnOrder>? orders = null)
+    public static void Configure(ClamGridView grid, ListScenario scenario, GridDataView<TicketRow> data, IEnumerable<GridColumnState>? orders = null)
     {
         grid.GridStyle = CreateStyle(scenario);
-        grid.ConfigureColumns(CreateColumns(scenario), orders);
+        grid.ColumnStates = orders?.ToArray();
+        grid.ColumnDefinitions.ReplaceAll(CreateColumns(scenario));
         grid.ItemsSource = data;
         grid.SelectionMode = scenario.SingleSelection ? GridSelectionMode.SingleToggle : GridSelectionMode.MultipleToggle;
         grid.SelectAllCommand = new Command<bool>(select => scenario.SelectAll(data, select));

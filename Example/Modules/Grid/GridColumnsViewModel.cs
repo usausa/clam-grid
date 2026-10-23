@@ -61,7 +61,7 @@ public sealed partial class GridColumnsViewModel : AppViewModelBase
         return Task.CompletedTask;
     }
 
-    protected override Task OnNotifyFunction4() => Navigator.PopAsync(Parameters.MakeColumnOrders(session.Export()));
+    protected override Task OnNotifyFunction4() => Navigator.PopAsync(Parameters.MakeColumnStates(session.Export()));
 
     //--------------------------------------------------------------------------------
     // Event

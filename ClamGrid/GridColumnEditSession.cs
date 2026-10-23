@@ -12,17 +12,18 @@ public sealed class GridColumnEditSession
     {
         ArgumentNullException.ThrowIfNull(columns);
         var copy = columns.Select(static column => new GridColumnOption(column.Key, column.Header, column.IsVisible) { Width = column.Width }).ToArray();
-        GridColumnSettings.Normalize(copy.Select(static column => column.Key), null);
+        GridColumnSettings.ValidateKeys(copy.Select(static column => column.Key));
         Columns = [with(copy)];
     }
 
     // Creates an editable copy from the definitions and saved orders; unknown keys are dropped and new columns are appended hidden
-    public static GridColumnEditSession Create(IEnumerable<GridColumn> columns, IEnumerable<GridColumnOrder>? orders = null)
+    public static GridColumnEditSession Create(IEnumerable<GridColumn> columns, IEnumerable<GridColumnState>? orders = null)
     {
         ArgumentNullException.ThrowIfNull(columns);
-        var headers = columns.ToDictionary(static column => column.Key, static column => column.Header, StringComparer.Ordinal);
-        return new GridColumnEditSession(GridColumnSettings.Normalize(headers.Keys, orders).Select(order => new GridColumnOption(order.Key, headers[order.Key], order.IsVisible) { Width = order.Width }));
+        var catalog = columns.ToArray();
+        var headers = catalog.ToDictionary(static column => column.Key, static column => column.Header, StringComparer.Ordinal);
+        return new GridColumnEditSession(GridColumnSettings.Normalize(catalog, orders).Select(state => new GridColumnOption(state.Key, headers[state.Key], state.IsVisible) { Width = state.Width }));
     }
 
-    public GridColumnOrder[] Export() => Columns.Select(static column => new GridColumnOrder(column.Key, column.IsVisible) { Width = column.Width }).ToArray();
+    public GridColumnState[] Export() => Columns.Select(static column => new GridColumnState(column.Key, column.IsVisible) { Width = column.Width }).ToArray();
 }

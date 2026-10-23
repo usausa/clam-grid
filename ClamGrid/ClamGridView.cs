@@ -66,8 +66,6 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         set => SetValue(EmptyTextProperty, value);
     }
 
-    public GridColumnCollection Columns { get; } = [];
-
     public IGridDataView? DataView { get; private set; }
 
     public int RowCount => Items.Count;
@@ -104,7 +102,6 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         AutoMeasureRowLimit = 32;
         BackgroundColor = Colors.White;
         EnableTouchEvents = true;
-        Columns.Changed += OnColumnsChanged;
         ColumnDefinitions.Changed += OnColumnDefinitionsChanged;
         Touch += OnGridTouch;
         SizeChanged += OnSizeChanged;
@@ -164,7 +161,6 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         DetachPlatform();
         renderer?.Dispose();
         renderer = null;
-        Columns.Changed -= OnColumnsChanged;
         ColumnDefinitions.Changed -= OnColumnDefinitionsChanged;
         Touch -= OnGridTouch;
         SizeChanged -= OnSizeChanged;
@@ -218,7 +214,7 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         }
     }
 
-    public void Invalidate()
+    public void ApplyStyle()
     {
         RequireUiThread();
         GridStyle.Validate();
@@ -275,16 +271,30 @@ public partial class ClamGridView : SKCanvasView, IDisposable
     // Sort
     //--------------------------------------------------------------------------------
 
-    public GridSortResult SortByColumn(int columnIndex)
+    public GridSortResult SortByColumn(string columnKey)
     {
         RequireUiThread();
-        if ((columnIndex < 0) || (columnIndex >= Columns.Count) || !Columns[columnIndex].AllowSorting || (DataView is null))
+        if ((IndexOfColumn(columnKey) is not { } columnIndex) || !ArrangedColumns[columnIndex].AllowSorting || (DataView is null))
         {
             return new GridSortResult(GridSortStatus.Rejected, Array.Empty<string>());
         }
 
-        var column = Columns[columnIndex];
+        var column = ArrangedColumns[columnIndex];
         return DataView.SortBy(column.SortKey ?? column.Key, SortCycle);
+    }
+
+    private int? IndexOfColumn(string columnKey)
+    {
+        var columns = ArrangedColumns;
+        for (var i = 0; i < columns.Count; i++)
+        {
+            if (String.Equals(columns[i].Key, columnKey, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+
+        return null;
     }
 
     //--------------------------------------------------------------------------------
@@ -301,18 +311,17 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         }
     }
 
-    public void ScrollBy(double x, double y) => ScrollTo(ScrollX + x, ScrollY + y);
-
     public void ScrollTo(double x, double y) => RequestScroll(layout => layout.ScrollTo(x, y));
 
     // Places the row at the position; the column is revealed with the smallest move and a null column keeps the horizontal offset
-    public bool ScrollIntoView(int rowIndex, int? columnIndex = null, ScrollToPosition position = ScrollToPosition.MakeVisible)
+    public bool ScrollIntoView(int rowIndex, string? columnKey = null, ScrollToPosition position = ScrollToPosition.MakeVisible)
     {
         if (!Enum.IsDefined(position))
         {
             throw new ArgumentOutOfRangeException(nameof(position));
         }
 
+        var columnIndex = columnKey is null ? null : IndexOfColumn(columnKey);
         return RequestScroll(layout => layout.ScrollIntoView(rowIndex, columnIndex, position));
     }
 
@@ -332,7 +341,8 @@ public partial class ClamGridView : SKCanvasView, IDisposable
     {
         RequireUiThread();
         EnsureLayout();
-        return CurrentLayout?.HitTest(x, y) ?? GridHit.None;
+        var hit = CurrentLayout?.HitTest(x, y) ?? GridHit.None;
+        return (hit.ColumnIndex >= 0) && (hit.ColumnIndex < ArrangedColumns.Count) ? hit with { ColumnKey = ArrangedColumns[hit.ColumnIndex].Key } : hit;
     }
 
     //--------------------------------------------------------------------------------
@@ -356,7 +366,7 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         try
         {
             canvas.Scale((float)(e.Info.Width / Width), (float)(e.Info.Height / Height));
-            cells = currentRenderer.Render(canvas, current, Columns, Items, DataView, AllowRowDragging && (RowMover is not null));
+            cells = currentRenderer.Render(canvas, current, ArrangedColumns, Items, DataView, AllowRowDragging && (RowMover is not null));
             if ((Items.Count == 0) && (EmptyText is { Length: > 0 } emptyText))
             {
                 currentRenderer.DrawEmptyText(canvas, emptyText, current);
@@ -380,7 +390,7 @@ public partial class ClamGridView : SKCanvasView, IDisposable
 
     internal bool ActivateCell(GridHit hit, Point point, bool longPress = false)
     {
-        if (disposed || !IsEnabled || (hit.CellType == GridCellType.None) || (hit.RowIndex >= Items.Count) || (hit.ColumnIndex >= Columns.Count))
+        if (disposed || !IsEnabled || (hit.CellType == GridCellType.None) || (hit.RowIndex >= Items.Count) || (hit.ColumnIndex >= ArrangedColumns.Count))
         {
             return false;
         }
@@ -391,7 +401,7 @@ public partial class ClamGridView : SKCanvasView, IDisposable
             return true;
         }
 
-        var key = (hit.ColumnIndex >= 0) && (hit.ColumnIndex < Columns.Count) ? Columns[hit.ColumnIndex].Key : null;
+        var key = (hit.ColumnIndex >= 0) && (hit.ColumnIndex < ArrangedColumns.Count) ? ArrangedColumns[hit.ColumnIndex].Key : null;
         var generation = inputGeneration;
         var args = new GridCellEventArgs(hit, point, item, key);
         if (longPress)
@@ -423,9 +433,9 @@ public partial class ClamGridView : SKCanvasView, IDisposable
             {
                 TryToggleSelection(hit.RowIndex, out _);
             }
-            else if (hit.CellType == GridCellType.ColumnHeader)
+            else if ((hit.CellType == GridCellType.ColumnHeader) && (args.ColumnKey is { } columnKey))
             {
-                SortByColumn(hit.ColumnIndex);
+                SortByColumn(columnKey);
             }
         }
 
@@ -436,7 +446,7 @@ public partial class ClamGridView : SKCanvasView, IDisposable
     {
         if ((args.Hit.CellType == GridCellType.ColumnHeader) && AllowColumnConfiguration)
         {
-            var request = new GridColumnConfigurationEventArgs(Array.AsReadOnly(columnCatalog), args.ColumnKey, Array.AsReadOnly(columnOrders));
+            var request = new GridColumnConfigurationEventArgs(Array.AsReadOnly(columnCatalog), args.ColumnKey, Array.AsReadOnly(columnStates));
             ColumnConfigurationRequested?.Invoke(this, request);
             if (!request.Handled && (generation == inputGeneration) && (ColumnConfigurationCommand is { } command) && command.CanExecute(request) && (generation == inputGeneration) && !request.Handled)
             {
@@ -636,15 +646,6 @@ public partial class ClamGridView : SKCanvasView, IDisposable
 
     private void OnSortFailed(object? sender, GridSortFailedEventArgs e) => SortFailed?.Invoke(this, e);
 
-    private void OnColumnsChanged(object? sender, EventArgs e)
-    {
-        RequireUiThread();
-        SynchronizeColumnCatalog();
-        CancelInput();
-        renderer?.ClearCache();
-        InvalidateLayout();
-    }
-
     private void OnSizeChanged(object? sender, EventArgs e)
     {
         CancelInput();
@@ -668,7 +669,7 @@ public partial class ClamGridView : SKCanvasView, IDisposable
 
         renderer ??= new GridRenderer(GridStyle);
         var rowHeader = GridStyle.RowHeadersVisible ? GridStyle.RowHeaderWidth : 0;
-        var widths = renderer.MeasureColumns(Columns, Items, Math.Max(0, Width - rowHeader), AutoMeasureRowLimit, DataView);
+        var widths = renderer.MeasureColumns(ArrangedColumns, Items, Math.Max(0, Width - rowHeader), AutoMeasureRowLimit, DataView);
         if ((resizeColumn >= 0) && (resizeColumn < widths.Length))
         {
             widths[resizeColumn] = previewWidth;

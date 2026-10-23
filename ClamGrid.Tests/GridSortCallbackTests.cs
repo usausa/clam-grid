@@ -110,7 +110,7 @@ public sealed class GridSortCallbackTests
         view.SortBy("number");
         view.SetSelected(0, true);
         var before = view.ToArray();
-        var history = view.SaveSortOrders();
+        var history = view.SortOrders.ToArray();
         var failed = 0;
         var committed = 0;
         view.SortFailed += (_, _) => failed++;

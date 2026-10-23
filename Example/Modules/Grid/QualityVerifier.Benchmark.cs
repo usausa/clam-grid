@@ -24,13 +24,13 @@ public sealed partial class QualityVerifier
             data = scenario.CreateData(rows);
             ScenarioGridFactory.Configure(grid, scenario, data);
             grid.GridStyle = grid.GridStyle with { RowHeight = 40, HeaderHeight = 40 };
-            if (columns > grid.Columns.Count)
+            if (columns > grid.VisibleColumns().Count)
             {
-                grid.Columns.ReplaceAll(grid.Columns.Concat(Enumerable.Range(0, columns - grid.Columns.Count).Select(static index => new GridColumn($"extra{index}", $"追加項目{index + 1}", new GridValueAccessor<TicketRow, string>(static row => row.GetText("Department"))) { Width = GridColumnWidth.Absolute(150) })).ToArray());
+                grid.ColumnDefinitions.ReplaceAll(grid.ColumnDefinitions.Concat(Enumerable.Range(0, columns - grid.VisibleColumns().Count).Select(static index => new GridColumn($"extra{index}", $"追加項目{index + 1}", new GridValueAccessor<TicketRow, string>(static row => row.GetText("Department"))) { Width = GridColumnWidth.Absolute(150) })).ToArray());
             }
         }).ConfigureAwait(true);
         var initialMs = Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds;
-        Check($"{rows}x{columns}: initial frame", first.RenderedCells > 0 && grid.RowCount == rows && grid.Columns.Count == columns);
+        Check($"{rows}x{columns}: initial frame", first.RenderedCells > 0 && grid.RowCount == rows && grid.VisibleColumns().Count == columns);
 
         var sortTimes = new List<double>();
         for (var iteration = 0; iteration < 5; iteration++)
@@ -76,7 +76,7 @@ public sealed partial class QualityVerifier
             }
         }
 
-        using var pump = new ScrollFrameCallback(() => grid.ScrollBy(2, 12));
+        using var pump = new ScrollFrameCallback(() => grid.ScrollTo(grid.ScrollX + 2, grid.ScrollY + 12));
         grid.FrameRendered += OnFrame;
         try
         {

@@ -2,12 +2,49 @@ namespace ClamGrid.Columns;
 
 internal static class GridColumnSettings
 {
-    public static GridColumnOrder[] Normalize(IEnumerable<string> columnKeys, IEnumerable<GridColumnOrder>? orders)
+    // Unknown keys are dropped, new columns are appended hidden and a saved width is clamped to the minimum width of its column
+    public static GridColumnState[] Normalize(IReadOnlyList<GridColumn> columns, IEnumerable<GridColumnState>? states)
+    {
+        ArgumentNullException.ThrowIfNull(columns);
+        var minWidths = new Dictionary<string, double>(StringComparer.Ordinal);
+        foreach (var column in columns)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(column.Key);
+            if (!minWidths.TryAdd(column.Key, column.MinWidth))
+            {
+                throw new ArgumentException("Column keys must be unique.", nameof(columns));
+            }
+        }
+
+        var result = new List<GridColumnState>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        if (states is not null)
+        {
+            foreach (var state in states)
+            {
+                if (minWidths.TryGetValue(state.Key, out var minWidth) && seen.Add(state.Key))
+                {
+                    result.Add(ClampWidth(state, minWidth));
+                }
+            }
+        }
+
+        if (!result.Any(static state => state.IsVisible))
+        {
+            // Saved widths survive the fallback to the default visibility
+            var widths = result.ToDictionary(static state => state.Key, static state => state.Width, StringComparer.Ordinal);
+            return columns.Select(column => new GridColumnState(column.Key, true) { Width = widths.GetValueOrDefault(column.Key) }).ToArray();
+        }
+
+        result.AddRange(columns.Where(column => !seen.Contains(column.Key)).Select(static column => new GridColumnState(column.Key, false)));
+        return result.ToArray();
+    }
+
+    public static void ValidateKeys(IEnumerable<string> columnKeys)
     {
         ArgumentNullException.ThrowIfNull(columnKeys);
-        var keys = columnKeys.ToArray();
         var known = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var key in keys)
+        foreach (var key in columnKeys)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(key);
             if (!known.Add(key))
@@ -15,121 +52,27 @@ internal static class GridColumnSettings
                 throw new ArgumentException("Column keys must be unique.", nameof(columnKeys));
             }
         }
-
-        var result = new List<GridColumnOrder>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        if (orders is not null)
-        {
-            foreach (var order in orders)
-            {
-                if (known.Contains(order.Key) && seen.Add(order.Key))
-                {
-                    result.Add((order.Width is { } width) && (!Double.IsFinite(width) || (width <= 0)) ? order with { Width = null } : order);
-                }
-            }
-        }
-
-        if (!result.Any(static order => order.IsVisible))
-        {
-            // Saved widths survive the fallback to the default visibility
-            var widths = result.ToDictionary(static order => order.Key, static order => order.Width, StringComparer.Ordinal);
-            return keys.Select(key => new GridColumnOrder(key, true) { Width = widths.GetValueOrDefault(key) }).ToArray();
-        }
-
-        result.AddRange(keys.Where(key => !seen.Contains(key)).Select(static key => new GridColumnOrder(key, false)));
-        return result.ToArray();
-    }
-
-    // Null when the key is unknown, the value is unchanged, or the last visible column would be hidden
-    public static GridColumnOrder[]? SetVisible(IReadOnlyList<GridColumnOrder> orders, string key, bool value)
-    {
-        var index = IndexOf(orders, key);
-        if ((index < 0) || (orders[index].IsVisible == value))
-        {
-            return null;
-        }
-
-        if (!value && (orders.Count(static order => order.IsVisible) <= 1))
-        {
-            return null;
-        }
-
-        var result = orders.ToArray();
-        result[index] = result[index] with { IsVisible = value };
-        return result;
-    }
-
-    // Null when the key is unknown or the width is unchanged; null width restores the declared width
-    public static GridColumnOrder[]? SetWidth(IReadOnlyList<GridColumnOrder> orders, string key, double? width)
-    {
-        var index = IndexOf(orders, key);
-        if ((index < 0) || Nullable.Equals(orders[index].Width, width))
-        {
-            return null;
-        }
-
-        var result = orders.ToArray();
-        result[index] = result[index] with { Width = width };
-        return result;
     }
 
     // Visible columns in display order; a saved width replaces the declared width
-    public static GridColumn[] Arrange(IReadOnlyList<GridColumn> catalog, IEnumerable<GridColumnOrder> orders)
+    public static GridColumn[] Arrange(IReadOnlyList<GridColumn> catalog, IEnumerable<GridColumnState> states)
     {
         var map = catalog.ToDictionary(static column => column.Key, StringComparer.Ordinal);
-        return orders.Where(static order => order.IsVisible).Select(order => ApplyWidth(map[order.Key], order.Width)).ToArray();
+        return states.Where(static state => state.IsVisible).Select(state => state.Width is { } width ? map[state.Key] with { Width = GridColumnWidth.Absolute(width) } : map[state.Key]).ToArray();
     }
 
-    public static GridColumn ApplyWidth(GridColumn column, double? width) =>
-        width is { } value ? column with { Width = GridColumnWidth.Absolute(Math.Max(value, column.MinWidth)) } : column;
-
-    // Takes direct edits of the visible columns into the definitions; an edit that changes a saved width drops the saved width
-    public static (GridColumn[] Catalog, GridColumnOrder[] Orders) Merge(IReadOnlyList<GridColumn> catalog, IEnumerable<GridColumn> visible, IReadOnlyList<GridColumnOrder> orders)
+    private static GridColumnState ClampWidth(GridColumnState state, double minWidth)
     {
-        var edited = visible.ToDictionary(static column => column.Key, StringComparer.Ordinal);
-        var widths = orders.ToDictionary(static order => order.Key, static order => order.Width, StringComparer.Ordinal);
-        var dropped = new HashSet<string>(StringComparer.Ordinal);
-        var result = new GridColumn[catalog.Count];
-        for (var i = 0; i < catalog.Count; i++)
+        if (state.Width is not { } width)
         {
-            var declared = catalog[i];
-            result[i] = declared;
-            if (!edited.TryGetValue(declared.Key, out var column) || ReferenceEquals(column, declared))
-            {
-                continue;
-            }
-
-            var width = widths.GetValueOrDefault(declared.Key);
-            if ((width is null) || !column.Width.Equals(ApplyWidth(declared, width).Width))
-            {
-                result[i] = column;
-                if (width is not null)
-                {
-                    dropped.Add(declared.Key);
-                }
-            }
-            else
-            {
-                // The saved width stays in effect, so the definition keeps its declared width
-                var definition = column with { Width = declared.Width };
-                result[i] = definition.Equals(declared) ? declared : definition;
-            }
+            return state;
         }
 
-        var nextOrders = orders.Select(order => dropped.Contains(order.Key) ? order with { Width = null } : order).ToArray();
-        return (result, nextOrders);
-    }
-
-    private static int IndexOf(IReadOnlyList<GridColumnOrder> orders, string key)
-    {
-        for (var i = 0; i < orders.Count; i++)
+        if (!Double.IsFinite(width) || (width <= 0))
         {
-            if (String.Equals(orders[i].Key, key, StringComparison.Ordinal))
-            {
-                return i;
-            }
+            return state with { Width = null };
         }
 
-        return -1;
+        return width < minWidth ? state with { Width = minWidth } : state;
     }
 }

@@ -61,7 +61,7 @@ public partial class ClamGridView
 
     private bool ActivateBoolean(GridHit hit, object item, bool longPress)
     {
-        var column = Columns[hit.ColumnIndex];
+        var column = ArrangedColumns[hit.ColumnIndex];
         if (!column.IsBoolean)
         {
             return false;

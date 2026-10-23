@@ -8,10 +8,9 @@
 |---|---|---|:-:|---|
 | `ItemsSource` | `IEnumerable?` | `null` | ✓ | Rows; an `IGridDataView` is used as is, other sources are wrapped in an owned `GridDataView<object>` |
 | `DataView` | `IGridDataView?` | | | Data view that owns rows, selection and sort state |
-| `Columns` | `GridColumnCollection` | | | Visible columns in display order |
 | `ColumnDefinitions` | `GridColumnCollection` | | | All definitions including hidden columns, declared as XAML content |
 | `ValueAccessors` | `IGridValueAccessorProvider?` | `null` | ✓ | Resolves the accessor of columns declared without one by `Key` |
-| `ColumnOrders` | `IReadOnlyList<GridColumnOrder>` | `[]` | ✓ TwoWay | Visibility, order and saved width of all columns; a dragged width is saved here instead of the definition, the normalized value is written back and `null` restores the defaults including the declared widths |
+| `ColumnStates` | `IReadOnlyList<GridColumnState>` | `[]` | ✓ TwoWay | Visibility, order and saved width of all columns; a dragged width is saved here instead of the definition, the normalized value is written back and `null` restores the defaults including the declared widths |
 | `FrozenColumnCount` | `int` | `0` | ✓ | Leading columns that stay in place while the others scroll |
 | `SortOrders` | `IReadOnlyList<GridSortOrder>` | `[]` | ✓ TwoWay | Sort keys and directions; applied to the data view and written back after every sort, an empty list clears the sort and `null` leaves the view unchanged |
 | `SortCycle` | `GridSortCycle` | `AscendingDescending` | ✓ | Direction sequence of repeated header taps; the `None` variants remove the key on the third tap |
@@ -43,27 +42,22 @@
 
 | Name | Returns | Description |
 |---|---|---|
-| `ConfigureColumns(IEnumerable<GridColumn> definitions, IEnumerable<GridColumnOrder>? orders = null)` | `void` | Replaces all column definitions and applies the saved visibility and order |
-| `ApplyColumnOrders(IEnumerable<GridColumnOrder>? orders)` | `void` | Applies visibility and order to the current definitions; `null` restores the default |
 | `CreateColumnEditSession()` | `GridColumnEditSession` | Creates an editable copy of the column settings; `GridColumnEditSession.Create(columns, orders)` does the same without the view |
-| `SetColumnVisible(string key, bool value)` | `bool` | Shows or hides one column and writes the result to `ColumnOrders`; `false` when the key is unknown, the value is unchanged or it would hide the last visible column, and nothing is changed then |
-| `SetColumnWidth(string key, double? width)` | `bool` | Saves an absolute width for one column, or restores the declared width with `null`; `false` when the key is unknown or the width is unchanged. A saved width is clamped to `MinWidth` when the column is drawn, the same as a dragged one |
 | `IsSelected(int rowIndex)` | `bool` | Whether the row is selected |
 | `SetSelected(int rowIndex, bool value)` | `bool` | Selects or clears the row |
 | `TryToggleSelection(int rowIndex, out bool isSelected)` | `bool` | Toggles the row selection |
 | `TryToggleSelectionByKey(object key, out bool isSelected)` | `bool` | Toggles the selection by row key and scrolls the row into view without moving horizontally |
 | `SelectAll()` | `void` | Selects all rows |
 | `ClearSelection()` | `void` | Clears the selection |
-| `SortByColumn(int columnIndex)` | `GridSortResult` | Sorts by the column key following `SortCycle` |
+| `SortByColumn(string columnKey)` | `GridSortResult` | Sorts by the column following `SortCycle`; rejected when the column is hidden or does not allow sorting |
 | `Refresh()` | `void` | Rebuilds the rows from the source |
 | `RefreshRows(int startIndex, int count)` | `bool` | Redraws values and colors of the rows |
 | `ScrollTo(double x, double y)` | `void` | Scrolls to the offset |
-| `ScrollBy(double x, double y)` | `void` | Scrolls by the delta |
-| `ScrollIntoView(int rowIndex, int? columnIndex = null, ScrollToPosition position = MakeVisible)` | `bool` | Places the row at `Start`, `Center` or `End`, or moves it just into view with `MakeVisible`; the column is revealed with the smallest move and `null` keeps the horizontal offset |
+| `ScrollIntoView(int rowIndex, string? columnKey = null, ScrollToPosition position = MakeVisible)` | `bool` | Places the row at `Start`, `Center` or `End`, or moves it just into view with `MakeVisible`; the column is revealed with the smallest move, and `null` or a hidden column keeps the horizontal offset |
 | `ScrollIntoViewByKey(object key, ScrollToPosition position = MakeVisible)` | `bool` | Scrolls only vertically to the row with the key; `false` when no shown row has it |
-| `HitTest(double x, double y)` | `GridHit` | Resolves the cell at the position in DIP |
+| `HitTest(double x, double y)` | `GridHit` | Resolves the cell at the position in DIP; the result carries `ColumnKey` as well as the indexes |
 | `CancelInteraction()` | `void` | Stops the current gesture and inertia |
-| `Invalidate()` | `void` | Recreates the renderer and the layout and redraws after the content of `GridStyle` was changed in place |
+| `ApplyStyle()` | `void` | Recreates the renderer and the layout and redraws after the content of `GridStyle` was changed in place |
 | `InvalidateSurface()` | `void` | Redraws the grid |
 | `Dispose()` | `void` | Releases the data view subscriptions, timers and native resources |
 
@@ -94,7 +88,7 @@ The grid is used on the UI thread; the members that change it throw `InvalidOper
 
 | Name | Type | Default | Description |
 |---|---|---|---|
-| `Key` | `string` | `""` | Unique identifier used by `ColumnOrders`, `ValueAccessors` and sorting |
+| `Key` | `string` | `""` | Unique identifier used by `ColumnStates`, `ValueAccessors` and sorting |
 | `Header` | `string` | `""` | Header text; line breaks (`&#10;` in XAML) split it into lines that are centered and truncated one by one |
 | `ValueAccessor` | `IGridValueAccessor` | unresolved | Typed getter and optional setter; resolved by `Key` from `ValueAccessors` when omitted |
 | `Width` | `GridColumnWidth` | `Auto` | `Auto`, `Absolute(dip)` or `Star(weight)`; in XAML `Auto`, `85`, `*` or `2*` |
@@ -109,9 +103,9 @@ The grid is used on the UI thread; the members that change it throw `InvalidOper
 | `AllowSorting` | `bool` | `true` | A header tap sorts the column |
 | `AllowResizing` | `bool` | `true` | The header boundary can be dragged |
 
-## 🧭 GridColumnOrder
+## 🧭 GridColumnState
 
-An entry of `ColumnOrders`, also produced by `GridColumnEditSession.Export()`.  
+An entry of `ColumnStates`, also produced by `GridColumnEditSession.Export()`.  
 
 | Name | Type | Description |
 |---|---|---|
@@ -119,13 +113,13 @@ An entry of `ColumnOrders`, also produced by `GridColumnEditSession.Export()`.
 | `IsVisible` | `bool` | Whether the column is shown |
 | `Width` | `double?` | Absolute width in DIP saved by a drag on the header boundary, kept while the column is hidden; `null` uses the width of the definition and `GridColumnOption.Width` edits it in a settings screen |
 
-Editing `Columns` directly changes the definitions; an edit that changes the width of a column with a saved width drops the saved width.  
+Changing `ColumnDefinitions` or `ColumnStates` is folded into one arrangement, which runs when the grid is drawn or when `ColumnStates` is read. The visible columns in display order are `ColumnStates` where `IsVisible`, and their effective width is `Width` of the state or the declared width of the definition when it is `null`.  
 
 ## 🎨 GridStyle
 
 A style can be a XAML resource.  
-Treat it as immutable once assigned and replace it with a `with` expression to change it, or call `Invalidate()` after changing it in place.  
-Invalid sizes throw `ArgumentException` when the style is assigned or `Invalidate()` is called, and `null` throws `ArgumentNullException`.  
+Treat it as immutable once assigned and replace it with a `with` expression to change it, or call `ApplyStyle()` after changing it in place.  
+Invalid sizes throw `ArgumentException` when the style is assigned or `ApplyStyle()` is called, and `null` throws `ArgumentNullException`.  
 The default colors follow the Material palette: Blue 700 header, Cyan 700 and Orange 700 for the sorted column, Blue 100 selection and Gray tints.  
 
 | Name | Type | Default | Description |
@@ -172,7 +166,7 @@ FallbackFonts.Typefaces = [SKTypeface.FromStream(await FileSystem.OpenAppPackage
 | `Filter` | `Func<T, bool>?` that hides the rows it rejects; it runs again on source and row changes, hidden rows lose their selection, and it survives `SetSource` like the sort. Hidden rows keep their place in the sort, so sort callbacks receive them as well |
 | `SetSelected`, `TryToggleSelection`, `SetSelectedKeys(keys)`, `SelectAll`, `ClearSelection`, `UpdateSelection(predicate)` | Selection API; `SetSelectedKeys` replaces the selection with the rows of the given keys, drops the keys without a row, and returns `false` without applying anything while a notification is running |
 | `RegisterSort(key, selector, comparer)`, `RegisterComparer(key, comparison)`, `SetSortCallback(keys, callback)` | Sort key registration; the callback variant delegates the sorting itself, for example to a database query |
-| `SortBy(key, cycle)`, `RestoreSortOrders(orders)`, `SaveSortOrders()` | Sort by a key following a `GridSortCycle` (ascending then descending when omitted) and persist the sort state |
+| `SortBy(key, cycle)`, `RestoreSortOrders(orders)` | Sort by a key following a `GridSortCycle` (ascending then descending when omitted) and restore a saved sort state |
 | `SetSource(rows)`, `Refresh()`, `Suspend()` / `Resume()` | Replace the rows, rebuild them or batch changes; the selection keeps every row whose key is still there, so reloading the rows as new instances of the same keys keeps it |
 | `Changed`, `SelectionChanged`, `SortRequested`, `SortChanged`, `SortFailed` | Events with the same meaning as on the view |
 

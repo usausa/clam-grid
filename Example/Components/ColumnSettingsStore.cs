@@ -6,9 +6,9 @@ using BunnyTail.DependencyInjection;
 
 public interface IColumnSettingsStore
 {
-    GridColumnOrder[]? Load(string key);
+    GridColumnState[]? Load(string key);
 
-    void Save(string key, IEnumerable<GridColumnOrder> orders);
+    void Save(string key, IEnumerable<GridColumnState> orders);
 
     void Remove(string key);
 }
@@ -16,7 +16,7 @@ public interface IColumnSettingsStore
 [Singleton(As = typeof(IColumnSettingsStore))]
 public sealed class ColumnSettingsStore : IColumnSettingsStore
 {
-    public GridColumnOrder[]? Load(string key)
+    public GridColumnState[]? Load(string key)
     {
         try
         {
@@ -28,7 +28,7 @@ public sealed class ColumnSettingsStore : IColumnSettingsStore
         }
     }
 
-    public void Save(string key, IEnumerable<GridColumnOrder> orders) =>
+    public void Save(string key, IEnumerable<GridColumnState> orders) =>
         Preferences.Default.Set(key, ColumnSettingsCodec.Write(orders));
 
     public void Remove(string key) => Preferences.Default.Remove(key);

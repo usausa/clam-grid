@@ -52,11 +52,11 @@ public static class GridBind
             controller = GetController(bindable);
             if (controller is not null)
             {
-                bindable.ConfigureColumns(controller.Columns, controller.ColumnOrders);
-                controller.ColumnOrders = bindable.ColumnOrders;
+                bindable.ColumnStates = controller.ColumnStates;
+                bindable.ColumnDefinitions.ReplaceAll(controller.Columns);
+                controller.ColumnStates = bindable.ColumnStates;
                 controller.PropertyChanged += ControllerOnPropertyChanged;
                 controller.ScrollRequest += ControllerOnScrollRequest;
-                controller.ColumnVisibilityRequest += ControllerOnColumnVisibilityRequest;
                 controller.InvalidateRequest += ControllerOnInvalidateRequest;
             }
 
@@ -74,7 +74,6 @@ public static class GridBind
             {
                 controller.PropertyChanged -= ControllerOnPropertyChanged;
                 controller.ScrollRequest -= ControllerOnScrollRequest;
-                controller.ColumnVisibilityRequest -= ControllerOnColumnVisibilityRequest;
                 controller.InvalidateRequest -= ControllerOnInvalidateRequest;
             }
 
@@ -92,19 +91,19 @@ public static class GridBind
 
         private void ControllerOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if ((e.PropertyName != nameof(GridController.ColumnOrders)) || (controller is null) || (AssociatedObject is not { } grid))
+            if ((e.PropertyName != nameof(GridController.ColumnStates)) || (controller is null) || (AssociatedObject is not { } grid))
             {
                 return;
             }
 
-            var orders = controller.ColumnOrders;
-            if ((orders is not null) && orders.SequenceEqual(grid.ColumnOrders))
+            var orders = controller.ColumnStates;
+            if ((orders is not null) && orders.SequenceEqual(grid.ColumnStates))
             {
                 return;
             }
 
-            grid.ApplyColumnOrders(orders);
-            controller.ColumnOrders = grid.ColumnOrders;
+            grid.ColumnStates = orders;
+            controller.ColumnStates = grid.ColumnStates;
         }
 
         private void ControllerOnScrollRequest(object? sender, GridScrollRequestEventArgs e)
@@ -116,19 +115,11 @@ public static class GridBind
 
             if (e.RowIndex >= 0)
             {
-                grid.ScrollIntoView(e.RowIndex, e.ColumnIndex, e.Position);
+                grid.ScrollIntoView(e.RowIndex, (e.ColumnIndex is { } index) && (index >= 0) && (index < grid.VisibleColumns().Count) ? grid.VisibleColumns()[index].Key : null, e.Position);
             }
             else
             {
-                grid.ScrollBy(e.DeltaX, e.DeltaY);
-            }
-        }
-
-        private void ControllerOnColumnVisibilityRequest(object? sender, GridColumnVisibilityRequestEventArgs e)
-        {
-            if ((controller is not null) && (AssociatedObject is { } grid) && grid.SetColumnVisible(e.Key, e.IsVisible))
-            {
-                controller.ColumnOrders = grid.ColumnOrders;
+                grid.ScrollTo(grid.ScrollX + e.DeltaX, grid.ScrollY + e.DeltaY);
             }
         }
 
@@ -148,7 +139,7 @@ public static class GridBind
             if ((controller is not null) && (AssociatedObject is { } grid))
             {
                 // The dragged width is saved in the column orders
-                controller.ColumnOrders = grid.ColumnOrders;
+                controller.ColumnStates = grid.ColumnStates;
             }
 
             controller?.HandleColumnWidthChanged(e);

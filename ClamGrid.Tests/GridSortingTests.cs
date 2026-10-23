@@ -127,7 +127,7 @@ public sealed class GridSortingTests
         Assert.Equal(before, view);
 
         // Act
-        var saved = view.SaveSortOrders();
+        var saved = view.SortOrders.ToArray();
         saved[0] = new GridSortOrder("unregistered");
 
         // Assert

@@ -100,10 +100,10 @@ public sealed partial class GridScenarioViewModel : AppViewModelBase
 
     public override Task OnNavigatedToAsync(INavigationContext context)
     {
-        if (context.Attribute.IsRestore() && context.Parameter.TryGetColumnOrders(out var orders) && (Grid is { } grid))
+        if (context.Attribute.IsRestore() && context.Parameter.TryGetColumnStates(out var orders) && (Grid is { } grid))
         {
-            grid.ColumnOrders = orders;
-            columnSettingsStore.Save(ColumnSettingsKey, grid.ColumnOrders!);
+            grid.ColumnStates = orders;
+            columnSettingsStore.Save(ColumnSettingsKey, grid.ColumnStates!);
             UpdateStatus();
         }
 
@@ -147,7 +147,7 @@ public sealed partial class GridScenarioViewModel : AppViewModelBase
 
         if ((scenario is not null) && (Data is not null))
         {
-            sessions[scenario.Key] = Data.SaveSortOrders();
+            sessions[scenario.Key] = Data.SortOrders.ToArray();
         }
 
         DetachData();
@@ -198,7 +198,7 @@ public sealed partial class GridScenarioViewModel : AppViewModelBase
         if (Grid is { } grid)
         {
             columnSettingsStore.Remove(ColumnSettingsKey);
-            grid.ColumnOrders = [];
+            grid.ColumnStates = [];
             UpdateStatus();
         }
     }

@@ -17,7 +17,7 @@ public sealed partial class QualityVerifier
         {
             data.ClearSelection();
             data.SetSelected(0, true);
-            grid.ScrollIntoView(40, 3);
+            grid.ScrollIntoView(40, grid.VisibleColumns()[3].Key);
             var selected = data.SelectedItems.Single();
             host.Content = null;
             grid.Handler?.DisconnectHandler();
@@ -67,10 +67,10 @@ public sealed partial class QualityVerifier
         Check("disposed grids collect", alive <= 1);
 
         grid.ItemsSource = Array.Empty<TicketRow>();
-        await NextFrameAsync(() => grid.Columns.ReplaceAll([])).ConfigureAwait(true);
-        Check("zero rows and columns", grid.RowCount == 0 && grid.Columns.Count == 0 && !grid.ScrollIntoView(0, 0));
+        await NextFrameAsync(() => grid.ColumnDefinitions.ReplaceAll([])).ConfigureAwait(true);
+        Check("zero rows and columns", grid.RowCount == 0 && grid.VisibleColumns().Count == 0 && !grid.ScrollIntoView(0));
         await NextFrameAsync(() => ScenarioGridFactory.Configure(grid, scenario, data)).ConfigureAwait(true);
-        Check("source replacement restores usable grid", grid.RowCount == 1000 && grid.Columns.Count == 18);
+        Check("source replacement restores usable grid", grid.RowCount == 1000 && grid.VisibleColumns().Count == 18);
         foreach (var size in new[] { 12f, 22f, 32f })
         {
             var frame = await NextFrameAsync(() => grid.GridStyle = grid.GridStyle with { FontSize = size }).ConfigureAwait(true);

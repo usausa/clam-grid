@@ -13,9 +13,9 @@ public sealed partial class QualityVerifier
             data?.Dispose();
             data = scenario.CreateData(120);
             var frame = await NextFrameAsync(() => ScenarioGridFactory.Configure(grid, scenario, data)).ConfigureAwait(true);
-            Check($"{scenario.Key}: columns and visible painting", grid.Columns.Count == scenario.Columns.Count && frame.RenderedCells > 0 && !grid.GridStyle.RowHeadersVisible);
-            Check($"{scenario.Key}: source keys and values", grid.Columns.All(column => column.ValueAccessor.GetValue(data[0]) is string));
-            Check($"{scenario.Key}: header colors independent of sorting", grid.Columns.Zip(scenario.Columns).All(pair => pair.First.AllowSorting == pair.Second.AllowSorting && Equals(pair.First.HeaderBackground, Color.FromArgb(pair.Second.GreenHeader ? "#2E7D32" : "#616161"))));
+            Check($"{scenario.Key}: columns and visible painting", grid.VisibleColumns().Count == scenario.Columns.Count && frame.RenderedCells > 0 && !grid.GridStyle.RowHeadersVisible);
+            Check($"{scenario.Key}: source keys and values", grid.VisibleColumns().All(column => column.ValueAccessor.GetValue(data[0]) is string));
+            Check($"{scenario.Key}: header colors independent of sorting", grid.VisibleColumns().Zip(scenario.Columns).All(pair => pair.First.AllowSorting == pair.Second.AllowSorting && Equals(pair.First.HeaderBackground, Color.FromArgb(pair.Second.GreenHeader ? "#2E7D32" : "#616161"))));
             scenario.SelectAll(data, true);
             Check($"{scenario.Key}: bulk selection", data.SelectedCount == (scenario.SingleSelection ? 0 : Enumerable.Range(0, 120).Count(id => scenario.IsPending(new TicketRow(id)))));
             scenario.SelectAll(data, false);
@@ -26,17 +26,17 @@ public sealed partial class QualityVerifier
             data.ClearSelection();
             await NextFrameAsync(() => data.RestoreSortOrders([new("CaseNo", true), new("DeptCode")])).ConfigureAwait(true);
             Check($"{scenario.Key}: external selection after sort", grid.TryToggleSelectionByKey(41, out var selected) && selected && ReferenceEquals(grid.SelectedItems.Single(), data[data.IndexOfKey(41)]));
-            var saved = data.SaveSortOrders();
+            var saved = data.SortOrders.ToArray();
             var order = data.Select(static row => row.Id).ToArray();
             data.SortBy("DeptCode");
             data.RestoreSortOrders(saved);
             Check($"{scenario.Key}: session sort roundtrip", data.Select(static row => row.Id).SequenceEqual(order) && data.SelectedCount == 1);
-            var edited = grid.ColumnOrders.Select((order, index) => new GridColumnOrder(order.Key, index != 0)).Reverse().ToArray();
+            var edited = grid.ColumnStates.Select((order, index) => new GridColumnState(order.Key, index != 0)).Reverse().ToArray();
             var json = ColumnSettingsCodec.Write(edited);
-            await NextFrameAsync(() => grid.ApplyColumnOrders(ColumnSettingsCodec.Read(json))).ConfigureAwait(true);
-            Check($"{scenario.Key}: legacy columns roundtrip", grid.Columns.Count == scenario.Columns.Count - 1 && grid.Columns[0].Key == scenario.Columns[^1].Key && data.SelectedCount == 1);
-            grid.ApplyColumnOrders(null);
-            Check($"{scenario.Key}: default columns restored", grid.Columns.Count == scenario.Columns.Count);
+            await NextFrameAsync(() => grid.ColumnStates = ColumnSettingsCodec.Read(json)).ConfigureAwait(true);
+            Check($"{scenario.Key}: legacy columns roundtrip", grid.VisibleColumns().Count == scenario.Columns.Count - 1 && grid.VisibleColumns()[0].Key == scenario.Columns[^1].Key && data.SelectedCount == 1);
+            grid.ColumnStates = null;
+            Check($"{scenario.Key}: default columns restored", grid.VisibleColumns().Count == scenario.Columns.Count);
             Check($"{scenario.Key}: three state colors", Enumerable.Range(0, 3).Select(id => grid.GridStyle.RowBackground!(new TicketRow(id))).Distinct().Count() == 3 && grid.GridStyle.SelectedBackground.Equals(Color.FromArgb("#448AFF")) && grid.GridStyle.SelectedTextColor.Equals(Colors.White));
             if (scenario.PendingField is not null)
             {

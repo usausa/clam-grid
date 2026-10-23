@@ -419,8 +419,6 @@ public sealed class GridDataView<T> : IReadOnlyList<T>, IGridDataView, INotifyCo
         }
     }
 
-    public GridSortOrder[] SaveSortOrders() => SortOrders.ToArray();
-
     public void CancelPendingSort()
     {
         RequireAccess();

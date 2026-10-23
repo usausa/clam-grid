@@ -156,10 +156,10 @@ public sealed partial class GridListViewModel : AppViewModelBase
 
     public override Task OnNavigatedToAsync(INavigationContext context)
     {
-        if (context.Attribute.IsRestore() && context.Parameter.TryGetColumnOrders(out var orders))
+        if (context.Attribute.IsRestore() && context.Parameter.TryGetColumnStates(out var orders))
         {
-            Grid.ColumnOrders = orders;
-            columnSettingsStore.Save(ColumnSettingsKey, Grid.ColumnOrders!);
+            Grid.ColumnStates = orders;
+            columnSettingsStore.Save(ColumnSettingsKey, Grid.ColumnStates!);
             Status = $"列設定を保存しました。表示 {Grid.VisibleColumnCount} / {Grid.Columns.Count}列";
         }
 
@@ -217,14 +217,6 @@ public sealed partial class GridListViewModel : AppViewModelBase
         AlternatingRowBackground = SampleColumns.AlternatingBackground
     };
 
-    private void ToggleSecondColumn()
-    {
-        var key = Grid.Columns[1].Key;
-        var visible = Grid.ColumnOrders?.FirstOrDefault(order => order.Key == key)?.IsVisible ?? true;
-        Grid.SetColumnVisible(key, !visible);
-        Status = $"{key} 列を{(visible ? "隠しました" : "表示しました")}。";
-    }
-
     private void Load()
     {
         Rows.RestoreSortOrders([]);
@@ -240,7 +232,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
     private async Task ExecuteActionAsync()
     {
         var operation = await actionSheet.ShowAsync("操作例", CancelText,
-            "全選択", "選択解除", "列設定を初期化", "行を追加", "先頭行を末尾へ移動", "選択行を削除", "同じIDの別データに置換", "名前と状態を更新", "発注チェックを外部から変更", "販売中だけを選択", "販売中だけを表示", "該当なしで絞り込む", "絞り込みを解除", "2列目の表示を切り替え", "外部からID42を選択", "ソート順を保存", "ソート順を復元", "再読込", "性能計測");
+            "全選択", "選択解除", "列設定を初期化", "行を追加", "先頭行を末尾へ移動", "選択行を削除", "同じIDの別データに置換", "名前と状態を更新", "発注チェックを外部から変更", "販売中だけを選択", "販売中だけを表示", "該当なしで絞り込む", "絞り込みを解除", "外部からID42を選択", "ソート順を保存", "ソート順を復元", "再読込", "性能計測");
         if ((operation is null) || IsDisposed)
         {
             return;
@@ -258,7 +250,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
                 Status = "選択を解除しました。";
                 break;
             case "列設定を初期化":
-                Grid.ColumnOrders = [];
+                Grid.ColumnStates = [];
                 columnSettingsStore.Remove(ColumnSettingsKey);
                 Status = "列設定を既定の表示・順序・幅へ戻しました。";
                 break;
@@ -323,14 +315,11 @@ public sealed partial class GridListViewModel : AppViewModelBase
                 Rows.Filter = null;
                 Status = "絞り込みを解除しました。";
                 break;
-            case "2列目の表示を切り替え":
-                ToggleSecondColumn();
-                break;
             case "外部からID42を選択":
                 SelectByKey(41);
                 break;
             case "ソート順を保存":
-                savedSortOrders = Rows.SaveSortOrders();
+                savedSortOrders = Rows.SortOrders.ToArray();
                 Status = $"{savedSortOrders.Length}個のソートキーを保存しました。";
                 break;
             case "ソート順を復元":
@@ -385,7 +374,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
 
     private void OnColumnWidthChanged(object? sender, GridColumnWidthEventArgs e)
     {
-        columnSettingsStore.Save(ColumnSettingsKey, Grid.ColumnOrders!);
+        columnSettingsStore.Save(ColumnSettingsKey, Grid.ColumnStates!);
         Status = $"列幅変更: {e.ColumnKey} / {e.OldWidth:F0} → {e.NewWidth:F0} DIP（保存しました）";
     }
 

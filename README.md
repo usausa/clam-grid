@@ -25,7 +25,7 @@ Define columns with typed value accessors and connect a data view.
 
 ```csharp
 var grid = new ClamGridView();
-grid.ConfigureColumns(
+grid.ColumnDefinitions.ReplaceAll(
 [
     new GridColumn("name", "Name", new GridValueAccessor<Customer, string>(static x => x.Name)) { Width = GridColumnWidth.Star(), MinWidth = 120 },
     new GridColumn("number", "Number", new GridValueAccessor<Customer, int>(static x => x.Number)) { Width = GridColumnWidth.Absolute(160), Alignment = TextAlignment.End, Format = "N0" },
@@ -48,7 +48,7 @@ A column without `ValueAccessor` is resolved by `Key` from `ValueAccessors`, so 
 ```xml
 <clam:ClamGridView ItemsSource="{Binding Customers}"
                    ValueAccessors="{x:Static local:Customer.Accessors}"
-                   ColumnOrders="{Binding ColumnOrders}"
+                   ColumnStates="{Binding ColumnStates}"
                    SelectionMode="MultipleToggle">
     <clam:GridColumn Key="name" Header="Name" Width="*" MinWidth="120" />
     <clam:GridColumn Key="number" Header="Number" Width="160" Alignment="End" Format="N0" />
@@ -77,7 +77,7 @@ Every setting a view model needs is a bindable property or a command.
 ```xml
 <clam:ClamGridView ItemsSource="{Binding Items}"
                    ValueAccessors="{x:Static models:TicketRowAccessors.Ticket}"
-                   ColumnOrders="{Binding ColumnOrders}"
+                   ColumnStates="{Binding ColumnStates}"
                    SortOrders="{Binding SortOrders}"
                    SelectedKeys="{Binding SelectedKeys}"
                    FrozenColumnCount="1"
@@ -100,7 +100,7 @@ public sealed class TicketListViewModel : ObservableObject
     public GridDataView<TicketRow> Items { get; } = new(Array.Empty<TicketRow>(), static x => x.Id);
 
     // TwoWay bound: the grid writes the normalized orders and dragged widths back, so persisting them in the setter is enough
-    public IReadOnlyList<GridColumnOrder>? ColumnOrders
+    public IReadOnlyList<GridColumnState>? ColumnStates
     {
         get;
         set
@@ -143,12 +143,12 @@ public sealed class TicketListViewModel : ObservableObject
     public TicketListViewModel(IColumnSettingsStore store)
     {
         this.store = store;
-        ColumnOrders = store.Load("columns");
+        ColumnStates = store.Load("columns");
         SortOrders = [new GridSortOrder("ReceiptOrder")];
         Items.RegisterSort("ReceiptOrder", static x => x.ReceiptOrder);
         // Long press on a row: true selects, false clears
         SelectCommand = new Command<bool>(select => Items.UpdateSelection(x => select && !x.IsCompleted));
-        // Long press on a header: open a settings page with an editable copy, assign session.Export() to ColumnOrders on return
+        // Long press on a header: open a settings page with an editable copy, assign session.Export() to ColumnStates on return
         ColumnEditCommand = new Command<GridColumnConfigurationEventArgs>(e => OpenColumnSettings(e.CreateEditSession()));
     }
 }
@@ -158,7 +158,7 @@ public sealed class TicketListViewModel : ObservableObject
 |---|---|
 | Rows | `ItemsSource` bound to a `GridDataView<T>`, which owns rows, filter, selection and sort state |
 | Columns | `GridColumn` children in XAML and `ValueAccessors` bound to a static `GridValueAccessorCollection<T>` |
-| Column settings | `ColumnOrders` (TwoWay, dragged widths included) and `ColumnConfigurationCommand`, whose argument creates the edit session for a settings page |
+| Column settings | `ColumnStates` (TwoWay, dragged widths included) and `ColumnConfigurationCommand`, whose argument creates the edit session for a settings page |
 | Sort state | `SortOrders` (TwoWay) with the keys registered on the data view, and `SortCycle` for the header tap sequence |
 | Selection | `SelectionMode`, `SelectedKeys` (TwoWay), `SelectAllCommand` and the selection methods of the data view |
 | Editing | `IsReadOnly` and `CellValueChangedCommand` for boolean cells |
@@ -172,7 +172,7 @@ Messaging, navigation and screen controllers belong to the application.
 | Category | Detail |
 |---|---|
 | **Columns** | Auto / Absolute / Star width, minimum width, alignment, multi-line headers, format string and value converter, frozen leading columns, static header and cell colors |
-| **Column settings** | Visibility, order and saved widths, edit session for a settings screen, drag to resize, show, hide or resize a single column by key |
+| **Column settings** | Visibility, order and saved widths, edit session for a settings screen, drag to resize |
 | **Data** | `INotifyCollectionChanged` / `INotifyPropertyChanged` tracking, stable row keys, filtering |
 | **Sorting** | Multi-key sort with history, direction aware comparers, sort callback, configurable tap cycle |
 | **Selection** | None / single / multiple toggle, select all, selection by key, two way bound keys that select the rows again after a reload |

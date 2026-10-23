@@ -56,7 +56,7 @@ public sealed class GridSelectBehavior : BehaviorBase<ClamGridView>
         if ((AssociatedObject is { } grid) && grid.TryToggleSelection(e.Index, out var selected))
         {
             e.IsSelected = selected;
-            grid.ScrollIntoView(e.Index, 0);
+            grid.ScrollIntoView(e.Index, grid.VisibleColumns().Count > 0 ? grid.VisibleColumns()[0].Key : null);
         }
     }
 }

@@ -9,15 +9,27 @@ public partial class ClamGridView
 {
     public static readonly BindableProperty ValueAccessorsProperty = BindableProperty.Create(nameof(ValueAccessors), typeof(IGridValueAccessorProvider), typeof(ClamGridView), propertyChanged: OnValueAccessorsChanged);
     public static readonly BindableProperty FrozenColumnCountProperty = BindableProperty.Create(nameof(FrozenColumnCount), typeof(int), typeof(ClamGridView), 0, propertyChanged: OnFrozenColumnCountChanged);
-    public static readonly BindableProperty ColumnOrdersProperty = BindableProperty.Create(nameof(ColumnOrders), typeof(IReadOnlyList<GridColumnOrder>), typeof(ClamGridView), defaultBindingMode: BindingMode.TwoWay, propertyChanged: OnColumnOrdersChanged);
+    public static readonly BindableProperty ColumnStatesProperty = BindableProperty.Create(nameof(ColumnStates), typeof(IReadOnlyList<GridColumnState>), typeof(ClamGridView), defaultBindingMode: BindingMode.TwoWay, propertyChanged: OnColumnStatesChanged);
 
     private GridColumn[] columnCatalog = [];
-    private GridColumnOrder[] columnOrders = [];
-    private GridColumnOrder[]? requestedOrders;
-    private bool applyingColumns;
+    private GridColumnState[] columnStates = [];
+    private GridColumnState[]? requestedStates;
+    private GridColumn[] visibleColumns = [];
+    private bool columnsDirty = true;
+    private bool publishingStates;
 
     // All column definitions including hidden ones, declared as XAML content
     public GridColumnCollection ColumnDefinitions { get; } = [];
+
+    // Visible columns in display order, built from the definitions and the states
+    internal IReadOnlyList<GridColumn> ArrangedColumns
+    {
+        get
+        {
+            EnsureColumns();
+            return visibleColumns;
+        }
+    }
 
     // Resolves the value accessor of columns declared without one by key
     public IGridValueAccessorProvider? ValueAccessors
@@ -33,78 +45,35 @@ public partial class ClamGridView
         set => SetValue(FrozenColumnCountProperty, value);
     }
 
-    // Visibility and order of all columns; the normalized value is written back for TwoWay bindings and null restores the default
+    // Visibility, order and saved width of all columns; the normalized value is written back for TwoWay bindings and null restores the default
     [AllowNull]
-    public IReadOnlyList<GridColumnOrder> ColumnOrders
+    public IReadOnlyList<GridColumnState> ColumnStates
     {
-        get => (IReadOnlyList<GridColumnOrder>?)GetValue(ColumnOrdersProperty) ?? Array.AsReadOnly(columnOrders);
-        set => SetValue(ColumnOrdersProperty, value);
-    }
-
-    public void ConfigureColumns(IEnumerable<GridColumn> definitions, IEnumerable<GridColumnOrder>? orders = null)
-    {
-        RequireUiThread();
-        ArgumentNullException.ThrowIfNull(definitions);
-        var catalog = definitions.ToArray();
-        requestedOrders = orders?.ToArray();
-        applyingColumns = true;
-        try
+        get
         {
-            ColumnDefinitions.ReplaceAll(catalog);
+            EnsureColumns();
+            return (IReadOnlyList<GridColumnState>?)GetValue(ColumnStatesProperty) ?? Array.AsReadOnly(columnStates);
         }
-        finally
-        {
-            applyingColumns = false;
-        }
-
-        SetColumnConfiguration(catalog, GridColumnSettings.Normalize(catalog.Select(static column => column.Key), requestedOrders));
-    }
-
-    public void ApplyColumnOrders(IEnumerable<GridColumnOrder>? orders)
-    {
-        RequireUiThread();
-        requestedOrders = orders?.ToArray();
-        SetColumnConfiguration(columnCatalog, GridColumnSettings.Normalize(columnCatalog.Select(static column => column.Key), requestedOrders));
+        set => SetValue(ColumnStatesProperty, value);
     }
 
     public GridColumnEditSession CreateColumnEditSession()
     {
         RequireUiThread();
-        return GridColumnEditSession.Create(columnCatalog, columnOrders);
+        EnsureColumns();
+        return GridColumnEditSession.Create(columnCatalog, columnStates);
     }
 
-    public bool SetColumnVisible(string key, bool value)
-    {
-        RequireUiThread();
-        return TryApplyColumnOrders(GridColumnSettings.SetVisible(columnOrders, key, value));
-    }
-
-    public bool SetColumnWidth(string key, double? width)
-    {
-        RequireUiThread();
-        return TryApplyColumnOrders(GridColumnSettings.SetWidth(columnOrders, key, width));
-    }
-
-    private static void OnColumnOrdersChanged(BindableObject bindable, object? oldValue, object? newValue)
+    private static void OnColumnStatesChanged(BindableObject bindable, object? oldValue, object? newValue)
     {
         var grid = (ClamGridView)bindable;
-        if (grid.applyingColumns)
+        if (grid.publishingStates)
         {
             return;
         }
 
-        // Orders set before the definitions are applied when the definitions arrive
-        grid.requestedOrders = (newValue as IEnumerable<GridColumnOrder>)?.ToArray();
-        if (grid.columnCatalog.Length == 0)
-        {
-            return;
-        }
-
-        var normalized = GridColumnSettings.Normalize(grid.columnCatalog.Select(static column => column.Key), grid.requestedOrders);
-        if (!normalized.SequenceEqual(grid.columnOrders))
-        {
-            grid.SetColumnConfiguration(grid.columnCatalog, normalized);
-        }
+        grid.requestedStates = (newValue as IEnumerable<GridColumnState>)?.ToArray();
+        grid.InvalidateColumns();
     }
 
     private static void OnFrozenColumnCountChanged(BindableObject bindable, object? oldValue, object? newValue)
@@ -118,116 +87,70 @@ public partial class ClamGridView
     private static void OnValueAccessorsChanged(BindableObject bindable, object? oldValue, object? newValue)
     {
         var grid = (ClamGridView)bindable;
-        if (grid.ResolveValueAccessors(grid.columnCatalog))
+        if (grid.ResolveValueAccessors(grid.ColumnDefinitions))
         {
-            // Columns with a saved width are copies of the definitions, so they are arranged again with the resolved accessors
-            grid.applyingColumns = true;
-            try
-            {
-                grid.Columns.ReplaceAll(GridColumnSettings.Arrange(grid.columnCatalog, grid.columnOrders));
-            }
-            finally
-            {
-                grid.applyingColumns = false;
-            }
+            grid.InvalidateColumns();
         }
     }
 
+    // Accessors are resolved at once so an unregistered key is reported where the column is declared
     private void OnColumnDefinitionsChanged(object? sender, EventArgs e)
     {
-        if (applyingColumns)
-        {
-            return;
-        }
-
         RequireUiThread();
-        var catalog = ColumnDefinitions.ToArray();
-        SetColumnConfiguration(catalog, GridColumnSettings.Normalize(catalog.Select(static column => column.Key), requestedOrders));
+        ResolveValueAccessors(ColumnDefinitions);
+        InvalidateColumns();
     }
 
-    private void SetColumnConfiguration(GridColumn[] catalog, GridColumnOrder[] orders)
+    private void InvalidateColumns()
     {
-        ResolveValueAccessors(catalog);
-        var visible = GridColumnSettings.Arrange(catalog, orders);
-        columnCatalog = catalog;
-        columnOrders = orders;
-        applyingColumns = true;
-        try
-        {
-            Columns.ReplaceAll(visible);
-            PublishColumnOrders();
-        }
-        finally
-        {
-            applyingColumns = false;
-        }
-
-        EnsureLayout();
+        columnsDirty = true;
+        InvalidateLayout();
     }
 
-    // Keeps the definitions and orders in sync when Columns is edited directly
-    private void SynchronizeColumnCatalog()
+    // Definitions and states are folded into a single normalization, so declaring columns in XAML arranges them once
+    private void EnsureColumns()
     {
-        if (applyingColumns)
+        if (!columnsDirty || disposed)
         {
             return;
         }
 
-        applyingColumns = true;
-        try
-        {
-            if (Columns.Select(static column => column.Key).SequenceEqual(columnOrders.Where(static order => order.IsVisible).Select(static order => order.Key)))
-            {
-                // Edits of the same columns go to the definitions; accessors are resolved first so both share them
-                ResolveValueAccessors(Columns);
-                var (catalog, orders) = GridColumnSettings.Merge(columnCatalog, Columns, columnOrders);
-                columnCatalog = catalog;
-                for (var i = 0; i < columnCatalog.Length; i++)
-                {
-                    if ((i < ColumnDefinitions.Count) && !ReferenceEquals(ColumnDefinitions[i], columnCatalog[i]))
-                    {
-                        ColumnDefinitions[i] = columnCatalog[i];
-                    }
-                }
-
-                if (!orders.SequenceEqual(columnOrders))
-                {
-                    columnOrders = orders;
-                    requestedOrders = orders;
-                    PublishColumnOrders();
-                }
-            }
-            else
-            {
-                columnCatalog = Columns.ToArray();
-                columnOrders = columnCatalog.Select(static column => new GridColumnOrder(column.Key, true)).ToArray();
-                requestedOrders = columnOrders;
-                ColumnDefinitions.ReplaceAll(columnCatalog);
-                PublishColumnOrders();
-            }
-        }
-        finally
-        {
-            applyingColumns = false;
-        }
-
-        ResolveValueAccessors(columnCatalog);
+        columnsDirty = false;
+        var catalog = ColumnDefinitions.ToArray();
+        var states = GridColumnSettings.Normalize(catalog, requestedStates);
+        ResolveValueAccessors(catalog);
+        columnCatalog = catalog;
+        columnStates = states;
+        visibleColumns = GridColumnSettings.Arrange(catalog, states);
+        PublishColumnStates();
     }
 
-    private bool TryApplyColumnOrders(GridColumnOrder[]? orders)
+    // A dragged width is saved in the column states, so the definitions keep their declared width
+    private void SetColumnWidth(string key, double width)
     {
-        if (orders is null)
-        {
-            return false;
-        }
-
-        requestedOrders = orders;
-        SetColumnConfiguration(columnCatalog, orders);
-        return true;
+        EnsureColumns();
+        requestedStates = columnStates.Select(state => state.Key == key ? state with { Width = width } : state).ToArray();
+        InvalidateColumns();
     }
 
     // Writes the value back as a control side change so OneWay bindings survive and TwoWay bindings update the source
-    private void PublishColumnOrders() => SetValueFromRenderer(ColumnOrdersProperty, Array.AsReadOnly(columnOrders));
+    private void PublishColumnStates()
+    {
+        if ((GetValue(ColumnStatesProperty) is IReadOnlyList<GridColumnState> current) && current.SequenceEqual(columnStates))
+        {
+            return;
+        }
+
+        publishingStates = true;
+        try
+        {
+            SetValueFromRenderer(ColumnStatesProperty, Array.AsReadOnly(columnStates));
+        }
+        finally
+        {
+            publishingStates = false;
+        }
+    }
 
     private bool ResolveValueAccessors(IEnumerable<GridColumn> catalog)
     {

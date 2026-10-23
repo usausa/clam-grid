@@ -8,7 +8,7 @@ public interface IColumnEditable
     ICommand ColumnEditCommand { get; }
 
     // Visibility and order of the columns; the grid writes the normalized value back through the TwoWay binding
-    IReadOnlyList<GridColumnOrder>? ColumnOrders { get; set; }
+    IReadOnlyList<GridColumnState>? ColumnStates { get; set; }
 
     // Sort keys and directions; the grid writes the applied value back through the TwoWay binding
     IReadOnlyList<GridSortOrder>? SortOrders { get; set; }

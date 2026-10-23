@@ -31,5 +31,6 @@ global using Smart.Navigation.Attributes;
 global using SkiaSharp;
 
 global using Example;
+global using Example.Components;
 global using Example.Messaging;
 global using Example.Models;

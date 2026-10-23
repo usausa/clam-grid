@@ -31,7 +31,7 @@ public sealed partial class QualityVerifier
         ];
         await NextFrameAsync(() =>
         {
-            probe.Columns.ReplaceAll(columns);
+            probe.ColumnDefinitions.ReplaceAll(columns);
             probe.GridStyle = new GridStyle
             {
                 RowHeight = 40,
@@ -169,7 +169,7 @@ public sealed partial class QualityVerifier
 
         await NextFrameAsync(() =>
         {
-            probe.Columns.ReplaceAll([columns[0], columns[1] with { Width = GridColumnWidth.Absolute(300), Alignment = TextAlignment.End }, columns[2] with { Width = GridColumnWidth.Absolute(300) }]);
+            probe.ColumnDefinitions.ReplaceAll([columns[0], columns[1] with { Width = GridColumnWidth.Absolute(300), Alignment = TextAlignment.End }, columns[2] with { Width = GridColumnWidth.Absolute(300) }]);
             probe.FrozenColumnCount = 1;
             probe.ScrollTo(100, 0);
         }).ConfigureAwait(true);
@@ -188,12 +188,13 @@ public sealed partial class QualityVerifier
         {
             probe.FrozenColumnCount = 0;
             probe.ScrollTo(0, 0);
-            probe.Columns.ReplaceAll([columns[1], columns[0]]);
-            probe.ScrollIntoView(800, 1);
+            probe.ColumnDefinitions.ReplaceAll([columns[1], columns[0]]);
+            probe.ScrollIntoView(800, probe.VisibleColumns()[1].Key);
         }).ConfigureAwait(true);
+        var reordered = probe.VisibleColumns();
         using (RenderBitmap())
         {
-            Check("colors: reordered columns and scrolled rows", cells.Count > 0 && cells.All(context => ReferenceEquals(context.Column, probe.Columns[context.ColumnIndex]) && ReferenceEquals(context.Item, view[context.RowIndex])));
+            Check("colors: reordered columns and scrolled rows", cells.Count > 0 && cells.All(context => (context.Column.Key == reordered[context.ColumnIndex].Key) && ReferenceEquals(context.Item, view[context.RowIndex])));
             Check("colors: hidden column not evaluated", cells.All(static context => context.Column.Key != "done") && headers.All(static context => context.Column.Key != "done"));
             Check("colors: offscreen rows not evaluated", cells.Count == probe.LastFrame!.RenderedCells && cells.Min(static context => context.RowIndex) > 0 && rowHeaders.Count == probe.LastFrame.Rows.Count);
         }
@@ -211,7 +212,7 @@ public sealed partial class QualityVerifier
         }).ConfigureAwait(true);
         using (RenderBitmap())
         {
-            Check("colors: empty data still paints headers", cells.Count == 0 && rowHeaders.Count == 0 && headers.Count == probe.Columns.Count);
+            Check("colors: empty data still paints headers", cells.Count == 0 && rowHeaders.Count == 0 && headers.Count == probe.VisibleColumns().Count);
         }
 
         grid.ItemsSource = null;

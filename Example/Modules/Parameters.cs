@@ -5,7 +5,7 @@ public static class Parameters
 {
     private const string ColumnEditSession = nameof(ColumnEditSession);
 
-    private const string ColumnOrders = nameof(ColumnOrders);
+    private const string ColumnStates = nameof(ColumnStates);
 
     public static NavigationParameter Make() => new();
 
@@ -15,10 +15,10 @@ public static class Parameters
     public static GridColumnEditSession GetColumnEditSession(this INavigationParameter parameter) =>
         parameter.GetValue<GridColumnEditSession>(ColumnEditSession);
 
-    public static NavigationParameter MakeColumnOrders(GridColumnOrder[] orders) =>
-        new NavigationParameter().SetValue(ColumnOrders, orders);
+    public static NavigationParameter MakeColumnStates(GridColumnState[] orders) =>
+        new NavigationParameter().SetValue(ColumnStates, orders);
 
-    public static bool TryGetColumnOrders(this INavigationParameter parameter, [NotNullWhen(true)] out GridColumnOrder[]? orders) =>
-        parameter.TryGetValue(ColumnOrders, out orders);
+    public static bool TryGetColumnStates(this INavigationParameter parameter, [NotNullWhen(true)] out GridColumnState[]? orders) =>
+        parameter.TryGetValue(ColumnStates, out orders);
 }
 #pragma warning restore CA1724

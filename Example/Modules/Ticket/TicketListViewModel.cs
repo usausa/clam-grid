@@ -35,7 +35,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
     public GridSelectRequest GridSelectRequest { get; } = new();
 
     // Visibility and order of the columns, bound TwoWay and saved when the normalized value comes back
-    public IReadOnlyList<GridColumnOrder>? ColumnOrders
+    public IReadOnlyList<GridColumnState>? ColumnStates
     {
         get;
         set
@@ -46,7 +46,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
             }
 
             field = value;
-            RaisePropertyChanged(nameof(ColumnOrders));
+            RaisePropertyChanged(nameof(ColumnStates));
             if (value is not null)
             {
                 columnSettingsStore.Save(ColumnSettingsKey, value);
@@ -120,7 +120,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
         this.session = session;
 
         // Saved column settings applied through the binding; unknown columns are dropped and new ones are appended hidden
-        ColumnOrders = columnSettingsStore.Load(ColumnSettingsKey);
+        ColumnStates = columnSettingsStore.Load(ColumnSettingsKey);
 
         Items = new GridDataView<TicketRow>(Array.Empty<TicketRow>(), static x => x.Id);
         Items.RegisterComparers(TicketComparers.Default);
@@ -160,10 +160,10 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
         {
             Load();
         }
-        else if (context.Parameter.TryGetColumnOrders(out var orders))
+        else if (context.Parameter.TryGetColumnStates(out var orders))
         {
             // Result of the column settings screen; the grid writes the normalized value back, so the setter saves it
-            ColumnOrders = orders;
+            ColumnStates = orders;
         }
 
         return Task.CompletedTask;
@@ -189,7 +189,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
     {
         // Restores the default column settings; null shows the default and the normalized value is written back
         columnSettingsStore.Remove(ColumnSettingsKey);
-        ColumnOrders = null;
+        ColumnStates = null;
         Status = "列設定を既定の表示・順序・幅へ戻しました。";
         return Task.CompletedTask;
     }

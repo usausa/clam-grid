@@ -66,7 +66,7 @@ public sealed partial class QualityVerifier
             }
 
             grid.FrameRendered += OnFrame;
-            using var callback = new ScrollFrameCallback(() => grid.ScrollBy(2, 12));
+            using var callback = new ScrollFrameCallback(() => grid.ScrollTo(grid.ScrollX + 2, grid.ScrollY + 12));
             try
             {
                 callback.Start();
@@ -79,7 +79,7 @@ public sealed partial class QualityVerifier
             }
 
             Check($"colors: enabled={enabled} viewport callback count", visibleOnly && maxCalls < 500 && frames.Count >= 120);
-            Log(FormattableString.Invariant($"COLOR_METRIC enabled={enabled};rows={grid.RowCount};columns={grid.Columns.Count};frames={frames.Count};paint_p95_ms={P95(frames):F3};max_callbacks_per_frame={maxCalls}"));
+            Log(FormattableString.Invariant($"COLOR_METRIC enabled={enabled};rows={grid.RowCount};columns={grid.VisibleColumns().Count};frames={frames.Count};paint_p95_ms={P95(frames):F3};max_callbacks_per_frame={maxCalls}"));
         }
 
         grid.GridStyle = baseline;

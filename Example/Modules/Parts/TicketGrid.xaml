@@ -7,7 +7,7 @@
                    x:Class="Example.Modules.Parts.TicketGrid"
                    x:DataType="{x:Type modules:IColumnEditable}"
                    ColumnConfigurationCommand="{Binding ColumnEditCommand}"
-                   ColumnOrders="{Binding ColumnOrders}"
+                   ColumnStates="{Binding ColumnStates}"
                    FrozenColumnCount="2"
                    GridStyle="{StaticResource ListGridStyle}"
                    SelectAllCommand="{Binding SelectCommand}"

@@ -36,19 +36,19 @@ public sealed partial class QualityVerifier
         frame = await NextFrameAsync(() => grid.TryToggleSelectionByKey(800, out _)).ConfigureAwait(true);
         Check("scroll: selection by key keeps the horizontal offset", (view.SelectedCount == 1) && grid.ScrollX.Equals(offset) && (frame.Rows.Start <= view.IndexOfKey(800)) && (frame.Rows.End > view.IndexOfKey(800)));
 
-        var key = grid.Columns[1].Key;
-        var declared = grid.Columns[1].Width;
-        await NextFrameAsync(() => grid.ColumnOrders = grid.ColumnOrders.Select(order => order.Key == key ? order with { Width = 222.5 } : order).ToArray()).ConfigureAwait(true);
-        Check("widths: saved width applies to the column", grid.Columns[1].Width.Equals(GridColumnWidth.Absolute(222.5)) && grid.ColumnDefinitions.First(column => column.Key == key).Width.Equals(declared));
-        await NextFrameAsync(() => grid.ColumnOrders = null).ConfigureAwait(true);
-        Check("widths: default orders restore the declared width", grid.Columns[1].Width.Equals(declared) && grid.ColumnOrders.All(static order => order.Width is null));
+        var key = grid.VisibleColumns()[1].Key;
+        var declared = grid.VisibleColumns()[1].Width;
+        await NextFrameAsync(() => grid.ColumnStates = grid.ColumnStates.Select(order => order.Key == key ? order with { Width = 222.5 } : order).ToArray()).ConfigureAwait(true);
+        Check("widths: saved width applies to the column", grid.VisibleColumns()[1].Width.Equals(GridColumnWidth.Absolute(222.5)) && grid.ColumnDefinitions.First(column => column.Key == key).Width.Equals(declared));
+        await NextFrameAsync(() => grid.ColumnStates = null).ConfigureAwait(true);
+        Check("widths: default orders restore the declared width", grid.VisibleColumns()[1].Width.Equals(declared) && grid.ColumnStates.All(static order => order.Width is null));
 
         var lastKey = grid.ColumnDefinitions[^1].Key;
         var single = HeaderBottom();
         await NextFrameAsync(() => grid.ColumnDefinitions[^1] = grid.ColumnDefinitions[^1] with { Header = "二行の\n見出し" }).ConfigureAwait(true);
         var doubled = HeaderBottom();
         Check("header: two lines make the header taller", doubled > single);
-        await NextFrameAsync(() => grid.ColumnOrders = grid.ColumnOrders.Select(order => order.Key == lastKey ? order with { IsVisible = false } : order).ToArray()).ConfigureAwait(true);
+        await NextFrameAsync(() => grid.ColumnStates = grid.ColumnStates.Select(order => order.Key == lastKey ? order with { IsVisible = false } : order).ToArray()).ConfigureAwait(true);
         Check("header: a hidden two line header keeps the height", HeaderBottom() == doubled);
 
         host.Content = null;
