@@ -94,14 +94,50 @@ The grid is used on the UI thread; the members that change it throw `InvalidOper
 | `Width` | `GridColumnWidth` | `Auto` | `Auto`, `Absolute(dip)` or `Star(weight)`; in XAML `Auto`, `85`, `*` or `2*` |
 | `MinWidth` | `double` | `40` | Lower bound for resizing and star distribution |
 | `Alignment` | `TextAlignment` | `Start` | Cell text alignment |
+| `VerticalAlignment` | `TextAlignment` | `Center` | Vertical alignment of the cell text within the row height |
+| `LineCount` | `int` | `1` | Cell text lines; above `1` the text is split at its line breaks (`&#10;` in XAML) into lines that are truncated one by one, lines past the count are dropped and `Auto` width measures the widest line. `0` draws as many lines as the row height allows without taking part in deriving it. At `1` the line breaks stay collapsed into spaces |
 | `Format` | `string?` | `null` | Composite format applied to any value when it contains `{` (`{0:N0} pcs`, `{0} san`), otherwise a .NET format string applied to `IFormattable` values (`N0`, `D6`, `yyyy/MM/dd`); parsed when assigned, so an invalid composite format throws `FormatException` there |
 | `Converter` | `IValueConverter?` | `null` | Runs on the cell value before `Format` when a text cell is painted; boolean cells, sorting and editing use the raw value |
 | `HeaderBackground`, `HeaderTextColor`, `TextColor`, `Background` | `Color?` | `null` | Static colors; `null` falls back to `GridStyle` |
 | `IsBoolean` | `bool` | `false` | Draws a check box and toggles the value on tap |
+| `CellPainter` | `Action<SKCanvas, GridCellPaintContext>?` | `null` | Draws the content of the body cells instead of the text or the check box (see below) |
 | `IsReadOnly` | `bool?` | `null` | Overrides `ClamGridView.IsReadOnly` for the column |
 | `SortKey` | `string?` | `null` | Sort key registered on the data view when it differs from `Key` |
 | `AllowSorting` | `bool` | `true` | A header tap sorts the column |
 | `AllowResizing` | `bool` | `true` | The header boundary can be dragged |
+
+### 🖌 CellPainter
+
+The painter is called for every visible body cell of the column in every frame, after the background and before the grid lines.  
+The canvas is in DIP and clipped to the cell, and its state is saved before the call and restored after it.  
+`Format` and `Converter` are not applied, an `Auto` width comes from the header only, and taps, selection, sorting and the toggle of `IsBoolean` work as before.  
+The painter runs while the grid is drawn, so it must not change the grid.  
+
+| Name | Type | Description |
+|---|---|---|
+| `Bounds` | `SKRect` | Whole cell in DIP, also when part of it is hidden by the frozen columns or the edges |
+| `Item` | `object` | Row item |
+| `RowIndex`, `ColumnIndex` | `int` | Indexes in the current display order |
+| `Column` | `GridColumn` | Column being painted |
+| `Value` | `object?` | Raw value of the `ValueAccessor` |
+| `IsSelected` | `bool` | Whether the row is selected |
+| `Colors` | `GridColors` | Text and background colors with the selection and `CellColors` applied |
+
+`ChartDrawing` of [ClamChart](https://github.com/usausa/clam-chart) draws a sparkline into the cell; the grid does not depend on ClamChart.  
+
+```csharp
+new GridColumn("trend", "Trend", new GridValueAccessor<SalesRow, double[]>(static x => x.GetSales()))
+{
+    Width = GridColumnWidth.Absolute(140),
+    CellPainter = static (canvas, context) =>
+    {
+        if (context.Value is double[] values)
+        {
+            ChartDrawing.DrawSparkline(canvas, SKRect.Inflate(context.Bounds, -8, -6), values, new SparklineDrawOptions());
+        }
+    }
+}
+```
 
 ## 🧭 GridColumnState
 
@@ -127,7 +163,7 @@ The default colors follow the Material palette: Blue 700 header, Cyan 700 and Or
 | `FontFamily` | `string` | `monospace` | Primary font; missing characters are resolved through `FallbackFonts` of SkiaExtension |
 | `FontSize` | `double` | `16` | Font size in DIP |
 | `HorizontalPadding`, `VerticalPadding` | `double` | `8` | Cell padding in DIP |
-| `RowHeight`, `HeaderHeight` | `double?` | `null` | `null` derives the height from the primary font and the fallback fonts resolved while measuring; the header also counts the most lines among all column headers, hidden ones included, and the corner text |
+| `RowHeight`, `HeaderHeight` | `double?` | `null` | `null` derives the height from the primary font and the fallback fonts resolved while measuring; the rows also count the largest `GridColumn.LineCount` and the header the most lines among all column headers and the corner text, hidden definitions included, so showing or hiding columns keeps both heights |
 | `RowHeaderWidth` | `double` | `48` | Width of the row header |
 | `ColumnHeadersVisible`, `RowHeadersVisible`, `VerticalLinesVisible` | `bool` | `true` | Visibility of the headers and vertical lines |
 | `ScrollBarVisible`, `ScrollBarThickness`, `ScrollBarColor` | `bool`, `double`, `Color` | `true`, `4`, `#8C64748B` | Scroll bars drawn over the right and bottom edges while the content overflows; the corner radius is half the thickness and the bar keeps a gap of one DIP from the edge |

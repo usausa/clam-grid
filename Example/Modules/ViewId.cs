@@ -9,5 +9,6 @@ public enum ViewId
     GridColor,
     GridQuality,
     GridInput,
+    GridSparkline,
     TicketList
 }

@@ -46,8 +46,9 @@
                 Text="6.Mvvm" />
         <Button Grid.Row="6"
                 Style="{StaticResource MenuButton}"
-                IsEnabled="False"
-                Text="" />
+                Command="{Binding ForwardCommand}"
+                CommandParameter="{x:Static modules:ViewId.GridSparkline}"
+                Text="7.Sparkline" />
     </Grid>
 
 </ContentView>

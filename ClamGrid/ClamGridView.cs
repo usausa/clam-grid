@@ -94,8 +94,10 @@ public partial class ClamGridView : SKCanvasView, IDisposable
 
     private GridLayout? CurrentLayout { get; set; }
 
-    // Every definition counts, hidden ones included, so showing or hiding columns keeps the header height
-    private int HeaderLineCount => columnCatalog.Select(static column => GridRenderer.GetHeaderLines(column.Header).Length).Append(GridStyle.RowHeadersVisible ? GridRenderer.GetHeaderLines(GridStyle.CornerText).Length : 1).Max();
+    // Every definition counts, hidden ones included, so showing or hiding columns keeps the header and row heights
+    private int HeaderLineCount => columnCatalog.Select(static column => GridRenderer.GetTextLines(column.Header).Length).Append(GridStyle.RowHeadersVisible ? GridRenderer.GetTextLines(GridStyle.CornerText).Length : 1).Max();
+
+    private int CellLineCount => columnCatalog.Select(static column => column.LineCount).Append(1).Max();
 
     public ClamGridView()
     {
@@ -675,7 +677,7 @@ public partial class ClamGridView : SKCanvasView, IDisposable
             widths[resizeColumn] = previewWidth;
         }
 
-        var replacement = new GridLayout(widths, Items.Count, GridStyle.RowHeight ?? renderer.AutoRowHeight, GridStyle.ColumnHeadersVisible ? GridStyle.HeaderHeight ?? renderer.GetAutoHeight(HeaderLineCount) : 0, rowHeader, Width, Height, Math.Clamp(FrozenColumnCount, 0, widths.Length));
+        var replacement = new GridLayout(widths, Items.Count, GridStyle.RowHeight ?? renderer.GetAutoHeight(CellLineCount), GridStyle.ColumnHeadersVisible ? GridStyle.HeaderHeight ?? renderer.GetAutoHeight(HeaderLineCount) : 0, rowHeader, Width, Height, Math.Clamp(FrozenColumnCount, 0, widths.Length));
         replacement.ScrollTo(ScrollX, ScrollY);
         CurrentLayout = replacement;
         layoutDirty = false;

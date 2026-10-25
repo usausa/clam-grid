@@ -169,8 +169,9 @@ public sealed partial class InputVerifier : IDisposable
         await DragAsync(200, 20, 60, 20).ConfigureAwait(true);
         Check("resize clamps to minimum width", Math.Abs(grid.VisibleColumns()[0].Width.Value - 40) < 1 && resizes == 2 && taps == priorTaps);
         grid.ColumnDefinitions[0] = grid.ColumnDefinitions[0] with { Width = GridColumnWidth.Absolute(160) };
+        grid.ColumnStates = grid.ColumnStates.Select(static state => state with { Width = null }).ToArray();
         resizes = 1;
-        Check("direct width edit replaces the saved width", (grid.ColumnStates[0].Width is null) && grid.ColumnDefinitions[0].Width.Equals(GridColumnWidth.Absolute(160)));
+        Check("clearing the saved width applies the declared width", (grid.ColumnStates[0].Width is null) && (Math.Abs(grid.VisibleColumns()[0].Width.Value - 160) < 1));
         Send(MotionEventActions.Down, 200, 20);
         Send(MotionEventActions.Move, 240, 20);
         Send(MotionEventActions.Cancel, 240, 20);

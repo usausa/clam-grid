@@ -38,7 +38,7 @@ public sealed class SampleRow : NotificationObject
 
     public int DescriptionNumber => (Id % 30) + 1;
 
-    public string Description => $"サンプル商品の説明 {DescriptionNumber} 行の高さと横スクロールを確認するための長い文章";
+    public string Description => $"サンプル商品の説明 {DescriptionNumber}\n行の高さと横スクロールを確認するための長い文章";
 
     public string Location => $"{(char)('A' + (Id % 6))}-{(Id % 40) + 1:D2}";
 

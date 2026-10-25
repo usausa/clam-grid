@@ -2,6 +2,8 @@ namespace ClamGrid;
 
 using ClamGrid.Rendering;
 
+using SkiaSharp;
+
 // Has a parameterless constructor for XAML; a column without ValueAccessor is resolved by key from ClamGridView.ValueAccessors
 public sealed record GridColumn
 {
@@ -16,6 +18,10 @@ public sealed record GridColumn
     public double MinWidth { get; set; } = 40;
 
     public TextAlignment Alignment { get; set; }
+
+    public TextAlignment VerticalAlignment { get; set; } = TextAlignment.Center;
+
+    public int LineCount { get; set; } = 1;
 
     // Composite format applied to any value when it contains '{' such as "{0:N0} pcs", otherwise a format string applied to IFormattable values such as "N0" or "yyyy/MM/dd"
     public string? Format
@@ -39,6 +45,8 @@ public sealed record GridColumn
     public Color? Background { get; set; }
 
     public bool IsBoolean { get; set; }
+
+    public Action<SKCanvas, GridCellPaintContext>? CellPainter { get; set; }
 
     public bool? IsReadOnly { get; set; }
 

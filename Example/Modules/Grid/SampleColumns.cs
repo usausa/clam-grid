@@ -17,7 +17,7 @@ internal static class SampleColumns
         new GridColumn("warehouse", "倉庫", new GridValueAccessor<SampleRow, int>(static x => x.Warehouse)) { Width = GridColumnWidth.Absolute(72), Alignment = TextAlignment.End },
         new GridColumn("supplier", "仕入先", new GridValueAccessor<SampleRow, string>(static x => x.Supplier)) { Width = GridColumnWidth.Auto },
         new GridColumn("difference", "在庫差異", new GridValueAccessor<SampleRow, int>(static x => x.Difference)) { Width = GridColumnWidth.Absolute(96), Alignment = TextAlignment.End, Format = "+#,0;-#,0;0" },
-        new GridColumn("description", "説明", new GridValueAccessor<SampleRow, string>(static x => x.Description)) { Width = GridColumnWidth.Absolute(240) },
+        new GridColumn("description", "説明", new GridValueAccessor<SampleRow, string>(static x => x.Description)) { Width = GridColumnWidth.Absolute(240), LineCount = 2, VerticalAlignment = TextAlignment.Start },
         new GridColumn("location", "棚番", new GridValueAccessor<SampleRow, string>(static x => x.Location)) { Width = GridColumnWidth.Absolute(200) },
         new GridColumn("unit", "単位", new GridValueAccessor<SampleRow, string>(static x => x.Unit)) { Width = GridColumnWidth.Absolute(140) },
         new GridColumn("arrival", "入荷日", new GridValueAccessor<SampleRow, DateTime>(static x => x.ArrivalDate)) { Width = GridColumnWidth.Absolute(80), Alignment = TextAlignment.End, Format = "MM/dd" },

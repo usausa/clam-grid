@@ -57,8 +57,12 @@ public sealed partial class QualityVerifier
         await NextFrameAsync(() => grid.ColumnDefinitions.Add(new GridColumn { Key = "GroupId", Header = "案件グループ" })).ConfigureAwait(true);
         Check("xaml: added definition keeps orders and is hidden until enabled", (grid.VisibleColumns().Count == 1) && (orders.Orders?.Count == scenario.Columns.Count + 1) && (orders.Orders[^1] == new GridColumnState("GroupId", false)) && grid.ColumnDefinitions[^1].ValueAccessor.GetValue(data[0]) is string);
 
-        await NextFrameAsync(() => grid.ColumnDefinitions[0] = grid.ColumnDefinitions[0] with { Width = GridColumnWidth.Absolute(321) }).ConfigureAwait(true);
-        Check("xaml: resized width is reflected to the definition", grid.ColumnDefinitions.First(static column => column.Key == "DeptCode").Width.Equals(GridColumnWidth.Absolute(321)) && (orders.Orders?.Count == scenario.Columns.Count + 1));
+        await NextFrameAsync(() =>
+        {
+            var target = grid.ColumnDefinitions.First(static column => column.Key == "DeptCode");
+            grid.ColumnDefinitions[grid.ColumnDefinitions.IndexOf(target)] = target with { Width = GridColumnWidth.Absolute(321) };
+        }).ConfigureAwait(true);
+        Check("xaml: a definition edit changes the width", grid.ColumnDefinitions.First(static column => column.Key == "DeptCode").Width.Equals(GridColumnWidth.Absolute(321)) && (orders.Orders?.Count == scenario.Columns.Count + 1));
 
         var missing = false;
         try

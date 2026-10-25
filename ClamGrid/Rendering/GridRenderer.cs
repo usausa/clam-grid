@@ -12,12 +12,14 @@ using SkiaSharp.Views.Maui;
 internal sealed class GridRenderer : IDisposable
 {
     private const int RowNumberCacheLimit = 2048;
+    private const int CellLineCacheLimit = 2048;
 
     private readonly GridStyle style;
     private readonly FontResolver fonts;
     private readonly float fontSize;
     private readonly SKPaint paint = new() { IsAntialias = true };
     private readonly Dictionary<string, string[]> headerLines = [with(StringComparer.Ordinal)];
+    private readonly Dictionary<string, string[]> cellLines = [with(StringComparer.Ordinal)];
     private readonly Dictionary<(bool Descending, int Number), string> headerMarks = [];
     private readonly Dictionary<int, string> rowNumbers = [];
     private RowState[] rowStates = [];
@@ -47,12 +49,12 @@ internal sealed class GridRenderer : IDisposable
         {
             var column = columns[columnIndex];
             var mark = GetHeaderMark(column, dataView);
-            var width = GetHeaderLines(column.Header).Max(line => Measure(style.SortMarkPosition == GridSortMarkPosition.End ? line + mark : mark + line, true));
-            if (column.Width.Unit == GridColumnWidthUnit.Auto)
+            var width = GetTextLines(column.Header).Max(line => Measure(style.SortMarkPosition == GridSortMarkPosition.End ? line + mark : mark + line, true));
+            if ((column.Width.Unit == GridColumnWidthUnit.Auto) && (column.CellPainter is null))
             {
                 for (var row = 0; row < Math.Min(sampleSize, items.Count); row++)
                 {
-                    width = Math.Max(width, column.IsBoolean ? 24 : Measure(GetCellText(column, column.ValueAccessor.GetValue(items[row])), false));
+                    width = Math.Max(width, column.IsBoolean ? 24 : MeasureCell(column, column.ValueAccessor.GetValue(items[row])));
                 }
             }
 
@@ -155,13 +157,17 @@ internal sealed class GridRenderer : IDisposable
                 var colors = new GridColors(state.Selected ? style.SelectedTextColor : definition.TextColor ?? style.TextColor, GetCellBackground(style, definition, row, state.Background));
                 colors = colors.Apply(style.CellColors?.Invoke(new GridCellColorContext(items[row], row, definition, column, value, state.Selected, colors)) ?? default);
                 Fill(canvas, rect, colors.Background!);
-                if (definition.IsBoolean)
+                if (definition.CellPainter is { } painter)
+                {
+                    PaintCell(canvas, painter, new GridCellPaintContext(ToSkRect(rect), items[row], row, definition, column, value, state.Selected, colors));
+                }
+                else if (definition.IsBoolean)
                 {
                     DrawBoolean(canvas, rect, value is true, colors.TextColor!, colors.Background!);
                 }
                 else
                 {
-                    DrawText(canvas, rect, GetCellText(definition, value), definition.Alignment, colors.TextColor!);
+                    DrawCellText(canvas, rect, GetCellText(definition, value), definition, colors.TextColor!);
                 }
 
                 DrawLines(canvas, rect);
@@ -208,6 +214,7 @@ internal sealed class GridRenderer : IDisposable
     {
         fonts.ClearCache();
         headerLines.Clear();
+        cellLines.Clear();
     }
 
     public void Dispose()
@@ -236,8 +243,8 @@ internal sealed class GridRenderer : IDisposable
     internal static Color GetCellBackground(GridStyle style, GridColumn column, int rowIndex, Color? rowBackground) =>
         rowBackground ?? column.Background ?? ((rowIndex % 2) == 1 ? style.AlternatingRowBackground : null) ?? style.Background;
 
-    // Header and corner texts break at every line break; body cells stay on one line
-    internal static string[] GetHeaderLines(string text) => text.ReplaceLineEndings("\n").Split('\n');
+    // Headers and corner texts use every line; cells use the first LineCount of them
+    internal static string[] GetTextLines(string text) => text.ReplaceLineEndings("\n").Split('\n');
 
     internal string GetRowHeaderText(object item, int rowIndex, bool selected) =>
         style.RowHeaderText?.Invoke(new GridRowHeaderTextContext(item, rowIndex, selected)) ?? GetRowNumber(rowIndex);
@@ -289,7 +296,41 @@ internal sealed class GridRenderer : IDisposable
 
     private static SKRect ToSkRect(GridRect rect) => new((float)rect.X, (float)rect.Y, (float)rect.Right, (float)rect.Bottom);
 
+    private static void PaintCell(SKCanvas canvas, Action<SKCanvas, GridCellPaintContext> painter, in GridCellPaintContext context)
+    {
+        var count = canvas.Save();
+        canvas.ClipRect(context.Bounds);
+        painter(canvas, context);
+        canvas.RestoreToCount(count);
+    }
+
     private float Measure(string text, bool header) => fonts.CreateText(text, fontSize, header).Width;
+
+    private float MeasureCell(GridColumn column, object? value)
+    {
+        var text = GetCellText(column, value);
+        if (column.LineCount == 1)
+        {
+            return Measure(text, false);
+        }
+
+        var width = 0f;
+        var lines = GetCachedCellLines(text);
+        var count = column.LineCount > 0 ? Math.Min(lines.Length, column.LineCount) : lines.Length;
+        for (var i = 0; i < count; i++)
+        {
+            width = Math.Max(width, Measure(lines[i], false));
+        }
+
+        return width;
+    }
+
+    private (double X, SKTextAlign Align) GetTextPosition(GridRect rect, TextAlignment alignment) => alignment switch
+    {
+        TextAlignment.Center => (rect.CenterX, SKTextAlign.Center),
+        TextAlignment.End => (rect.Right - style.HorizontalPadding, SKTextAlign.Right),
+        _ => (rect.X + style.HorizontalPadding, SKTextAlign.Left)
+    };
 
     private void DrawText(SKCanvas canvas, GridRect rect, string text, TextAlignment alignment, Color color)
     {
@@ -305,18 +346,46 @@ internal sealed class GridRenderer : IDisposable
             return;
         }
 
-        var (x, textAlign) = alignment switch
-        {
-            TextAlignment.Center => (rect.CenterX, SKTextAlign.Center),
-            TextAlignment.End => (rect.Right - style.HorizontalPadding, SKTextAlign.Right),
-            _ => (rect.X + style.HorizontalPadding, SKTextAlign.Left)
-        };
+        var (x, textAlign) = GetTextPosition(rect, alignment);
         var baseline = fonts.GetMetrics(fontSize, false).GetCenterBaseline((float)rect.CenterY);
         paint.Style = SKPaintStyle.Fill;
         paint.Color = color.ToSKColor();
         canvas.Save();
         canvas.ClipRect(ToSkRect(rect));
         canvas.DrawText(drawableText, (float)x, baseline, textAlign, paint);
+        canvas.Restore();
+    }
+
+    // Lines are stacked from the vertical alignment and truncated on their own; LineCount caps them and 0 fits as many as the row height allows
+    private void DrawCellText(SKCanvas canvas, GridRect rect, string text, GridColumn column, Color color)
+    {
+        var available = (float)(rect.Width - (style.HorizontalPadding * 2));
+        if (rect.IsEmpty || (available <= 0) || (text.Length == 0))
+        {
+            return;
+        }
+
+        var lineHeight = (double)TextLineHeight;
+        var allowed = column.LineCount > 0 ? column.LineCount : Math.Max(1, (int)((rect.Height - (style.VerticalPadding * 2)) / lineHeight));
+        var lines = allowed > 1 ? GetCachedCellLines(text) : null;
+        var count = lines is null ? 1 : Math.Min(lines.Length, allowed);
+        var top = column.VerticalAlignment switch
+        {
+            TextAlignment.Start => rect.Y + style.VerticalPadding,
+            TextAlignment.End => rect.Bottom - style.VerticalPadding - (lineHeight * count),
+            _ => rect.Y + ((rect.Height - (lineHeight * count)) / 2)
+        };
+        var (x, textAlign) = GetTextPosition(rect, column.Alignment);
+        var metrics = fonts.GetMetrics(fontSize, false);
+        paint.Style = SKPaintStyle.Fill;
+        paint.Color = color.ToSKColor();
+        canvas.Save();
+        canvas.ClipRect(ToSkRect(rect));
+        for (var i = 0; i < count; i++)
+        {
+            canvas.DrawText(fonts.CreateText(lines is null ? text : lines[i], fontSize, false, available), (float)x, metrics.GetCenterBaseline((float)(top + (lineHeight * (i + 0.5)))), textAlign, paint);
+        }
+
         canvas.Restore();
     }
 
@@ -361,8 +430,24 @@ internal sealed class GridRenderer : IDisposable
     {
         if (!headerLines.TryGetValue(text, out var lines))
         {
-            lines = GetHeaderLines(text);
+            lines = GetTextLines(text);
             headerLines[text] = lines;
+        }
+
+        return lines;
+    }
+
+    private string[] GetCachedCellLines(string text)
+    {
+        if (!cellLines.TryGetValue(text, out var lines))
+        {
+            if (cellLines.Count >= CellLineCacheLimit)
+            {
+                cellLines.Clear();
+            }
+
+            lines = GetTextLines(text);
+            cellLines[text] = lines;
         }
 
         return lines;

@@ -121,7 +121,8 @@ public sealed partial class InputVerifier
         Check("edit copy contains hidden columns without changing grid", session.Columns.Count == 3 && grid.VisibleColumns()[0].Key == "description" && grid.ColumnStates[0].IsVisible);
         grid.ScrollTo(Double.MaxValue, 0);
         grid.ColumnStates = [new("name", true), new("description", false), new("visible", false)];
-        Check("column update clamps scroll and hit test uses new order", grid.ScrollX.Equals(0d) && grid.HitTest(90, 60).ColumnIndex == 0 && grid.VisibleColumns()[0].Key == "name" && data.SelectedCount == 1);
+        var hit = grid.HitTest(90, 60);
+        Check("column update clamps scroll and hit test uses new order", grid.ScrollX.Equals(0d) && (hit.ColumnIndex == 0) && (grid.VisibleColumns()[0].Key == "name") && (data.SelectedCount == 1));
         grid.ColumnStates = [new("visible", false), new("name", false), new("description", false)];
         Check("all hidden settings restore all default columns", grid.VisibleColumns().Select(static column => column.Key).SequenceEqual(["visible", "name", "description"]));
         var decoded = ColumnSettingsCodec.Read("[{\"ColumnName\":\"name\",\"IsVisible\":true},{\"ColumnName\":\"visible\",\"IsVisible\":false}]");

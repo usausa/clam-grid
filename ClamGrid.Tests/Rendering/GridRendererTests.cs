@@ -139,10 +139,10 @@ public sealed class GridRendererTests
     public void HeaderLinesBreakAtEveryLineBreak()
     {
         // Act & Assert
-        Assert.Equal(["対応", "開始日"], GridRenderer.GetHeaderLines("対応\n開始日"));
-        Assert.Equal(["A", "B", "C"], GridRenderer.GetHeaderLines("A\r\nB\rC"));
-        Assert.Equal(["A", String.Empty], GridRenderer.GetHeaderLines("A\n"));
-        Assert.Equal([String.Empty], GridRenderer.GetHeaderLines(String.Empty));
+        Assert.Equal(["対応", "開始日"], GridRenderer.GetTextLines("対応\n開始日"));
+        Assert.Equal(["A", "B", "C"], GridRenderer.GetTextLines("A\r\nB\rC"));
+        Assert.Equal(["A", String.Empty], GridRenderer.GetTextLines("A\n"));
+        Assert.Equal([String.Empty], GridRenderer.GetTextLines(String.Empty));
     }
 
     [Fact]
