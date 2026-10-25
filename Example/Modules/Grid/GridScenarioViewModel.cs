@@ -75,7 +75,7 @@ public sealed partial class GridScenarioViewModel : AppViewModelBase
 
         SelectAllCommand = MakeDelegateCommand<bool>(x => scenario?.SelectAll(Data!, x));
         ColumnConfigurationCommand = MakeAsyncCommand<GridColumnConfigurationEventArgs>(_ => OpenColumnSettingsAsync());
-        CommitCommand = MakeDelegateCommand(() => Status = $"選択データ: {String.Join(", ", Data!.SelectedItems.Cast<TicketRow>().Take(5).Select(static row => row.Id + 1))}（合成データ）", () => CanCommit);
+        CommitCommand = MakeDelegateCommand(() => Status = $"確定 {String.Join(", ", Data!.SelectedItems.Cast<TicketRow>().Take(5).Select(static row => row.Id + 1))}", () => CanCommit);
         SelectKeyCommand = MakeDelegateCommand(SelectKey);
         AdvanceCommand = MakeDelegateCommand(() => (Data!.SelectedItems.Cast<TicketRow>().FirstOrDefault() ?? Data[0]).AdvanceStatus());
         ResetColumnsCommand = MakeDelegateCommand(ResetColumns);
@@ -212,9 +212,9 @@ public sealed partial class GridScenarioViewModel : AppViewModelBase
 
         CanCommit = data.SelectedCount > 0;
         CanBulkSelect = !scenario.SingleSelection;
-        Status = $"{scenario.Family}: {data.Count}行 / {grid.VisibleColumnCount}列 / 選択 {data.SelectedCount}件\n" +
-            (scenario.SingleSelection ? "単一選択" : scenario.PendingField is null ? "複数選択・長押しで全選択" : $"長押し: {(scenario.PendingField == "IsStarted" ? "未対応" : "未完了")}を選択") +
-            $" / ソート {String.Join(" → ", data.SortOrders.Take(2).Select(order => SortLabel(order.Key) + (order.Descending ? "↓" : "↑")))}";
+        Status = $"{scenario.Family} {data.Count}行 {grid.VisibleColumnCount}列 / 選択 {data.SelectedCount}件 " +
+            (scenario.SingleSelection ? "単一" : "複数") +
+            $" / ソート {String.Join(" ", data.SortOrders.Take(2).Select(order => SortLabel(order.Key) + (order.Descending ? "↓" : "↑")))}";
     }
 
     private string SortLabel(string key) => scenario!.Columns.FirstOrDefault(column => column.Key == key)?.Header ?? key switch

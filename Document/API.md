@@ -165,7 +165,9 @@ The default colors follow the Material palette: Blue 700 header, Cyan 700 and Or
 | `HorizontalPadding`, `VerticalPadding` | `double` | `8` | Cell padding in DIP |
 | `RowHeight`, `HeaderHeight` | `double?` | `null` | `null` derives the height from the primary font and the fallback fonts resolved while measuring; the rows also count the largest `GridColumn.LineCount` and the header the most lines among all column headers and the corner text, hidden definitions included, so showing or hiding columns keeps both heights |
 | `RowHeaderWidth` | `double` | `48` | Width of the row header |
-| `ColumnHeadersVisible`, `RowHeadersVisible`, `VerticalLinesVisible` | `bool` | `true` | Visibility of the headers and vertical lines |
+| `ColumnHeadersVisible`, `RowHeadersVisible` | `bool` | `true` | Visibility of the headers |
+| `HorizontalLinesVisible`, `VerticalLinesVisible` | `bool` | `true` | Lines of the body, the headers and the corner; `False` for both draws no grid lines |
+| `GridLineWidth` | `double` | `0.5` | Width of the grid lines in DIP |
 | `ScrollBarVisible`, `ScrollBarThickness`, `ScrollBarColor` | `bool`, `double`, `Color` | `true`, `4`, `#8C64748B` | Scroll bars drawn over the right and bottom edges while the content overflows; the corner radius is half the thickness and the bar keeps a gap of one DIP from the edge |
 | `CornerText` | `string` | `#` | Text of the corner cell above the row headers; line breaks work as in column headers |
 | `RowHeaderAlignment` | `TextAlignment` | `End` | Alignment of the row header text |
@@ -180,18 +182,6 @@ The default colors follow the Material palette: Blue 700 header, Cyan 700 and Or
 | `RowBackground` | `Func<object, Color?>?` | `null` | Row background by item |
 | `RowHeaderText` | `Func<GridRowHeaderTextContext, string?>?` | `null` | Row header text by item and selection state; `null` falls back to the row number |
 | `CellColors`, `ColumnHeaderColors`, `RowHeaderColors` | callback | `null` | Per cell and per header colors with the item, column, sort state and default colors in the context |
-
-## 🔤 Fonts
-
-Per character font fallback comes from [SkiaExtension](https://github.com/usausa/skia-extension).  
-Configure it with `FallbackFonts` in the `SkiaExtension` namespace at startup, before the first grid is shown.  
-`Languages` defaults to the UI language of the device.  
-The `Typefaces` also count toward the automatic row height.  
-
-```csharp
-FallbackFonts.Languages = ["ja", "en"];
-FallbackFonts.Typefaces = [SKTypeface.FromStream(await FileSystem.OpenAppPackageFileAsync("NotoSansJP-Regular.ttf"))];
-```
 
 ## 🗂 GridDataView&lt;T&gt;
 
@@ -208,3 +198,15 @@ FallbackFonts.Typefaces = [SKTypeface.FromStream(await FileSystem.OpenAppPackage
 
 The data view belongs to the thread that created it, and that is where the bound collection has to be changed as well; the members that change it throw `InvalidOperationException` when they are called from another thread and `ObjectDisposedException` after `Dispose()`.  
 A change made from inside one of its own events is refused as well: most members throw `InvalidOperationException`, while `SetSelectedKeys` returns `false` and `RestoreSortOrders` returns a `Rejected` result. Defer it until the notification returns.  
+
+## 🔤 Fonts
+
+Per character font fallback comes from [SkiaExtension](https://github.com/usausa/skia-extension).  
+Configure it with `FallbackFonts` in the `SkiaExtension` namespace at startup, before the first grid is shown.  
+`Languages` defaults to the UI language of the device.  
+The `Typefaces` also count toward the automatic row height.  
+
+```csharp
+FallbackFonts.Languages = ["ja", "en"];
+FallbackFonts.Typefaces = [SKTypeface.FromStream(await FileSystem.OpenAppPackageFileAsync("NotoSansJP-Regular.ttf"))];
+```

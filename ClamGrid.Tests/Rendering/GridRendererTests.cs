@@ -275,7 +275,7 @@ public sealed class GridRendererTests
     {
         public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value is int number ? number * 10 : value;
 
-        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotSupportedException();
+        public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotSupportedException();
     }
 
     // Produces text, so the format string no longer applies
@@ -283,6 +283,6 @@ public sealed class GridRendererTests
     {
         public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value is null ? null : $"★{value}";
 
-        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotSupportedException();
+        public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotSupportedException();
     }
 }

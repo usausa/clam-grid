@@ -72,7 +72,8 @@ public sealed class GridCellPainterTests
         var columns = CreateColumns((canvas, _) =>
         {
             states.Add((canvas.TotalMatrix, canvas.SaveCount, canvas.DeviceClipBounds));
-            using var paint = new SKPaint { Color = SKColors.Red };
+            using var paint = new SKPaint();
+            paint.Color = SKColors.Red;
             canvas.DrawRect(new SKRect(-1000, -1000, 1000, 1000), paint);
             canvas.Save();
             canvas.Translate(10, 10);
@@ -126,7 +127,8 @@ public sealed class GridCellPainterTests
         var items = CreateItems(3);
         var columns = CreateColumns(static (canvas, context) =>
         {
-            using var paint = new SKPaint { Color = SKColors.Red };
+            using var paint = new SKPaint();
+            paint.Color = SKColors.Red;
             canvas.DrawRect(context.Bounds, paint);
         });
         var style = new GridStyle { ScrollBarVisible = false, AlternatingRowBackground = Colors.Yellow };

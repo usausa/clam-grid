@@ -2,6 +2,7 @@ namespace Example.Modules.Grid;
 
 public sealed partial class QualityVerifier
 {
+    // ReSharper disable AccessToDisposedClosure
     private async Task VerifyViewAsync()
     {
         report("表示検証: 絞り込み・スクロール位置・保存した列幅・複数行の見出し");
@@ -64,4 +65,5 @@ public sealed partial class QualityVerifier
 
         int HeaderBottom() => Enumerable.Range(0, 400).First(y => grid.HitTest(10, y).CellType != GridCellType.ColumnHeader);
     }
+    // ReSharper restore AccessToDisposedClosure
 }

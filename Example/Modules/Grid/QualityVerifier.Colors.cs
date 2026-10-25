@@ -4,6 +4,7 @@ using SkiaSharp.Views.Maui;
 
 public sealed partial class QualityVerifier
 {
+    // ReSharper disable AccessToDisposedClosure
     private async Task VerifyColorsAsync()
     {
         report("セル・見出しの条件色と描画画素の検証");
@@ -29,6 +30,7 @@ public sealed partial class QualityVerifier
             new("id", "BBB", new GridValueAccessor<SampleRow, int>(static row => row.Id)) { Width = GridColumnWidth.Absolute(100) },
             new("done", "CCC", new GridValueAccessor<SampleRow, bool>(static row => row.IsChecked)) { Width = GridColumnWidth.Absolute(100), IsBoolean = true, AllowSorting = false }
         ];
+        var only = backgroundOnly;
         await NextFrameAsync(() =>
         {
             probe.ColumnDefinitions.ReplaceAll(columns);
@@ -52,7 +54,7 @@ public sealed partial class QualityVerifier
                     cells.Add(context);
                     if ((context.Column.Key == "name") && (context.Item is SampleRow { Id: 0, IsDiscontinued: true }))
                     {
-                        return backgroundOnly ? new(Background: Colors.Pink) : new(Colors.Red, Colors.Pink);
+                        return only ? new(Background: Colors.Pink) : new(Colors.Red, Colors.Pink);
                     }
 
                     return context.Column.IsBoolean ? new(Colors.Green) : default;
@@ -226,6 +228,7 @@ public sealed partial class QualityVerifier
             return probe.RenderBitmap();
         }
     }
+    // ReSharper restore AccessToDisposedClosure
 
     private void CheckColors(SKBitmap bitmap, Rect rect, Color background, Color foreground, string name)
     {

@@ -4,6 +4,7 @@ using Example.Components;
 
 public sealed partial class QualityVerifier
 {
+    // ReSharper disable AccessToDisposedClosure
     private async Task VerifyScenariosAsync()
     {
         foreach (var scenario in ListScenario.All)
@@ -31,7 +32,7 @@ public sealed partial class QualityVerifier
             data.SortBy("DeptCode");
             data.RestoreSortOrders(saved);
             Check($"{scenario.Key}: session sort roundtrip", data.Select(static row => row.Id).SequenceEqual(order) && data.SelectedCount == 1);
-            var edited = grid.ColumnStates.Select((order, index) => new GridColumnState(order.Key, index != 0)).Reverse().ToArray();
+            var edited = grid.ColumnStates.Select((state, index) => new GridColumnState(state.Key, index != 0)).Reverse().ToArray();
             var json = ColumnSettingsCodec.Write(edited);
             await NextFrameAsync(() => grid.ColumnStates = ColumnSettingsCodec.Read(json)).ConfigureAwait(true);
             Check($"{scenario.Key}: legacy columns roundtrip", grid.VisibleColumns().Count == scenario.Columns.Count - 1 && grid.VisibleColumns()[0].Key == scenario.Columns[^1].Key && data.SelectedCount == 1);
@@ -45,4 +46,5 @@ public sealed partial class QualityVerifier
             }
         }
     }
+    // ReSharper restore AccessToDisposedClosure
 }

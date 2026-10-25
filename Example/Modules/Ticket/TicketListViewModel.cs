@@ -190,7 +190,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
         // Restores the default column settings; null shows the default and the normalized value is written back
         columnSettingsStore.Remove(ColumnSettingsKey);
         ColumnStates = null;
-        Status = "列設定を既定の表示・順序・幅へ戻しました。";
+        Status = "列設定 既定";
         return Task.CompletedTask;
     }
 
@@ -206,14 +206,14 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
         Items.SetSource(rows);
         SelectedKeys = selectedKeys;
         UpdateCounts();
-        Status = "タップで選択、長押しで未完了を一括選択。見出しタップで並べ替え、見出し長押しで列設定。";
+        Status = $"{Items.Count:N0}行";
     }
 
     private void Commit()
     {
         var selected = Items.SelectedItems.Cast<TicketRow>().ToArray();
         var groups = selected.Select(static x => x.GetText("GroupId")).Distinct(StringComparer.Ordinal).Count();
-        Status = $"確定: {selected.Length}件 / {groups}グループ / ID {String.Join(", ", selected.Take(5).Select(static x => x.Id + 1))}";
+        Status = $"確定 {selected.Length}件 / {groups}グループ / ID {String.Join(", ", selected.Take(5).Select(static x => x.Id + 1))}";
     }
 
     private void Advance()
@@ -222,7 +222,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
         // The INotifyPropertyChanged notification refreshes sorting and colors while the selection follows the row identity
         row.AdvanceStatus();
         UpdateCounts();
-        Status = $"状態更新: ID={row.Id + 1} / {row.GetText("StatusMark")}";
+        Status = $"状態更新 ID={row.Id + 1} / {row.GetText("StatusMark")}";
     }
 
     private void Scan()
@@ -246,7 +246,7 @@ public sealed partial class TicketListViewModel : AppViewModelBase, IColumnEdita
             }
         }
 
-        Status = $"検索: 製品番号 {productNo} / 選択 {Items.SelectedCount}件";
+        Status = $"検索 製品番号 {productNo} / 選択 {Items.SelectedCount}件";
     }
 
     private void UpdateCounts()

@@ -10,6 +10,7 @@ public sealed partial class InputVerifier
 
     private int moves;
 
+    // ReSharper disable AccessToModifiedClosure
     private async Task VerifyEditingAsync()
     {
         data.RestoreSortOrders([]);
@@ -134,4 +135,5 @@ public sealed partial class InputVerifier
         grid.ColumnDefinitions.ReplaceAll([boolean, name, address, new GridColumn("new", "追加", name.ValueAccessor)]);
         Check("new catalog column is appended hidden", grid.ColumnStates[^1] == new GridColumnState("new", false) && grid.VisibleColumns().Count == 1);
     }
+    // ReSharper restore AccessToModifiedClosure
 }

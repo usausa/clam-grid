@@ -72,11 +72,11 @@
                             <Button Grid.Column="0"
                                     Style="{StaticResource SheetButton}"
                                     Command="{Binding SelectRowCountCommand}"
-                                    CommandParameter="10000"
+                                    CommandParameter="{x:Int32 10000}"
                                     Text="10000">
                                 <Button.Triggers>
                                     <DataTrigger TargetType="Button"
-                                                 Value="10000"
+                                                 Value="{x:Int32 10000}"
                                                  Binding="{Binding RowCount}">
                                         <Setter Property="BackgroundColor" Value="{StaticResource BlueDefault}" />
                                         <Setter Property="TextColor" Value="White" />
@@ -86,11 +86,11 @@
                             <Button Grid.Column="1"
                                     Style="{StaticResource SheetButton}"
                                     Command="{Binding SelectRowCountCommand}"
-                                    CommandParameter="1000"
+                                    CommandParameter="{x:Int32 1000}"
                                     Text="1000">
                                 <Button.Triggers>
                                     <DataTrigger TargetType="Button"
-                                                 Value="1000"
+                                                 Value="{x:Int32 1000}"
                                                  Binding="{Binding RowCount}">
                                         <Setter Property="BackgroundColor" Value="{StaticResource BlueDefault}" />
                                         <Setter Property="TextColor" Value="White" />
@@ -100,11 +100,11 @@
                             <Button Grid.Column="2"
                                     Style="{StaticResource SheetButton}"
                                     Command="{Binding SelectRowCountCommand}"
-                                    CommandParameter="0"
+                                    CommandParameter="{x:Int32 0}"
                                     Text="0">
                                 <Button.Triggers>
                                     <DataTrigger TargetType="Button"
-                                                 Value="0"
+                                                 Value="{x:Int32 0}"
                                                  Binding="{Binding RowCount}">
                                         <Setter Property="BackgroundColor" Value="{StaticResource BlueDefault}" />
                                         <Setter Property="TextColor" Value="White" />

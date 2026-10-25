@@ -29,7 +29,7 @@ public sealed partial class GridColumnsViewModel : AppViewModelBase
         Grid.CellValueChanged += OnCellValueChanged;
         Grid.RowMoved += OnRowMoved;
         GridStyle = new GridStyle { RowHeaderWidth = 56, RowHeight = 46 };
-        Status = "チェックで表示を切替。左の三本線をドラッグして順序を変更できます。幅のタップでその列、「Width」で全列の幅を既定に戻します。変更は「Apply」で反映します。";
+        Status = $"表示 {session.Columns.Count(static x => x.IsVisible)} / {session.Columns.Count}列";
     }
 
     //--------------------------------------------------------------------------------
@@ -57,7 +57,7 @@ public sealed partial class GridColumnsViewModel : AppViewModelBase
             column.Width = null;
         }
 
-        Status = "全列の幅を既定に戻しました。";
+        Status = "全列の幅 既定";
         return Task.CompletedTask;
     }
 
@@ -72,7 +72,7 @@ public sealed partial class GridColumnsViewModel : AppViewModelBase
         if ((e.ColumnKey == "width") && (e.Item is GridColumnOption { Width: not null } column))
         {
             column.Width = null;
-            Status = $"{column.Header.ReplaceLineEndings(" ")} の幅を既定に戻しました。";
+            Status = $"{column.Header.ReplaceLineEndings(" ")} の幅 既定";
         }
     }
 
@@ -80,5 +80,5 @@ public sealed partial class GridColumnsViewModel : AppViewModelBase
         Status = $"表示 {session.Columns.Count(static x => x.IsVisible)} / {session.Columns.Count}列";
 
     private void OnRowMoved(object? sender, GridRowMoveEventArgs e) =>
-        Status = $"{e.OldIndex + 1}行目 → {e.NewIndex + 1}行目へ移動しました。";
+        Status = $"移動 {e.OldIndex + 1}行目 → {e.NewIndex + 1}行目";
 }

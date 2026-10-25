@@ -80,8 +80,8 @@ public sealed partial class QualityVerifier
         Check($"{rows}: Android header callback descending", callbackCalls == beforeTap + 1 && view.SortOrders[0] == new GridSortOrder("DeptCode", true) && view.SelectedCount == 1);
         await NextFrameAsync(() => DispatchTap(140, 20)).ConfigureAwait(true);
         Check($"{rows}: Android header callback ascending", callbackCalls == beforeTap + 2 && view.SortOrders[0] == new GridSortOrder("DeptCode"));
-        static void Cancel(object? sender, GridSortRequestedEventArgs args) => args.Cancel = true;
-        view.SortRequested += Cancel;
+        static void CancelSort(object? sender, GridSortRequestedEventArgs args) => args.Cancel = true;
+        view.SortRequested += CancelSort;
         try
         {
             await NextFrameAsync(() => DispatchTap(140, 20)).ConfigureAwait(true);
@@ -89,7 +89,7 @@ public sealed partial class QualityVerifier
         }
         finally
         {
-            view.SortRequested -= Cancel;
+            view.SortRequested -= CancelSort;
         }
 
         view.ClearSortCallback();

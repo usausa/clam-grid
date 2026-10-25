@@ -321,6 +321,17 @@
         <Setter Property="Padding" Value="6,3" />
         <Setter Property="TextColor" Value="{StaticResource SecondaryTextColor}" />
         <Setter Property="FontSize" Value="13" />
+        <Setter Property="MaxLines" Value="1" />
+        <Setter Property="LineBreakMode" Value="TailTruncation" />
+        <Setter Property="HeightRequest" Value="24" />
+        <Setter Property="VerticalTextAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="ReportLabel"
+           TargetType="Label">
+        <Setter Property="Padding" Value="6,3" />
+        <Setter Property="TextColor" Value="{StaticResource SecondaryTextColor}" />
+        <Setter Property="FontSize" Value="13" />
     </Style>
 
     <!-- ================================================================================ -->

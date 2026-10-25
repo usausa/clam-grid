@@ -28,12 +28,17 @@ public sealed partial class GridColorViewModel : AppViewModelBase
                 field = value;
                 RaisePropertyChanged(nameof(EmphasizeHeader));
                 Grid.Invalidate();
-                Status = value ? "顧客名の見出し色を強調しました。" : "見出し色の強調を解除しました。";
+                Status = value ? "見出し色 強調" : "見出し色 既定";
             }
         }
     }
 
+    [ObservableProperty]
+    public partial int LineIndex { get; set; }
+
     public IObserveCommand ToggleFontCommand { get; }
+
+    public IObserveCommand SelectLineCommand { get; }
 
     [ObservableProperty]
     public partial GridStyle GridStyle { get; set; }
@@ -55,7 +60,8 @@ public sealed partial class GridColorViewModel : AppViewModelBase
         GridStyle = CreateStyle(16);
         FontText = $"文字 {GridStyle.FontSize}";
         ToggleFontCommand = MakeDelegateCommand(ToggleFont);
-        Status = "在庫差異が負の行は赤、廃番は緑。チェック変更で色も更新します。選択中は選択色を優先します。";
+        SelectLineCommand = MakeDelegateCommand<int>(SelectLine);
+        Status = $"{Rows.Count:N0}行";
     }
 
     //--------------------------------------------------------------------------------
@@ -84,7 +90,7 @@ public sealed partial class GridColorViewModel : AppViewModelBase
     protected override Task OnNotifyFunction4()
     {
         Rows.ClearSelection();
-        Status = "選択を解除しました。";
+        Status = "選択なし";
         return Task.CompletedTask;
     }
 
@@ -96,7 +102,14 @@ public sealed partial class GridColorViewModel : AppViewModelBase
     {
         GridStyle = CreateStyle(GridStyle.FontSize.Equals(16d) ? 22 : 16);
         FontText = $"文字 {GridStyle.FontSize}";
-        Status = $"文字サイズ: {GridStyle.FontSize}";
+        Status = $"文字 {GridStyle.FontSize}";
+    }
+
+    private void SelectLine(int index)
+    {
+        LineIndex = index;
+        GridStyle = CreateStyle(GridStyle.FontSize);
+        Status = index switch { 1 => "罫線 横だけ", 2 => "罫線 なし", _ => "罫線 格子" };
     }
 
     //--------------------------------------------------------------------------------
@@ -107,6 +120,8 @@ public sealed partial class GridColorViewModel : AppViewModelBase
     {
         FontSize = fontSize,
         RowHeaderWidth = fontSize > 16 ? 64 : 48,
+        HorizontalLinesVisible = LineIndex != 2,
+        VerticalLinesVisible = LineIndex == 0,
         CellColors = static context => context.IsSelected ? default : context.Column.Key switch
         {
             "difference" when context.Value is < 0 => new GridColors(WarningText, WarningBackground),

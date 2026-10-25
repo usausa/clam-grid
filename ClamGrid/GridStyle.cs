@@ -19,9 +19,13 @@ public sealed record GridStyle
 
     public double ScrollBarThickness { get; set; } = 4;
 
+    public double GridLineWidth { get; set; } = 0.5;
+
     public bool ColumnHeadersVisible { get; set; } = true;
 
     public bool RowHeadersVisible { get; set; } = true;
+
+    public bool HorizontalLinesVisible { get; set; } = true;
 
     public bool VerticalLinesVisible { get; set; } = true;
 
@@ -103,6 +107,11 @@ public sealed record GridStyle
         if (!Double.IsFinite(ScrollBarThickness) || (ScrollBarThickness <= 0))
         {
             throw new ArgumentException("The scroll bar thickness must be a positive finite value.");
+        }
+
+        if (!Double.IsFinite(GridLineWidth) || (GridLineWidth <= 0))
+        {
+            throw new ArgumentException("The grid line width must be a positive finite value.");
         }
     }
 

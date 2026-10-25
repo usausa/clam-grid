@@ -9,6 +9,7 @@ public sealed class GridStyleTests
         Assert.True(GridStyle.ValidateValue(new GridStyle()));
         Assert.True(GridStyle.ValidateValue(new GridStyle { HorizontalPadding = 0, VerticalPadding = 0, RowHeight = 40, HeaderHeight = 32, RowHeaderWidth = 0 }));
         Assert.True(GridStyle.ValidateValue(new GridStyle { ScrollBarThickness = 1, ScrollBarVisible = false }));
+        Assert.True(GridStyle.ValidateValue(new GridStyle { GridLineWidth = 2, HorizontalLinesVisible = false, VerticalLinesVisible = false }));
     }
 
     [Fact]
@@ -35,6 +36,8 @@ public sealed class GridStyleTests
         Assert.Throws<ArgumentException>(static () => GridStyle.ValidateValue(new GridStyle { RowHeaderWidth = -1 }));
         Assert.Throws<ArgumentException>(static () => GridStyle.ValidateValue(new GridStyle { ScrollBarThickness = 0 }));
         Assert.Throws<ArgumentException>(static () => GridStyle.ValidateValue(new GridStyle { ScrollBarThickness = Double.NaN }));
+        Assert.Throws<ArgumentException>(static () => GridStyle.ValidateValue(new GridStyle { GridLineWidth = 0 }));
+        Assert.Throws<ArgumentException>(static () => GridStyle.ValidateValue(new GridStyle { GridLineWidth = Double.NaN }));
     }
 
     [Fact]

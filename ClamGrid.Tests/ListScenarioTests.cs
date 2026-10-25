@@ -10,7 +10,7 @@ public sealed class ListScenarioTests
 
         // Assert
         Assert.Equal(7, scenarios.Count);
-        Assert.Equal<int>([18, 17, 18, 18], scenarios.DistinctBy(static scenario => scenario.Family).Select(static scenario => scenario.Columns.Count));
+        Assert.Equal([18, 17, 18, 18], scenarios.DistinctBy(static scenario => scenario.Family).Select(static scenario => scenario.Columns.Count));
         foreach (var scenario in scenarios)
         {
             Assert.Equal(scenario.Columns.Count, scenario.Columns.Select(static column => column.Key).Distinct(StringComparer.Ordinal).Count());

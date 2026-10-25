@@ -2,6 +2,7 @@ namespace ClamGrid.Tests;
 
 public sealed class GridDataViewTests
 {
+    // ReSharper disable AccessToDisposedClosure
     [Fact]
     public void NonAdjacentMoveRemovalAndReplacementPreserveOnlyTheCorrectRows()
     {
@@ -45,6 +46,7 @@ public sealed class GridDataViewTests
         // Assert
         Assert.Equal(4, notifications);
     }
+    // ReSharper restore AccessToDisposedClosure
 
     [Fact]
     public void ResetAndRefreshBothKeepTheSelectionOfTheRowsThatRemain()
@@ -147,6 +149,7 @@ public sealed class GridDataViewTests
         Assert.Equal(rows, rows.OrderBy(static row => row.Id));
     }
 
+    // ReSharper disable AccessToDisposedClosure
     [Fact]
     public void PropertyChangesRefreshAndResortWithoutTransferringSelection()
     {
@@ -180,7 +183,9 @@ public sealed class GridDataViewTests
         Assert.Same(rows[0], view[^1]);
         Assert.True(view.IsSelected(3));
     }
+    // ReSharper restore AccessToDisposedClosure
 
+    // ReSharper disable AccessToDisposedClosure
     [Fact]
     public void SourcesAndRemovedItemsAreUnsubscribedOnReplacementSuspendAndDispose()
     {
@@ -232,6 +237,7 @@ public sealed class GridDataViewTests
         Assert.Same(replacement[0], Assert.Single(view.SelectedItems));
 
         // Act
+        // ReSharper disable once DisposeOnUsingVariable
         view.Dispose();
 
         // Assert
@@ -243,6 +249,7 @@ public sealed class GridDataViewTests
         // Assert
         Assert.Equal(3, view.Count);
     }
+    // ReSharper restore AccessToDisposedClosure
 
     [Fact]
     public void ReferenceIdentityDoesNotUseOverriddenValueEquality()
@@ -277,6 +284,7 @@ public sealed class GridDataViewTests
         Assert.True(view.IsSelected(0));
     }
 
+    // ReSharper disable AccessToDisposedClosure
     [Fact]
     public void NotificationsSeeCommittedStateAndSourceReentrancyIsDeferred()
     {
@@ -301,6 +309,7 @@ public sealed class GridDataViewTests
         Assert.Equal(2, view.Count);
         Assert.Empty(view.SelectedItems);
     }
+    // ReSharper restore AccessToDisposedClosure
 
     [Fact]
     public void MutatingSelectionPredicateCannotOverwriteTheUpdatedSource()
@@ -348,6 +357,7 @@ public sealed class GridDataViewTests
 
     private static ObservableCollection<Row> Rows(int count) => [with(Enumerable.Range(0, count).Select(static id => new Row(id, $"row{id}")))];
 
+    // ReSharper disable once NotAccessedPositionalProperty.Local
     private sealed record EqualRow(int Value);
 
     private sealed class Row : INotifyPropertyChanged

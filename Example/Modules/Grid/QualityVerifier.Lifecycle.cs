@@ -2,6 +2,7 @@ namespace Example.Modules.Grid;
 
 public sealed partial class QualityVerifier
 {
+    // ReSharper disable AccessToDisposedClosure
     private async Task VerifyLifecycleAsync()
     {
         report("寿命検証: Handler再接続・画面の生成と破棄");
@@ -11,6 +12,7 @@ public sealed partial class QualityVerifier
         data = scenario.CreateData(1000);
         await NextFrameAsync(() => ScenarioGridFactory.Configure(grid, scenario, data)).ConfigureAwait(true);
         var notifications = 0;
+        // ReSharper disable once AccessToModifiedClosure
         void OnSelection(object? sender, EventArgs args) => Interlocked.Increment(ref notifications);
         grid.SelectionChanged += OnSelection;
         for (var iteration = 0; iteration < 10; iteration++)
@@ -62,7 +64,7 @@ public sealed partial class QualityVerifier
         GC.Collect();
         var retained = GC.GetTotalMemory(false);
         var alive = weakViews.Count(static reference => reference.IsAlive);
-        var pss = global::Android.OS.Debug.Pss;
+        var pss = Android.OS.Debug.Pss;
         Log($"LIFETIME cycles=25;reconnections=10;weak_alive={alive};managed_baseline_bytes={baseline};managed_final_bytes={retained};managed_growth_bytes={retained - baseline};pss_kb={pss}");
         Check("disposed grids collect", alive <= 1);
 
@@ -77,4 +79,5 @@ public sealed partial class QualityVerifier
             Check($"font {size}: rendered and bounded", frame.RenderedCells > 0 && frame.RenderedCells < 500);
         }
     }
+    // ReSharper restore AccessToDisposedClosure
 }

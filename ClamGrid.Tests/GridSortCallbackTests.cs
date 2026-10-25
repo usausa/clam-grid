@@ -2,6 +2,7 @@ namespace ClamGrid.Tests;
 
 public sealed class GridSortCallbackTests
 {
+    // ReSharper disable AccessToDisposedClosure
     [Fact]
     public void CallbackOwnsStableMultiKeySortingAndSharesCommittedSelectionAndNotifications()
     {
@@ -21,7 +22,7 @@ public sealed class GridSortCallbackTests
 
         // Assert
         Assert.Equal("missing", Assert.Single(result.IgnoredKeys));
-        Assert.Equal<int>([3, 1, 2, 0], view.Select(static row => row.Id));
+        Assert.Equal([3, 1, 2, 0], view.Select(static row => row.Id));
 
         // Arrange
         var notifications = 0;
@@ -33,14 +34,14 @@ public sealed class GridSortCallbackTests
 
         // Assert
         Assert.Equal(2, notifications);
-        Assert.Equal<int>([0, 1, 2, 3], rows.Select(static row => row.Id));
+        Assert.Equal([0, 1, 2, 3], rows.Select(static row => row.Id));
 
         // Act
         view.SortBy("name");
 
         // Assert
         Assert.Equal(new[] { new GridSortOrder("name"), new GridSortOrder("number", true) }, view.SortOrders);
-        Assert.Equal<int>([3, 0, 1, 2], view.Select(static row => row.Id));
+        Assert.Equal([3, 0, 1, 2], view.Select(static row => row.Id));
 
         void Verify()
         {
@@ -51,12 +52,13 @@ public sealed class GridSortCallbackTests
 
             notifications++;
             Assert.True(view.SortOrders[0].Descending);
-            Assert.Equal<int>([0, 3, 1, 2], view.Select(static row => row.Id));
+            Assert.Equal([0, 3, 1, 2], view.Select(static row => row.Id));
             Assert.Same(rows[2], Assert.Single(view.SelectedItems));
             Assert.Same(rows[2], view.Items[view.IndexOfKey(2)]);
             Assert.True(view.IsSelected(view.IndexOfKey(2)));
         }
     }
+    // ReSharper restore AccessToDisposedClosure
 
     [Fact]
     public void InputAndOrdersAreReadOnlyAndReturnedArrayIsNotRetained()
@@ -180,6 +182,7 @@ public sealed class GridSortCallbackTests
         }
     }
 
+    // ReSharper disable AccessToDisposedClosure
     [Fact]
     public void CanceledRequestsSkipCallbackAndNestedRequestsCannotCommit()
     {
@@ -208,6 +211,7 @@ public sealed class GridSortCallbackTests
         Assert.Equal(1, calls);
         Assert.Empty(view.SortOrders);
     }
+    // ReSharper restore AccessToDisposedClosure
 
     [Fact]
     public void SourceMutationRejectsOldResultsAndRefreshUsesTheCallback()
@@ -239,13 +243,13 @@ public sealed class GridSortCallbackTests
         rows.Add(new Row(3, -1, "add"));
 
         // Assert
-        Assert.Equal<int>([3, 2, 1, 0], view.Select(static row => row.Id));
+        Assert.Equal([3, 2, 1, 0], view.Select(static row => row.Id));
 
         // Act
         view.Refresh();
 
         // Assert
-        Assert.Equal<int>([3, 2, 1, 0], view.Select(static row => row.Id));
+        Assert.Equal([3, 2, 1, 0], view.Select(static row => row.Id));
 
         // Act & Assert
         Assert.Equal(GridSortStatus.Applied, view.RestoreSortOrders([]).Status);
@@ -279,7 +283,7 @@ public sealed class GridSortCallbackTests
         view.Refresh();
 
         // Assert
-        Assert.Equal<int>([2, 1, 0], view.Select(static row => row.Id));
+        Assert.Equal([2, 1, 0], view.Select(static row => row.Id));
         Assert.Same(before[0], Assert.Single(view.SelectedItems));
     }
 
@@ -384,12 +388,14 @@ public sealed class GridSortCallbackTests
         return sorted is null ? rows : sorted;
     }
 
+    // ReSharper disable once ParameterTypeCanBeEnumerable.Local
     private static IOrderedEnumerable<Row> Append<TValue>(IReadOnlyList<Row> rows, IOrderedEnumerable<Row>? sorted, Func<Row, TValue> selector, bool descending, IComparer<TValue> comparer) => sorted is null
         ? descending ? rows.OrderByDescending(selector, comparer) : rows.OrderBy(selector, comparer)
         : descending ? sorted.ThenByDescending(selector, comparer) : sorted.ThenBy(selector, comparer);
 
     private sealed record Row(int Id, int Number, string? Name);
 
+    // ReSharper disable once CapturedPrimaryConstructorParameterIsMutable
     private sealed class MutableRow(int number) : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;

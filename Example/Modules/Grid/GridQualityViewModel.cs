@@ -26,7 +26,7 @@ public sealed partial class GridQualityViewModel : AppViewModelBase
         }
         catch (OperationCanceledException)
         {
-            Status = "中止しました。";
+            Status = "中止";
             QualityVerifier.Log("CANCELED");
         }
         catch (Exception error)

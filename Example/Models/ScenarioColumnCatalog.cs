@@ -22,7 +22,7 @@ public static class ScenarioColumnCatalog
         new("SiteCode", "拠点", 130, false, true, true),
         new("ManagementNo", "管理番号", 100, false, true, true),
         new("StartedDate", "対応開始日", 80, true, false, false),
-        new("CompletedAt", "完了日時", 230, true, false, false),
+        new("CompletedAt", "完了日時", 230, true, false, false)
     ]);
 
     public static IReadOnlyList<string> TicketSortKeys { get; } = Array.AsReadOnly<string>(["DeptCode", "Priority", "TicketNo", "TicketType", "CustomerName", "ReceiptOrder", "CaseNo", "CompanyName", "Department", "ProductNo", "SiteCode", "ManagementNo", "GroupId", "LineNo", "SortOrder", "ProductType", "IsCompleted", "IsStarted"]);
@@ -44,7 +44,7 @@ public static class ScenarioColumnCatalog
         new("SiteCode", "拠点", 130, false, true, true),
         new("ManagementNo", "管理番号", 100, false, false, false),
         new("Contact", "連絡", 45, false, false, false),
-        new("CompletedAt", "完了日時", 230, true, false, false),
+        new("CompletedAt", "完了日時", 230, true, false, false)
     ]);
 
     public static IReadOnlyList<string> FollowupSortKeys { get; } = Array.AsReadOnly<string>(["FollowupType", "DeptCode", "TicketNo", "CustomerName", "CaseNo", "CompanyKana", "CompanyName", "ProductNo", "SiteCode", "LineNo"]);
@@ -67,7 +67,7 @@ public static class ScenarioColumnCatalog
         new("SiteCode", "拠点", 130, false, true, true),
         new("ManagementNo", "管理番号", 100, false, true, true),
         new("StartedDate", "対応開始日", 80, true, false, false),
-        new("CompletedAt", "完了日時", 230, true, false, false),
+        new("CompletedAt", "完了日時", 230, true, false, false)
     ]);
 
     public static IReadOnlyList<string> EscalationSortKeys { get; } = Array.AsReadOnly<string>(["DeptCode", "Priority", "TicketNo", "TicketType", "CustomerName", "ReceiptOrder", "CaseNo", "CompanyName", "Department", "ProductNo", "SiteCode", "ManagementNo", "GroupId", "LineNo", "SortOrder", "ProductType", "IsCompleted", "IsStarted"]);
@@ -90,7 +90,7 @@ public static class ScenarioColumnCatalog
         new("ProductNo", "製品番号", 125, false, false, false),
         new("SiteCode", "拠点", 130, false, false, false),
         new("ReceivedAt", "受付日時", 150, true, true, true),
-        new("ReceiverName", "受付者", 200, false, false, true),
+        new("ReceiverName", "受付者", 200, false, false, true)
     ]);
 
     public static IReadOnlyList<string> RequestSortKeys { get; } = Array.AsReadOnly<string>(["OfficeCode", "DeptCode", "TicketNo", "CaseNo", "ChangedAt", "ReceivedAt", "ReceiverName"]);

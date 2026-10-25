@@ -95,13 +95,13 @@ public sealed class GridSortingTests
         view.RestoreSortOrders([new GridSortOrder("number"), new GridSortOrder("name")]);
 
         // Assert
-        Assert.Equal<int>([3, 1, 2, 0], view.Select(static row => row.Id));
+        Assert.Equal([3, 1, 2, 0], view.Select(static row => row.Id));
 
         // Act
         view.SortBy("number");
 
         // Assert
-        Assert.Equal<int>([0, 3, 1, 2], view.Select(static row => row.Id));
+        Assert.Equal([0, 3, 1, 2], view.Select(static row => row.Id));
     }
 
     [Fact]
@@ -151,7 +151,7 @@ public sealed class GridSortingTests
         view.RestoreSortOrders([new("custom", true)]);
 
         // Assert
-        Assert.Equal<int>([0, 2, 1], view.Select(static row => row.Id));
+        Assert.Equal([0, 2, 1], view.Select(static row => row.Id));
     }
 
     [Fact]
@@ -208,6 +208,7 @@ public sealed class GridSortingTests
         Assert.Empty(view.SortOrders);
     }
 
+    // ReSharper disable AccessToDisposedClosure
     [Fact]
     public void DuplicateRequestsAndExplicitCancellationDoNotCommitOldWork()
     {
@@ -226,7 +227,9 @@ public sealed class GridSortingTests
         Assert.Equal(GridSortStatus.Superseded, result.Status);
         Assert.Empty(view.SortOrders);
     }
+    // ReSharper restore AccessToDisposedClosure
 
+    // ReSharper disable AccessToDisposedClosure
     [Fact]
     public void EveryNotificationObservesTheFinalSortedOrderAndSelection()
     {
@@ -255,11 +258,12 @@ public sealed class GridSortingTests
         {
             notifications++;
             Assert.Equal("number", view.SortOrders[0].Key);
-            Assert.Equal<int>([1, 2, 3], view.Select(static row => row.Number));
+            Assert.Equal([1, 2, 3], view.Select(static row => row.Number));
             Assert.Same(selected, Assert.Single(view.SelectedItems));
             Assert.True(view.IsSelected(2));
         }
     }
+    // ReSharper restore AccessToDisposedClosure
 
     private static GridDataView<Row> CreateView()
     {

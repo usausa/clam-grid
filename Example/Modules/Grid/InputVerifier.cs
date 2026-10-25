@@ -252,6 +252,7 @@ public sealed partial class InputVerifier : IDisposable
         await VerifyEditingAsync().ConfigureAwait(true);
     }
 
+    // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
     private void Check(string name, bool success)
     {
         if (!success)
@@ -321,10 +322,22 @@ public sealed partial class InputVerifier : IDisposable
     {
         var view = (View)grid.Handler!.PlatformView!;
         var scale = (float)(view.Width / grid.Width);
-        using var first = new MotionEvent.PointerProperties { Id = 0, ToolType = MotionEventToolType.Finger };
-        using var second = new MotionEvent.PointerProperties { Id = 1, ToolType = MotionEventToolType.Finger };
-        using var firstPoint = new MotionEvent.PointerCoords { X = 90 * scale, Y = 80 * scale, Pressure = 1, Size = 1 };
-        using var secondPoint = new MotionEvent.PointerCoords { X = 110 * scale, Y = 90 * scale, Pressure = 1, Size = 1 };
+        using var first = new MotionEvent.PointerProperties();
+        first.Id = 0;
+        first.ToolType = MotionEventToolType.Finger;
+        using var second = new MotionEvent.PointerProperties();
+        second.Id = 1;
+        second.ToolType = MotionEventToolType.Finger;
+        using var firstPoint = new MotionEvent.PointerCoords();
+        firstPoint.X = 90 * scale;
+        firstPoint.Y = 80 * scale;
+        firstPoint.Pressure = 1;
+        firstPoint.Size = 1;
+        using var secondPoint = new MotionEvent.PointerCoords();
+        secondPoint.X = 110 * scale;
+        secondPoint.Y = 90 * scale;
+        secondPoint.Pressure = 1;
+        secondPoint.Size = 1;
         using var motion = MotionEvent.Obtain(downTime, SystemClock.UptimeMillis(), action, count, [first, second], [firstPoint, secondPoint], MetaKeyStates.None, 0, 1, 1, 0, 0, InputSourceType.Touchscreen, MotionEventFlags.None)!;
         view.DispatchTouchEvent(motion);
     }

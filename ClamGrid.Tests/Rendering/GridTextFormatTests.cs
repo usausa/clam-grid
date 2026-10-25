@@ -13,8 +13,8 @@ public sealed class GridTextFormatTests
         Assert.Equal("1,234 pcs", GridTextFormat.Parse("{0:N0} pcs").Format(1234, culture));
         Assert.Equal("1,234", GridTextFormat.Parse("N0").Format(1234, culture));
         Assert.Equal("2026/09", GridTextFormat.Parse("yyyy/MM").Format(date, culture));
-        Assert.Equal("Yamada san", GridTextFormat.Parse("{0} san").Format((object?)"Yamada", culture));
-        Assert.Equal("text", GridTextFormat.Parse("D6").Format((object?)"text", culture));
+        Assert.Equal("Yamada san", GridTextFormat.Parse("{0} san").Format("Yamada", culture));
+        Assert.Equal("text", GridTextFormat.Parse("D6").Format("text", culture));
         Assert.Equal(String.Empty, GridTextFormat.Parse("{0} san").Format(null, culture));
     }
 

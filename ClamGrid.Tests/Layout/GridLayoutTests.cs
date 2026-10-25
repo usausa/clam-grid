@@ -167,6 +167,7 @@ public sealed class GridLayoutTests
         Assert.Equal(1820, layout.ScrollY);
         Assert.True(layout.ScrollIntoView(50, null, ScrollToPosition.End));
         Assert.Equal(1640, layout.ScrollY);
+        // ReSharper disable once RedundantArgumentDefaultValue
         Assert.True(layout.ScrollIntoView(50, null, ScrollToPosition.MakeVisible));
         Assert.Equal(1640, layout.ScrollY);
 

@@ -494,9 +494,13 @@ internal sealed class GridRenderer : IDisposable
     private void DrawLines(SKCanvas canvas, GridRect rect)
     {
         paint.Style = SKPaintStyle.Stroke;
-        paint.StrokeWidth = 0.5f;
+        paint.StrokeWidth = (float)style.GridLineWidth;
         paint.Color = style.GridLineColor.ToSKColor();
-        canvas.DrawLine((float)rect.X, (float)rect.Bottom, (float)rect.Right, (float)rect.Bottom, paint);
+        if (style.HorizontalLinesVisible)
+        {
+            canvas.DrawLine((float)rect.X, (float)rect.Bottom, (float)rect.Right, (float)rect.Bottom, paint);
+        }
+
         if (style.VerticalLinesVisible)
         {
             canvas.DrawLine((float)rect.Right, (float)rect.Y, (float)rect.Right, (float)rect.Bottom, paint);

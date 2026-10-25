@@ -139,13 +139,13 @@ public sealed partial class GridSparklineViewModel : AppViewModelBase
 
     private GridColumn[] CreateColumns() =>
     [
-        new GridColumn("name", "店舗", new GridValueAccessor<SalesRow, string>(static x => x.Name)) { Width = GridColumnWidth.Auto },
-        new GridColumn("today", "本日", new GridValueAccessor<SalesRow, double>(static x => x.Today)) { Width = GridColumnWidth.Auto, Alignment = TextAlignment.End, Format = "N0" },
-        new GridColumn("change", "前日比", new GridValueAccessor<SalesRow, double>(static x => x.Change)) { Width = GridColumnWidth.Auto, Alignment = TextAlignment.End, Format = "+0.0%;-0.0%;0.0%" },
-        new GridColumn("trend", "推移", new GridValueAccessor<SalesRow, double[]>(static x => x.GetSales())) { Width = GridColumnWidth.Absolute(140), AllowSorting = false, CellPainter = PaintTrend },
-        new GridColumn("changes", "増減", new GridValueAccessor<SalesRow, double[]>(static x => x.GetChanges())) { Width = GridColumnWidth.Absolute(120), AllowSorting = false, CellPainter = PaintChanges },
-        new GridColumn("achievement", "達成率", new GridValueAccessor<SalesRow, double>(static x => x.Achievement)) { Width = GridColumnWidth.Auto, Alignment = TextAlignment.End, Format = "0.0%" },
-        new GridColumn("progress", "進捗", new GridValueAccessor<SalesRow, double>(static x => x.Achievement)) { Width = GridColumnWidth.Absolute(120), SortKey = "achievement", CellPainter = PaintProgress }
+        new("name", "店舗", new GridValueAccessor<SalesRow, string>(static x => x.Name)) { Width = GridColumnWidth.Auto },
+        new("today", "本日", new GridValueAccessor<SalesRow, double>(static x => x.Today)) { Width = GridColumnWidth.Auto, Alignment = TextAlignment.End, Format = "N0" },
+        new("change", "前日比", new GridValueAccessor<SalesRow, double>(static x => x.Change)) { Width = GridColumnWidth.Auto, Alignment = TextAlignment.End, Format = "+0.0%;-0.0%;0.0%" },
+        new("trend", "推移", new GridValueAccessor<SalesRow, double[]>(static x => x.GetSales())) { Width = GridColumnWidth.Absolute(140), AllowSorting = false, CellPainter = PaintTrend },
+        new("changes", "増減", new GridValueAccessor<SalesRow, double[]>(static x => x.GetChanges())) { Width = GridColumnWidth.Absolute(120), AllowSorting = false, CellPainter = PaintChanges },
+        new("achievement", "達成率", new GridValueAccessor<SalesRow, double>(static x => x.Achievement)) { Width = GridColumnWidth.Auto, Alignment = TextAlignment.End, Format = "0.0%" },
+        new("progress", "進捗", new GridValueAccessor<SalesRow, double>(static x => x.Achievement)) { Width = GridColumnWidth.Absolute(120), SortKey = "achievement", CellPainter = PaintProgress }
     ];
 
     private static SKRect Inset(SKRect bounds) => SKRect.Inflate(bounds, -8, -6);

@@ -123,12 +123,12 @@ public sealed partial class GridListViewModel : AppViewModelBase
             if (x)
             {
                 Rows.UpdateSelection(static row => !row.IsDiscontinued);
-                Status = "長押し: 販売中の行を選択しました。";
+                Status = $"長押し 販売中 {Rows.SelectedCount:N0}件";
             }
             else
             {
                 Rows.ClearSelection();
-                Status = "長押し: 選択を解除しました。";
+                Status = "長押し 選択なし";
             }
         });
         ColumnConfigurationCommand = MakeAsyncCommand<GridColumnConfigurationEventArgs>(_ => OpenColumnSettingsAsync(), _ => IsIdle);
@@ -174,7 +174,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
         {
             Grid.ColumnStates = orders;
             columnSettingsStore.Save(ColumnSettingsKey, Grid.ColumnStates!);
-            Status = $"列設定を保存しました。表示 {Grid.VisibleColumnCount} / {Grid.Columns.Count}列";
+            Status = $"列設定 表示 {Grid.VisibleColumnCount} / {Grid.Columns.Count}列";
         }
 
         return Task.CompletedTask;
@@ -249,7 +249,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
         Source = SampleData.CreateSource(RowCount);
         nextId = RowCount;
         Rows.SetSource(Source);
-        Status = $"{RowCount:N0}行を読み込みました。チェックのタップで編集、長押しで一括選択、見出し境界のドラッグで列幅変更。";
+        Status = $"{RowCount:N0}行";
     }
 
     private Task<bool> OpenColumnSettingsAsync() =>
@@ -269,16 +269,16 @@ public sealed partial class GridListViewModel : AppViewModelBase
         {
             case "全選択":
                 Rows.SelectAll();
-                Status = "全ての行を選択しました。";
+                Status = $"全選択 {Rows.SelectedCount:N0}件";
                 break;
             case "選択解除":
                 Rows.ClearSelection();
-                Status = "選択を解除しました。";
+                Status = "選択なし";
                 break;
             case "列設定を初期化":
                 Grid.ColumnStates = [];
                 columnSettingsStore.Remove(ColumnSettingsKey);
-                Status = "列設定を既定の表示・順序・幅へ戻しました。";
+                Status = "列設定 既定";
                 break;
             case "行を追加":
                 Source.Add(new SampleRow(nextId++));
@@ -290,7 +290,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
                     Source.Move(0, Source.Count - 1);
                 }
 
-                Status = "元データの先頭行を末尾へ移動しました。";
+                Status = "先頭行を末尾へ移動";
                 break;
             case "選択行を削除":
                 foreach (var item in Rows.SelectedItems.OfType<SampleRow>())
@@ -298,7 +298,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
                     Source.Remove(item);
                 }
 
-                Status = "選択した行を削除しました。";
+                Status = $"削除 {Rows.Count:N0}行";
                 break;
             case "同じIDの別データに置換":
                 if (row is not null)
@@ -306,7 +306,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
                     Source[Source.IndexOf(row)] = new SampleRow(row.Id) { Name = "置換した商品" };
                 }
 
-                Status = $"置換 ID={row?.Id + 1}（置換行の選択は解除）";
+                Status = $"置換 ID={row?.Id + 1}";
                 break;
             case "名前と状態を更新":
                 if (row is not null)
@@ -327,34 +327,34 @@ public sealed partial class GridListViewModel : AppViewModelBase
                 break;
             case "販売中だけを選択":
                 Rows.UpdateSelection(static item => !item.IsDiscontinued);
-                Status = "販売中の行を選択しました。";
+                Status = $"販売中を選択 {Rows.SelectedCount:N0}件";
                 break;
             case "販売中だけを表示":
                 Rows.Filter = static item => !item.IsDiscontinued;
-                Status = "販売中の行だけを表示しました。廃番にした行はその場で非表示になります。";
+                Status = $"絞り込み 販売中 {Rows.Count:N0}行";
                 break;
             case "該当なしで絞り込む":
                 Rows.Filter = static _ => false;
-                Status = "該当する行が無い状態にしました。";
+                Status = $"絞り込み {Rows.Count:N0}行";
                 break;
             case "絞り込みを解除":
                 Rows.Filter = null;
-                Status = "絞り込みを解除しました。";
+                Status = $"絞り込みなし {Rows.Count:N0}行";
                 break;
             case "外部からID42を選択":
                 SelectByKey(41);
                 break;
             case "ソート順を保存":
                 savedSortOrders = Rows.SortOrders.ToArray();
-                Status = $"{savedSortOrders.Length}個のソートキーを保存しました。";
+                Status = $"ソート保存 {savedSortOrders.Length}件";
                 break;
             case "ソート順を復元":
-                Status = $"ソート復元: {Rows.RestoreSortOrders(savedSortOrders).Status}";
+                Status = $"ソート復元 {Rows.RestoreSortOrders(savedSortOrders).Status}";
                 break;
             case "再読込":
                 Source = SampleData.CreateSource(Source.Count);
                 Rows.SetSource(Source);
-                Status = "再読込しました。キーが同じ行の選択は残ります。";
+                Status = $"再読込 {Rows.Count:N0}行";
                 break;
             case "性能計測":
                 await BenchmarkAsync().ConfigureAwait(true);
@@ -368,11 +368,11 @@ public sealed partial class GridListViewModel : AppViewModelBase
         if (Rows.TryToggleSelection(index, out var selected))
         {
             Grid.ScrollIntoView(index, position: ScrollToPosition.Center);
-            Status = $"外部指定 ID={key + 1} / 選択={selected} / 表示行={index + 1}（横位置を保って中央に表示）";
+            Status = $"外部指定 ID={key + 1} / 選択={selected} / 行={index + 1}";
         }
         else
         {
-            Status = $"ID{key + 1}を選択できません。";
+            Status = $"ID{key + 1} 選択不可";
         }
     }
 
@@ -393,15 +393,15 @@ public sealed partial class GridListViewModel : AppViewModelBase
         Status = $"{e.Hit.CellType} 行={e.Hit.RowIndex + 1} 列={e.Hit.ColumnIndex + 1} / ID={(e.Item as SampleRow)?.Id + 1}";
 
     private void OnCellLongPressed(object? sender, GridCellEventArgs e) =>
-        Status = $"長押し: {e.Hit.CellType} 行={e.Hit.RowIndex + 1} 列={e.Hit.ColumnIndex + 1}";
+        Status = $"長押し {e.Hit.CellType} 行={e.Hit.RowIndex + 1} 列={e.Hit.ColumnIndex + 1}";
 
     private void OnCellValueChanged(object? sender, GridCellValueEventArgs e) =>
-        Status = $"セル編集: {e.ColumnKey} ID={((SampleRow)e.Item).Id + 1} → {e.NewValue}";
+        Status = $"セル編集 {e.ColumnKey} ID={((SampleRow)e.Item).Id + 1} → {e.NewValue}";
 
     private void OnColumnWidthChanged(object? sender, GridColumnWidthEventArgs e)
     {
         columnSettingsStore.Save(ColumnSettingsKey, Grid.ColumnStates!);
-        Status = $"列幅変更: {e.ColumnKey} / {e.OldWidth:F0} → {e.NewWidth:F0} DIP（保存しました）";
+        Status = $"列幅 {e.ColumnKey} {e.OldWidth:F0} → {e.NewWidth:F0} DIP";
     }
 
     private void OnSortRequested(object? sender, GridSortRequestedEventArgs e) => sortStarted = Stopwatch.GetTimestamp();
@@ -410,13 +410,13 @@ public sealed partial class GridListViewModel : AppViewModelBase
     {
         var orders = Rows.SortOrders;
         var header = orders.Count == 0 ? null : Grid.Columns.FirstOrDefault(x => (x.SortKey ?? x.Key) == orders[0].Key)?.Header;
-        Status = orders.Count == 0 ? "並べ替えを解除しました。" : $"並べ替え: {header ?? orders[0].Key} {(orders[0].Descending ? "降順" : "昇順")}";
+        Status = orders.Count == 0 ? "並べ替えなし" : $"並べ替え {header ?? orders[0].Key} {(orders[0].Descending ? "降順" : "昇順")}";
         global::Android.Util.Log.Info("ClamGrid.Sort", FormattableString.Invariant($"rows={Rows.Count};elapsed_ms={Stopwatch.GetElapsedTime(sortStarted).TotalMilliseconds:F3};keys={String.Join(',', orders.Select(static x => x.Key))}"));
     }
 
     private void OnSortFailed(object? sender, GridSortFailedEventArgs e)
     {
-        Status = "並べ替えに失敗しました。データと比較条件を確認してください。";
+        Status = "並べ替え失敗";
         global::Android.Util.Log.Error("ClamGrid.Sort", e.Error.ToString());
     }
 
@@ -498,18 +498,18 @@ public sealed partial class GridListViewModel : AppViewModelBase
                 var maxMeasurements = frames.Max(static frame => frame.TextMeasurements);
                 var pss = global::Android.OS.Debug.Pss;
                 global::Android.Util.Log.Info("ClamGrid.Benchmark", FormattableString.Invariant($"rows={count};frames={frames.Count};paint_p95_ms={p95:F3};interval_p95_ms={interval95:F3};max_cells={maxCells};max_text_measurements={maxMeasurements};managed_bytes={GC.GetTotalMemory(false)};pss_kb={pss}"));
-                summaries.Add($"{count:N0}行: p95 {p95:F2}ms / 最大{maxCells}セル");
+                summaries.Add($"{count:N0}行 p95 {p95:F2}ms");
             }
 
-            Status = String.Join("\n", summaries);
+            Status = String.Join(" / ", summaries);
         }
         catch (OperationCanceledException)
         {
-            Status = "計測を中止しました。";
+            Status = "計測 中止";
         }
         catch (TimeoutException)
         {
-            Status = "計測がタイムアウトしました。";
+            Status = "計測 タイムアウト";
         }
         finally
         {

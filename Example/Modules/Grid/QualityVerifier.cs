@@ -97,6 +97,7 @@ public sealed partial class QualityVerifier : IDisposable
         }
     }
 
+    // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
     private void Check(string name, bool condition)
     {
         if (!condition)

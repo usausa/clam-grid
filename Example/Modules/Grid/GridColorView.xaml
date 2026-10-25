@@ -54,6 +54,53 @@
                                         IsToggled="{Binding EmphasizeHeader}" />
                             </Grid>
                         </Grid>
+                        <Label Style="{StaticResource SheetTitle}"
+                               Text="罫線" />
+                        <Grid Style="{StaticResource SheetGrid}"
+                              ColumnDefinitions="*,*,*">
+                            <Button Grid.Column="0"
+                                    Style="{StaticResource SheetButton}"
+                                    Command="{Binding SelectLineCommand}"
+                                    CommandParameter="{x:Int32 0}"
+                                    Text="格子">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button"
+                                                 Value="{x:Int32 0}"
+                                                 Binding="{Binding LineIndex}">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource BlueDefault}" />
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                            <Button Grid.Column="1"
+                                    Style="{StaticResource SheetButton}"
+                                    Command="{Binding SelectLineCommand}"
+                                    CommandParameter="{x:Int32 1}"
+                                    Text="横だけ">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button"
+                                                 Value="{x:Int32 1}"
+                                                 Binding="{Binding LineIndex}">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource BlueDefault}" />
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                            <Button Grid.Column="2"
+                                    Style="{StaticResource SheetButton}"
+                                    Command="{Binding SelectLineCommand}"
+                                    CommandParameter="{x:Int32 2}"
+                                    Text="なし">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button"
+                                                 Value="{x:Int32 2}"
+                                                 Binding="{Binding LineIndex}">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource BlueDefault}" />
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                        </Grid>
                     </VerticalStackLayout>
                 </DataTemplate>
             </cmc:BottomSheetView.SheetTemplate>

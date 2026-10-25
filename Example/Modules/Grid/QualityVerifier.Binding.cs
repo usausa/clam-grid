@@ -91,6 +91,7 @@ public sealed partial class QualityVerifier
         await NextFrameAsync(() =>
         {
             sorts.Sorts = [new("DeptCode")];
+            // ReSharper disable once AccessToDisposedClosure
             grid.ItemsSource = other;
         }).ConfigureAwait(true);
         Check("binding: sort orders follow a new data view", other.SortOrders.SequenceEqual([new GridSortOrder("DeptCode")]) && (data.SortOrders.Count == 1));
