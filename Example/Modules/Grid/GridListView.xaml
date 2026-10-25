@@ -5,64 +5,175 @@
              xmlns:shell="clr-namespace:Example.Shell"
              xmlns:behaviors="clr-namespace:Example.Behaviors"
              xmlns:module="clr-namespace:Example.Modules.Grid"
-             xmlns:clam="clr-namespace:ClamGrid;assembly=ClamGrid"
+             xmlns:clam="clr-namespace:ClamGrid;assembly=ClamGrid" xmlns:cmc="clr-namespace:MauiComponents.Controls;assembly=MauiComponents.Controls"
              x:Class="Example.Modules.Grid.GridListView"
              x:DataType="{x:Type module:GridListViewModel}"
              s:BindingContextResolver.Type="{x:Type module:GridListViewModel}"
              shell:ShellProperty.Title="商品一覧"
              shell:ShellProperty.Function1Text="Back"
-             shell:ShellProperty.Function2Text="Rows"
-             shell:ShellProperty.Function3Text="Mode"
+             shell:ShellProperty.Function2Text="Setting"
              shell:ShellProperty.Function4Text="Column"
              shell:ShellProperty.Function1Enabled="True"
              shell:ShellProperty.Function2Enabled="True"
-             shell:ShellProperty.Function3Enabled="True"
              shell:ShellProperty.Function4Enabled="True">
 
-    <Grid Style="{StaticResource FillGrid}"
-          RowDefinitions="Auto,*,Auto,Auto,Auto">
-        <Label Grid.Row="0"
-               Style="{StaticResource ValueLabel}"
-               Text="{Binding SelectionText}" />
+    <Grid>
+        <Grid Style="{StaticResource FillGrid}"
+              RowDefinitions="Auto,*,Auto,Auto,Auto">
+            <Label Grid.Row="0"
+                   Style="{StaticResource ValueLabel}"
+                   Text="{Binding SelectionText}" />
 
-        <clam:ClamGridView Grid.Row="1"
-                           behaviors:GridBind.Controller="{Binding Grid}"
-                           ItemsSource="{Binding Rows}"
-                           ColumnConfigurationCommand="{Binding ColumnConfigurationCommand}"
-                           EmptyText="該当する行がありません"
-                           GridStyle="{Binding GridStyle}"
-                           IsReadOnly="False"
-                           SelectAllCommand="{Binding SelectAllCommand}"
-                           SelectionMode="{Binding SelectionMode}" />
+            <clam:ClamGridView Grid.Row="1"
+                               behaviors:GridBind.Controller="{Binding Grid}"
+                               ItemsSource="{Binding Rows}"
+                               ColumnConfigurationCommand="{Binding ColumnConfigurationCommand}"
+                               EmptyText="該当する行がありません"
+                               GridStyle="{Binding GridStyle}"
+                               IsReadOnly="False"
+                               SelectAllCommand="{Binding SelectAllCommand}"
+                               SelectionMode="{Binding SelectionMode}" />
 
-        <Label Grid.Row="2"
-               Style="{StaticResource StatusLabel}"
-               Text="{Binding Statistics}" />
+            <Label Grid.Row="2"
+                   Style="{StaticResource StatusLabel}"
+                   Text="{Binding Statistics}" />
 
-        <Label Grid.Row="3"
-               Style="{StaticResource StatusLabel}"
-               Text="{Binding Status}" />
+            <Label Grid.Row="3"
+                   Style="{StaticResource StatusLabel}"
+                   Text="{Binding Status}" />
 
-        <Grid Grid.Row="4"
-              Style="{StaticResource SubMenuGrid}"
-              ColumnDefinitions="*,*,*,*">
-            <Button Grid.Column="0"
-                    Style="{StaticResource SubMenuButton}"
-                    Command="{Binding ScrollTopCommand}"
-                    Text="先頭" />
-            <Button Grid.Column="1"
-                    Style="{StaticResource SubMenuButton}"
-                    Command="{Binding ScrollEndCommand}"
-                    Text="末尾" />
-            <Button Grid.Column="2"
-                    Style="{StaticResource SubMenuButton}"
-                    Command="{Binding FontCommand}"
-                    Text="文字" />
-            <Button Grid.Column="3"
-                    Style="{StaticResource SubMenuButton}"
-                    Command="{Binding ActionCommand}"
-                    Text="操作例" />
+            <Grid Grid.Row="4"
+                  Style="{StaticResource SubMenuGrid}"
+                  ColumnDefinitions="*,*,*">
+                <Button Grid.Column="0"
+                        Style="{StaticResource SubMenuButton}"
+                        Command="{Binding ScrollTopCommand}"
+                        Text="先頭" />
+                <Button Grid.Column="1"
+                        Style="{StaticResource SubMenuButton}"
+                        Command="{Binding ScrollEndCommand}"
+                        Text="末尾" />
+                <Button Grid.Column="2"
+                        Style="{StaticResource SubMenuButton}"
+                        Command="{Binding ActionCommand}"
+                        Text="操作例" />
+            </Grid>
         </Grid>
+
+        <cmc:BottomSheetView Style="{StaticResource SettingSheet}"
+                             IsOpen="{Binding IsSettingOpen}">
+            <cmc:BottomSheetView.SheetTemplate>
+                <DataTemplate x:DataType="{x:Type module:GridListViewModel}">
+                    <VerticalStackLayout Style="{StaticResource SheetStack}">
+                        <Label Style="{StaticResource SheetTitle}"
+                               Text="行数" />
+                        <Grid Style="{StaticResource SheetGrid}"
+                              ColumnDefinitions="*,*,*">
+                            <Button Grid.Column="0"
+                                    Style="{StaticResource SheetButton}"
+                                    Command="{Binding SelectRowCountCommand}"
+                                    CommandParameter="10000"
+                                    Text="10000">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button"
+                                                 Value="10000"
+                                                 Binding="{Binding RowCount}">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource BlueDefault}" />
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                            <Button Grid.Column="1"
+                                    Style="{StaticResource SheetButton}"
+                                    Command="{Binding SelectRowCountCommand}"
+                                    CommandParameter="1000"
+                                    Text="1000">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button"
+                                                 Value="1000"
+                                                 Binding="{Binding RowCount}">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource BlueDefault}" />
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                            <Button Grid.Column="2"
+                                    Style="{StaticResource SheetButton}"
+                                    Command="{Binding SelectRowCountCommand}"
+                                    CommandParameter="0"
+                                    Text="0">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button"
+                                                 Value="0"
+                                                 Binding="{Binding RowCount}">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource BlueDefault}" />
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                        </Grid>
+
+                        <Label Style="{StaticResource SheetTitle}"
+                               Text="選択モード" />
+                        <Grid Style="{StaticResource SheetGrid}"
+                              ColumnDefinitions="*,*,*">
+                            <Button Grid.Column="0"
+                                    Style="{StaticResource SheetButton}"
+                                    Command="{Binding SelectModeCommand}"
+                                    CommandParameter="{x:Static clam:GridSelectionMode.MultipleToggle}"
+                                    Text="複数">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button"
+                                                 Value="{x:Static clam:GridSelectionMode.MultipleToggle}"
+                                                 Binding="{Binding SelectionMode}">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource BlueDefault}" />
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                            <Button Grid.Column="1"
+                                    Style="{StaticResource SheetButton}"
+                                    Command="{Binding SelectModeCommand}"
+                                    CommandParameter="{x:Static clam:GridSelectionMode.SingleToggle}"
+                                    Text="単一">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button"
+                                                 Value="{x:Static clam:GridSelectionMode.SingleToggle}"
+                                                 Binding="{Binding SelectionMode}">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource BlueDefault}" />
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                            <Button Grid.Column="2"
+                                    Style="{StaticResource SheetButton}"
+                                    Command="{Binding SelectModeCommand}"
+                                    CommandParameter="{x:Static clam:GridSelectionMode.None}"
+                                    Text="なし">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button"
+                                                 Value="{x:Static clam:GridSelectionMode.None}"
+                                                 Binding="{Binding SelectionMode}">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource BlueDefault}" />
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                        </Grid>
+
+                        <Label Style="{StaticResource SheetTitle}"
+                               Text="表示" />
+                        <Grid Style="{StaticResource SheetGrid}"
+                              ColumnDefinitions="*,*,*">
+                            <Button Grid.Column="0"
+                                    Style="{StaticResource SheetButton}"
+                                    Command="{Binding FontCommand}"
+                                    Text="{Binding FontText}" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </DataTemplate>
+            </cmc:BottomSheetView.SheetTemplate>
+        </cmc:BottomSheetView>
     </Grid>
 
 </ContentView>

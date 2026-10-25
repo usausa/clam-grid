@@ -5,31 +5,59 @@
              xmlns:shell="clr-namespace:Example.Shell"
              xmlns:behaviors="clr-namespace:Example.Behaviors"
              xmlns:module="clr-namespace:Example.Modules.Grid"
-             xmlns:clam="clr-namespace:ClamGrid;assembly=ClamGrid"
+             xmlns:clam="clr-namespace:ClamGrid;assembly=ClamGrid" xmlns:cmc="clr-namespace:MauiComponents.Controls;assembly=MauiComponents.Controls"
              x:Class="Example.Modules.Grid.GridColorView"
              x:DataType="{x:Type module:GridColorViewModel}"
              s:BindingContextResolver.Type="{x:Type module:GridColorViewModel}"
              shell:ShellProperty.Title="条件付き着色"
              shell:ShellProperty.Function1Text="Back"
-             shell:ShellProperty.Function2Text="Font"
-             shell:ShellProperty.Function3Text="Header"
+             shell:ShellProperty.Function2Text="Setting"
              shell:ShellProperty.Function4Text="Clear"
              shell:ShellProperty.Function1Enabled="True"
              shell:ShellProperty.Function2Enabled="True"
-             shell:ShellProperty.Function3Enabled="True"
              shell:ShellProperty.Function4Enabled="True">
 
-    <Grid Style="{StaticResource FillGrid}"
-          RowDefinitions="*,Auto">
-        <clam:ClamGridView Grid.Row="0"
-                           behaviors:GridBind.Controller="{Binding Grid}"
-                           ItemsSource="{Binding Rows}"
-                           GridStyle="{Binding GridStyle}"
-                           IsReadOnly="False" />
+    <Grid>
+        <Grid Style="{StaticResource FillGrid}"
+              RowDefinitions="*,Auto">
+            <clam:ClamGridView Grid.Row="0"
+                               behaviors:GridBind.Controller="{Binding Grid}"
+                               ItemsSource="{Binding Rows}"
+                               GridStyle="{Binding GridStyle}"
+                               IsReadOnly="False" />
 
-        <Label Grid.Row="1"
-               Style="{StaticResource StatusLabel}"
-               Text="{Binding Status}" />
+            <Label Grid.Row="1"
+                   Style="{StaticResource StatusLabel}"
+                   Text="{Binding Status}" />
+        </Grid>
+
+        <cmc:BottomSheetView Style="{StaticResource SettingSheet}"
+                             IsOpen="{Binding IsSettingOpen}">
+            <cmc:BottomSheetView.SheetTemplate>
+                <DataTemplate x:DataType="{x:Type module:GridColorViewModel}">
+                    <VerticalStackLayout Style="{StaticResource SheetStack}">
+                        <Label Style="{StaticResource SheetTitle}"
+                               Text="表示" />
+                        <Grid Style="{StaticResource SheetGrid}"
+                              ColumnDefinitions="*,*">
+                            <Button Grid.Column="0"
+                                    Style="{StaticResource SheetButton}"
+                                    Command="{Binding ToggleFontCommand}"
+                                    Text="{Binding FontText}" />
+                            <Grid Grid.Column="1"
+                                  ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0"
+                                       Style="{StaticResource SheetSwitchLabel}"
+                                       Text="見出しの強調" />
+                                <Switch Grid.Column="1"
+                                        Style="{StaticResource SheetSwitch}"
+                                        IsToggled="{Binding EmphasizeHeader}" />
+                            </Grid>
+                        </Grid>
+                    </VerticalStackLayout>
+                </DataTemplate>
+            </cmc:BottomSheetView.SheetTemplate>
+        </cmc:BottomSheetView>
     </Grid>
 
 </ContentView>

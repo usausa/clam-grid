@@ -8,8 +8,6 @@ public sealed partial class GridSparklineViewModel : AppViewModelBase
 {
     private const int FrameSamples = 120;
 
-    private static readonly ChartSparklineKind[] TrendKinds = [ChartSparklineKind.Line, ChartSparklineKind.Area, ChartSparklineKind.Bar];
-
     private static readonly SKColor TrendColor = new(0x1E, 0x88, 0xE5);
 
     private static readonly ChartDrawingThreshold[] AchievementThresholds =
@@ -27,8 +25,6 @@ public sealed partial class GridSparklineViewModel : AppViewModelBase
 
     private int frameCount;
 
-    private int trendKind;
-
     private bool statisticsPending;
 
     private GridFrameEventArgs? latestFrame;
@@ -39,6 +35,19 @@ public sealed partial class GridSparklineViewModel : AppViewModelBase
 
     [ObservableProperty]
     public partial GridStyle GridStyle { get; set; } = CreateStyle(16);
+
+    [ObservableProperty]
+    public partial bool IsSettingOpen { get; set; }
+
+    [ObservableProperty]
+    public partial ChartSparklineKind TrendKind { get; set; } = ChartSparklineKind.Line;
+
+    [ObservableProperty]
+    public partial string FontText { get; set; } = "文字 16";
+
+    public IObserveCommand SelectKindCommand { get; }
+
+    public IObserveCommand ToggleFontCommand { get; }
 
     [ObservableProperty]
     public partial string Statistics { get; set; } = String.Empty;
@@ -59,6 +68,9 @@ public sealed partial class GridSparklineViewModel : AppViewModelBase
 
         Grid = new GridController(CreateColumns());
         Grid.FrameRendered += OnFrameRendered;
+
+        SelectKindCommand = MakeDelegateCommand<ChartSparklineKind>(SelectKind);
+        ToggleFontCommand = MakeDelegateCommand(ToggleFont);
     }
 
     protected override void Dispose(bool disposing)
@@ -75,14 +87,22 @@ public sealed partial class GridSparklineViewModel : AppViewModelBase
     // Navigation
     //--------------------------------------------------------------------------------
 
-    protected override Task OnNotifyBackAsync() => Navigator.ForwardAsync(ViewId.GridMenu);
+    protected override Task OnNotifyBackAsync()
+    {
+        if (IsSettingOpen)
+        {
+            IsSettingOpen = false;
+            return Task.CompletedTask;
+        }
+
+        return Navigator.ForwardAsync(ViewId.GridMenu);
+    }
 
     protected override Task OnNotifyFunction1() => OnNotifyBackAsync();
 
     protected override Task OnNotifyFunction2()
     {
-        trendKind = (trendKind + 1) % TrendKinds.Length;
-        Grid.Invalidate();
+        IsSettingOpen = !IsSettingOpen;
         return Task.CompletedTask;
     }
 
@@ -97,10 +117,20 @@ public sealed partial class GridSparklineViewModel : AppViewModelBase
         return Task.CompletedTask;
     }
 
-    protected override Task OnNotifyFunction4()
+    //--------------------------------------------------------------------------------
+    // Operation
+    //--------------------------------------------------------------------------------
+
+    private void SelectKind(ChartSparklineKind value)
+    {
+        TrendKind = value;
+        Grid.Invalidate();
+    }
+
+    private void ToggleFont()
     {
         GridStyle = CreateStyle(GridStyle.FontSize.Equals(16d) ? 22 : 16);
-        return Task.CompletedTask;
+        FontText = $"文字 {GridStyle.FontSize}";
     }
 
     //--------------------------------------------------------------------------------
@@ -125,7 +155,7 @@ public sealed partial class GridSparklineViewModel : AppViewModelBase
         if (context.Value is double[] values)
         {
             var color = context.IsSelected ? context.Colors.TextColor!.ToSKColor() : TrendColor;
-            ChartDrawing.DrawSparkline(canvas, Inset(context.Bounds), values, new SparklineDrawOptions { Kind = TrendKinds[trendKind], Color = color, Markers = ChartSparklineMarkers.Last });
+            ChartDrawing.DrawSparkline(canvas, Inset(context.Bounds), values, new SparklineDrawOptions { Kind = TrendKind, Color = color, Markers = ChartSparklineMarkers.Last });
         }
     }
 

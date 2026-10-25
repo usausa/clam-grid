@@ -8,17 +8,38 @@ public sealed partial class GridColorViewModel : AppViewModelBase
     private static readonly Color CompleteBackground = Color.FromArgb("#DCFCE7");
     private static readonly Color EmphasisBackground = Color.FromArgb("#4F46E5");
 
-    private bool emphasizeHeader;
-
     public GridDataView<SampleRow> Rows { get; }
 
     public GridController Grid { get; }
 
     [ObservableProperty]
-    public partial GridStyle GridStyle { get; set; } = default!;
+    public partial bool IsSettingOpen { get; set; }
 
     [ObservableProperty]
-    public partial string Status { get; set; } = default!;
+    public partial string FontText { get; set; }
+
+    public bool EmphasizeHeader
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                RaisePropertyChanged(nameof(EmphasizeHeader));
+                Grid.Invalidate();
+                Status = value ? "顧客名の見出し色を強調しました。" : "見出し色の強調を解除しました。";
+            }
+        }
+    }
+
+    public IObserveCommand ToggleFontCommand { get; }
+
+    [ObservableProperty]
+    public partial GridStyle GridStyle { get; set; }
+
+    [ObservableProperty]
+    public partial string Status { get; set; }
 
     //--------------------------------------------------------------------------------
     // Constructor
@@ -32,6 +53,8 @@ public sealed partial class GridColorViewModel : AppViewModelBase
 
         Grid = new GridController(SampleColumns.CreateColor());
         GridStyle = CreateStyle(16);
+        FontText = $"文字 {GridStyle.FontSize}";
+        ToggleFontCommand = MakeDelegateCommand(ToggleFont);
         Status = "在庫差異が負の行は赤、廃番は緑。チェック変更で色も更新します。選択中は選択色を優先します。";
     }
 
@@ -39,22 +62,22 @@ public sealed partial class GridColorViewModel : AppViewModelBase
     // Navigation
     //--------------------------------------------------------------------------------
 
-    protected override Task OnNotifyBackAsync() => Navigator.ForwardAsync(ViewId.GridMenu);
+    protected override Task OnNotifyBackAsync()
+    {
+        if (IsSettingOpen)
+        {
+            IsSettingOpen = false;
+            return Task.CompletedTask;
+        }
+
+        return Navigator.ForwardAsync(ViewId.GridMenu);
+    }
 
     protected override Task OnNotifyFunction1() => OnNotifyBackAsync();
 
     protected override Task OnNotifyFunction2()
     {
-        GridStyle = CreateStyle(GridStyle.FontSize.Equals(16d) ? 22 : 16);
-        Status = $"文字サイズ: {GridStyle.FontSize}";
-        return Task.CompletedTask;
-    }
-
-    protected override Task OnNotifyFunction3()
-    {
-        emphasizeHeader = !emphasizeHeader;
-        Grid.Invalidate();
-        Status = emphasizeHeader ? "顧客名の見出し色を強調しました。" : "見出し色の強調を解除しました。";
+        IsSettingOpen = !IsSettingOpen;
         return Task.CompletedTask;
     }
 
@@ -63,6 +86,17 @@ public sealed partial class GridColorViewModel : AppViewModelBase
         Rows.ClearSelection();
         Status = "選択を解除しました。";
         return Task.CompletedTask;
+    }
+
+    //--------------------------------------------------------------------------------
+    // Operation
+    //--------------------------------------------------------------------------------
+
+    private void ToggleFont()
+    {
+        GridStyle = CreateStyle(GridStyle.FontSize.Equals(16d) ? 22 : 16);
+        FontText = $"文字 {GridStyle.FontSize}";
+        Status = $"文字サイズ: {GridStyle.FontSize}";
     }
 
     //--------------------------------------------------------------------------------
@@ -81,6 +115,6 @@ public sealed partial class GridColorViewModel : AppViewModelBase
             _ => default
         },
         RowHeaderColors = static context => !context.IsSelected && ((SampleRow)context.Item).IsDiscontinued ? new GridColors(CompleteText, CompleteBackground) : default,
-        ColumnHeaderColors = context => emphasizeHeader && (context.Column.Key == "name") ? new GridColors(Colors.White, EmphasisBackground) : default
+        ColumnHeaderColors = context => EmphasizeHeader && (context.Column.Key == "name") ? new GridColors(Colors.White, EmphasisBackground) : default
     };
 }

@@ -18,8 +18,6 @@ public sealed partial class GridListViewModel : AppViewModelBase
 
     private readonly List<double> intervals = [];
 
-    private int rowCount = 10000;
-
     private int nextId;
 
     private GridSortOrder[] savedSortOrders = [];
@@ -50,13 +48,26 @@ public sealed partial class GridListViewModel : AppViewModelBase
     public partial GridSelectionMode SelectionMode { get; set; }
 
     [ObservableProperty]
-    public partial GridStyle GridStyle { get; set; } = default!;
+    public partial bool IsSettingOpen { get; set; }
+
+    [ObservableProperty]
+    public partial int RowCount { get; set; } = 10000;
+
+    [ObservableProperty]
+    public partial string FontText { get; set; }
+
+    public IObserveCommand SelectRowCountCommand { get; }
+
+    public IObserveCommand SelectModeCommand { get; }
+
+    [ObservableProperty]
+    public partial GridStyle GridStyle { get; set; }
 
     [ObservableProperty]
     public partial string SelectionText { get; set; } = default!;
 
     [ObservableProperty]
-    public partial string Statistics { get; set; } = default!;
+    public partial string Statistics { get; set; }
 
     [ObservableProperty]
     public partial string Status { get; set; } = default!;
@@ -104,6 +115,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
 
         SelectionMode = GridSelectionMode.MultipleToggle;
         GridStyle = CreateStyle(16);
+        FontText = $"文字 {GridStyle.FontSize}";
         Statistics = String.Empty;
 
         SelectAllCommand = MakeDelegateCommand<bool>(x =>
@@ -122,7 +134,9 @@ public sealed partial class GridListViewModel : AppViewModelBase
         ColumnConfigurationCommand = MakeAsyncCommand<GridColumnConfigurationEventArgs>(_ => OpenColumnSettingsAsync(), _ => IsIdle);
         ScrollTopCommand = MakeDelegateCommand(() => Grid.ScrollIntoView(0, 0), () => IsIdle);
         ScrollEndCommand = MakeDelegateCommand(() => Grid.ScrollIntoView(Rows.Count - 1, Grid.VisibleColumnCount - 1), () => IsIdle);
-        FontCommand = MakeDelegateCommand(() => GridStyle = CreateStyle(GridStyle.FontSize.Equals(16d) ? 22 : 16), () => IsIdle);
+        FontCommand = MakeDelegateCommand(ToggleFont, () => IsIdle);
+        SelectRowCountCommand = MakeDelegateCommand<int>(SelectRowCount);
+        SelectModeCommand = MakeDelegateCommand<GridSelectionMode>(SelectMode);
         ActionCommand = MakeAsyncCommand(ExecuteActionAsync, () => IsIdle);
 
         Load();
@@ -166,34 +180,22 @@ public sealed partial class GridListViewModel : AppViewModelBase
         return Task.CompletedTask;
     }
 
-    protected override Task OnNotifyBackAsync() => IsIdle ? Navigator.ForwardAsync(ViewId.GridMenu) : Task.CompletedTask;
+    protected override Task OnNotifyBackAsync()
+    {
+        if (IsSettingOpen)
+        {
+            IsSettingOpen = false;
+            return Task.CompletedTask;
+        }
+
+        return IsIdle ? Navigator.ForwardAsync(ViewId.GridMenu) : Task.CompletedTask;
+    }
 
     protected override Task OnNotifyFunction1() => OnNotifyBackAsync();
 
     protected override Task OnNotifyFunction2()
     {
-        if (IsIdle)
-        {
-            rowCount = rowCount switch { 10000 => 1000, 1000 => 0, _ => 10000 };
-            Load();
-        }
-
-        return Task.CompletedTask;
-    }
-
-    protected override Task OnNotifyFunction3()
-    {
-        if (IsIdle)
-        {
-            SelectionMode = SelectionMode switch
-            {
-                GridSelectionMode.MultipleToggle => GridSelectionMode.SingleToggle,
-                GridSelectionMode.SingleToggle => GridSelectionMode.None,
-                _ => GridSelectionMode.MultipleToggle
-            };
-            Status = SelectionMode switch { GridSelectionMode.SingleToggle => "単一選択", GridSelectionMode.None => "選択なし", _ => "複数選択" };
-        }
-
+        IsSettingOpen = !IsSettingOpen;
         return Task.CompletedTask;
     }
 
@@ -202,6 +204,30 @@ public sealed partial class GridListViewModel : AppViewModelBase
     //--------------------------------------------------------------------------------
     // Operation
     //--------------------------------------------------------------------------------
+
+    private void ToggleFont()
+    {
+        GridStyle = CreateStyle(GridStyle.FontSize.Equals(16d) ? 22 : 16);
+        FontText = $"文字 {GridStyle.FontSize}";
+    }
+
+    private void SelectRowCount(int value)
+    {
+        if (IsIdle && (RowCount != value))
+        {
+            RowCount = value;
+            Load();
+        }
+    }
+
+    private void SelectMode(GridSelectionMode value)
+    {
+        if (IsIdle)
+        {
+            SelectionMode = value;
+            Status = value switch { GridSelectionMode.SingleToggle => "単一選択", GridSelectionMode.None => "選択なし", _ => "複数選択" };
+        }
+    }
 
     private static GridStyle CreateStyle(double fontSize) => new()
     {
@@ -220,10 +246,10 @@ public sealed partial class GridListViewModel : AppViewModelBase
     private void Load()
     {
         Rows.RestoreSortOrders([]);
-        Source = SampleData.CreateSource(rowCount);
-        nextId = rowCount;
+        Source = SampleData.CreateSource(RowCount);
+        nextId = RowCount;
         Rows.SetSource(Source);
-        Status = $"{rowCount:N0}行を読み込みました。チェックのタップで編集、長押しで一括選択、見出し境界のドラッグで列幅変更。";
+        Status = $"{RowCount:N0}行を読み込みました。チェックのタップで編集、長押しで一括選択、見出し境界のドラッグで列幅変更。";
     }
 
     private Task<bool> OpenColumnSettingsAsync() =>
@@ -451,7 +477,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
             var summaries = new List<string>();
             foreach (var count in new[] { 1000, 10000 })
             {
-                rowCount = count;
+                RowCount = count;
                 GridStyle = CreateStyle(16);
                 Load();
                 frames.Clear();

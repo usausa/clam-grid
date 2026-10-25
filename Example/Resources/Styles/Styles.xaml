@@ -2,7 +2,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                     xmlns:helpers="clr-namespace:Example.Modules.Helpers"
-                    xmlns:clam="clr-namespace:ClamGrid;assembly=ClamGrid">
+                    xmlns:clam="clr-namespace:ClamGrid;assembly=ClamGrid" xmlns:cmc="clr-namespace:MauiComponents.Controls;assembly=MauiComponents.Controls">
 
     <!-- ================================================================================ -->
     <!-- Value -->
@@ -267,7 +267,7 @@
         <Setter Property="Margin" Value="0" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="BorderWidth" Value="0" />
-        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="CornerRadius" Value="0" />
         <Setter Property="TextColor" Value="White" />
         <Setter Property="FontSize" Value="22" />
         <Setter Property="VisualStateManager.VisualStateGroups">
@@ -357,6 +357,63 @@
         <Setter Property="AllowColumnResizing" Value="True" />
         <Setter Property="AllowColumnConfiguration" Value="True" />
         <Setter Property="BackgroundColor" Value="White" />
+    </Style>
+    <!-- ================================================================================ -->
+    <!-- Setting sheet -->
+    <!-- ================================================================================ -->
+
+    <Style x:Key="SettingSheet"
+           TargetType="cmc:BottomSheetView">
+        <Setter Property="CornerRadius" Value="16" />
+        <Setter Property="HalfExpandedRatio" Value="0.45" />
+    </Style>
+
+    <Style x:Key="SheetStack"
+           TargetType="VerticalStackLayout">
+        <Setter Property="Padding" Value="12,0,12,12" />
+        <Setter Property="Spacing" Value="4" />
+    </Style>
+
+    <Style x:Key="SheetTitle"
+           TargetType="Label">
+        <Setter Property="Padding" Value="2,6,2,0" />
+        <Setter Property="TextColor" Value="{StaticResource SecondaryTextColor}" />
+        <Setter Property="FontSize" Value="11" />
+    </Style>
+
+    <Style x:Key="SheetGrid"
+           TargetType="Grid">
+        <Setter Property="ColumnSpacing" Value="6" />
+        <Setter Property="RowSpacing" Value="4" />
+    </Style>
+
+    <Style x:Key="SheetSwitchLabel"
+           TargetType="Label">
+        <Setter Property="TextColor" Value="{StaticResource PrimaryTextColor}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="VerticalTextAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="SheetSwitch"
+           TargetType="Switch">
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="Scale" Value="0.75" />
+        <Setter Property="HorizontalOptions" Value="End" />
+        <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="OnColor" Value="{StaticResource BlueDefault}" />
+    </Style>
+
+    <Style x:Key="SheetButton"
+           TargetType="Button">
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HeightRequest" Value="32" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="BorderWidth" Value="1" />
+        <Setter Property="BorderColor" Value="{StaticResource GrayLighten1}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor" Value="{StaticResource PrimaryTextColor}" />
     </Style>
 
 </ResourceDictionary>

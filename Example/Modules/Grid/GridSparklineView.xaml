@@ -5,31 +5,98 @@
              xmlns:shell="clr-namespace:Example.Shell"
              xmlns:behaviors="clr-namespace:Example.Behaviors"
              xmlns:module="clr-namespace:Example.Modules.Grid"
-             xmlns:clam="clr-namespace:ClamGrid;assembly=ClamGrid"
+             xmlns:chart="clr-namespace:ClamChart;assembly=ClamChart" xmlns:clam="clr-namespace:ClamGrid;assembly=ClamGrid" xmlns:cmc="clr-namespace:MauiComponents.Controls;assembly=MauiComponents.Controls"
              x:Class="Example.Modules.Grid.GridSparklineView"
              x:DataType="{x:Type module:GridSparklineViewModel}"
              s:BindingContextResolver.Type="{x:Type module:GridSparklineViewModel}"
              shell:ShellProperty.Title="スパークライン列"
              shell:ShellProperty.Function1Text="Back"
-             shell:ShellProperty.Function2Text="Kind"
+             shell:ShellProperty.Function2Text="Setting"
              shell:ShellProperty.Function3Text="Update"
-             shell:ShellProperty.Function4Text="Font"
              shell:ShellProperty.Function1Enabled="True"
              shell:ShellProperty.Function2Enabled="True"
-             shell:ShellProperty.Function3Enabled="True"
-             shell:ShellProperty.Function4Enabled="True">
+             shell:ShellProperty.Function3Enabled="True">
 
-    <Grid Style="{StaticResource FillGrid}"
-          RowDefinitions="*,Auto">
-        <clam:ClamGridView Grid.Row="0"
-                           behaviors:GridBind.Controller="{Binding Grid}"
-                           ItemsSource="{Binding Rows}"
-                           FrozenColumnCount="1"
-                           GridStyle="{Binding GridStyle}" />
+    <Grid>
+        <Grid Style="{StaticResource FillGrid}"
+              RowDefinitions="*,Auto">
+            <clam:ClamGridView Grid.Row="0"
+                               behaviors:GridBind.Controller="{Binding Grid}"
+                               ItemsSource="{Binding Rows}"
+                               FrozenColumnCount="1"
+                               GridStyle="{Binding GridStyle}" />
 
-        <Label Grid.Row="1"
-               Style="{StaticResource StatusLabel}"
-               Text="{Binding Statistics}" />
+            <Label Grid.Row="1"
+                   Style="{StaticResource StatusLabel}"
+                   Text="{Binding Statistics}" />
+        </Grid>
+
+        <cmc:BottomSheetView Style="{StaticResource SettingSheet}"
+                             IsOpen="{Binding IsSettingOpen}">
+            <cmc:BottomSheetView.SheetTemplate>
+                <DataTemplate x:DataType="{x:Type module:GridSparklineViewModel}">
+                    <VerticalStackLayout Style="{StaticResource SheetStack}">
+                        <Label Style="{StaticResource SheetTitle}"
+                               Text="スパークラインの種類" />
+                        <Grid Style="{StaticResource SheetGrid}"
+                              ColumnDefinitions="*,*,*">
+                            <Button Grid.Column="0"
+                                    Style="{StaticResource SheetButton}"
+                                    Command="{Binding SelectKindCommand}"
+                                    CommandParameter="{x:Static chart:ChartSparklineKind.Line}"
+                                    Text="線">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button"
+                                                 Value="{x:Static chart:ChartSparklineKind.Line}"
+                                                 Binding="{Binding TrendKind}">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource BlueDefault}" />
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                            <Button Grid.Column="1"
+                                    Style="{StaticResource SheetButton}"
+                                    Command="{Binding SelectKindCommand}"
+                                    CommandParameter="{x:Static chart:ChartSparklineKind.Area}"
+                                    Text="面">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button"
+                                                 Value="{x:Static chart:ChartSparklineKind.Area}"
+                                                 Binding="{Binding TrendKind}">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource BlueDefault}" />
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                            <Button Grid.Column="2"
+                                    Style="{StaticResource SheetButton}"
+                                    Command="{Binding SelectKindCommand}"
+                                    CommandParameter="{x:Static chart:ChartSparklineKind.Bar}"
+                                    Text="棒">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button"
+                                                 Value="{x:Static chart:ChartSparklineKind.Bar}"
+                                                 Binding="{Binding TrendKind}">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource BlueDefault}" />
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                        </Grid>
+
+                        <Label Style="{StaticResource SheetTitle}"
+                               Text="表示" />
+                        <Grid Style="{StaticResource SheetGrid}"
+                              ColumnDefinitions="*,*,*">
+                            <Button Grid.Column="0"
+                                    Style="{StaticResource SheetButton}"
+                                    Command="{Binding ToggleFontCommand}"
+                                    Text="{Binding FontText}" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </DataTemplate>
+            </cmc:BottomSheetView.SheetTemplate>
+        </cmc:BottomSheetView>
     </Grid>
 
 </ContentView>
