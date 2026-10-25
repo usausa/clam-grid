@@ -35,7 +35,7 @@ public sealed partial class GridScenarioViewModel : AppViewModelBase
     public partial GridController? Grid { get; set; }
 
     [ObservableProperty]
-    public partial GridStyle GridStyle { get; set; } = default!;
+    public partial GridStyle GridStyle { get; set; }
 
     [ObservableProperty]
     public partial GridSelectionMode SelectionMode { get; set; }

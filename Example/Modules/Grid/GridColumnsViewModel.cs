@@ -13,10 +13,10 @@ public sealed partial class GridColumnsViewModel : AppViewModelBase
     public partial IGridRowMover? RowMover { get; set; }
 
     [ObservableProperty]
-    public partial GridStyle GridStyle { get; set; } = default!;
+    public partial GridStyle GridStyle { get; set; }
 
     [ObservableProperty]
-    public partial string Status { get; set; } = default!;
+    public partial string Status { get; set; }
 
     //--------------------------------------------------------------------------------
     // Constructor
