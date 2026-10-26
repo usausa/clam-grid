@@ -20,7 +20,8 @@
     <Grid>
         <Grid Style="{StaticResource FillGrid}"
               RowDefinitions="*,Auto">
-            <clam:ClamGridView Grid.Row="0"
+            <clam:ClamGridView x:Name="DataGrid"
+                               Grid.Row="0"
                                behaviors:GridBind.Controller="{Binding Grid}"
                                ItemsSource="{Binding Rows}"
                                GridStyle="{Binding GridStyle}"

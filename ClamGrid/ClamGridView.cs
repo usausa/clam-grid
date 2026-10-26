@@ -347,6 +347,69 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         return (hit.ColumnIndex >= 0) && (hit.ColumnIndex < ArrangedColumns.Count) ? hit with { ColumnKey = ArrangedColumns[hit.ColumnIndex].Key } : hit;
     }
 
+    public Rect BodyBounds
+    {
+        get
+        {
+            RequireUiThread();
+            EnsureLayout();
+            return CurrentLayout is { } layout ? ToRect(layout.BodyBounds) : Rect.Zero;
+        }
+    }
+
+    public Rect? GetCellBounds(int row, int column)
+    {
+        RequireUiThread();
+        EnsureLayout();
+        return (CurrentLayout is { } layout) && IsRowIndex(row) && IsColumnIndex(column) ? ToRect(layout.GetCellBounds(row, column)) : null;
+    }
+
+    public Rect? GetCellBounds(int row, string columnKey)
+    {
+        RequireUiThread();
+        return GetCellBounds(row, IndexOfArrangedColumn(columnKey));
+    }
+
+    public Rect? GetColumnHeaderBounds(int column)
+    {
+        RequireUiThread();
+        EnsureLayout();
+        return (CurrentLayout is { } layout) && IsColumnIndex(column) ? ToRect(layout.GetColumnHeaderBounds(column)) : null;
+    }
+
+    public Rect? GetColumnHeaderBounds(string columnKey)
+    {
+        RequireUiThread();
+        return GetColumnHeaderBounds(IndexOfArrangedColumn(columnKey));
+    }
+
+    public Rect? GetRowHeaderBounds(int row)
+    {
+        RequireUiThread();
+        EnsureLayout();
+        return (CurrentLayout is { } layout) && IsRowIndex(row) ? ToRect(layout.GetRowHeaderBounds(row)) : null;
+    }
+
+    private bool IsRowIndex(int row) => (row >= 0) && (row < RowCount);
+
+    private bool IsColumnIndex(int column) => (column >= 0) && (column < ArrangedColumns.Count);
+
+    private int IndexOfArrangedColumn(string columnKey)
+    {
+        var columns = ArrangedColumns;
+        for (var i = 0; i < columns.Count; i++)
+        {
+            if (String.Equals(columns[i].Key, columnKey, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private static Rect ToRect(GridRect rect) => new(rect.X, rect.Y, rect.Width, rect.Height);
+
     //--------------------------------------------------------------------------------
     // Render
     //--------------------------------------------------------------------------------

@@ -94,7 +94,7 @@ public sealed partial class QualityVerifier
         var paint = P95(frames.Select(static frame => frame.Milliseconds));
         var tap = P95(tapTimes);
         var pss = global::Android.OS.Debug.Pss;
-        Log(FormattableString.Invariant($"METRIC rows={rows};columns={columns};frames={frames.Count};initial_ms={initialMs:F3};sort_to_paint_p95_ms={P95(sortTimes):F3};tap_to_paint_p95_ms={tap:F3};paint_p95_ms={paint:F3};paint_interval_p95_ms={P95(intervals):F3};max_cells={frames.Max(static frame => frame.RenderedCells)};max_measurements={frames.Max(static frame => frame.TextMeasurements)};managed_bytes={retained};managed_delta_bytes={retained - baseline};pss_kb={pss};paint_budget_met={paint <= 16.7};tap_budget_met={tap <= 100}"));
+        Log(FormattableString.Invariant($"METRIC rows={rows};columns={columns};frames={frames.Count};initial_ms={initialMs:F3};sort_to_paint_p95_ms={P95(sortTimes):F3};tap_to_paint_p95_ms={tap:F3};paint_p95_ms={paint:F3};paint_interval_p95_ms={P95(intervals):F3};max_cells={frames.Max(static frame => frame.RenderedCells)};max_measurements={frames.Max(static frame => frame.TextMeasurements)};managed_bytes={retained};managed_delta_bytes={retained - baseline};pss_kb={pss};paint_budget_met={paint <= 16};tap_budget_met={tap <= 100}"));
         summaries.Add($"{rows:N0}×{columns}: 描画p95 {paint:F2}ms / 選択 {tap:F1}ms");
         await BenchmarkSortCallbackAsync(scenario, data!, rows).ConfigureAwait(true);
     }

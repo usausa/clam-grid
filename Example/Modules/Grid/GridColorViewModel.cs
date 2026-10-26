@@ -105,6 +105,9 @@ public sealed partial class GridColorViewModel : AppViewModelBase
         Status = $"文字 {GridStyle.FontSize}";
     }
 
+    public void ShowCellBounds(string? columnKey, Rect? bounds) =>
+        Status = bounds is { } rect ? $"{columnKey} {rect.X:F0},{rect.Y:F0} {rect.Width:F0}×{rect.Height:F0}" : "セルの外";
+
     private void SelectLine(int index)
     {
         LineIndex = index;

@@ -181,6 +181,8 @@ Messaging, navigation and screen controllers belong to the application.
 | **Input** | Tap, long press, pan with inertia, column resize, scrolling a row to a position, commands for MVVM |
 | **Styling** | Font, padding, colors, alternating rows, grid lines by direction and width, sort marks, row header text, scroll bars, text for the empty state and conditional color callbacks |
 | **Fonts** | Per character fallback to the `FallbackFonts` typefaces of SkiaExtension and system fonts, emoji sequences included |
+| **Geometry** | `BodyBounds` and `GetCellBounds` / `GetColumnHeaderBounds` / `GetRowHeaderBounds` by index or column key, for placing views of your own over the grid |
+| **Performance** | Judged by the p95 of the draw time staying within 16 ms; fps is not used and no extra margin is added for slower devices |
 
 ## 🧵 Threading
 

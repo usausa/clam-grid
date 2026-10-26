@@ -37,6 +37,7 @@
 | `ScrollX`, `ScrollY` | `double` | | | Scroll offsets in DIP |
 | `InputState` | `GridGestureState` | | | Current gesture state |
 | `IsInertiaRunning` | `bool` | | | Inertial scrolling in progress |
+| `BodyBounds` | `Rect` | | | Area of the cells in DIP, without the headers; `Rect.Zero` before the view has a size |
 
 ### 🛠 Methods
 
@@ -56,6 +57,9 @@
 | `ScrollIntoView(int rowIndex, string? columnKey = null, ScrollToPosition position = MakeVisible)` | `bool` | Places the row at `Start`, `Center` or `End`, or moves it just into view with `MakeVisible`; the column is revealed with the smallest move, and `null` or a hidden column keeps the horizontal offset |
 | `ScrollIntoViewByKey(object key, ScrollToPosition position = MakeVisible)` | `bool` | Scrolls only vertically to the row with the key; `false` when no shown row has it |
 | `HitTest(double x, double y)` | `GridHit` | Resolves the cell at the position in DIP; the result carries `ColumnKey` as well as the indexes |
+| `GetCellBounds(int row, int column)`, `GetCellBounds(int row, string columnKey)` | `Rect?` | Cell in DIP, with the scroll applied and the frozen columns kept in place; `null` before the view has a size, for a row or column outside the range, and for a key that no shown column has |
+| `GetColumnHeaderBounds(int column)`, `GetColumnHeaderBounds(string columnKey)` | `Rect?` | Column header in DIP, same `null` cases |
+| `GetRowHeaderBounds(int row)` | `Rect?` | Row header in DIP, same `null` cases; the width is zero while `RowHeadersVisible` is `False` |
 | `CancelInteraction()` | `void` | Stops the current gesture and inertia |
 | `ApplyStyle()` | `void` | Recreates the renderer and the layout and redraws after the content of `GridStyle` was changed in place |
 | `InvalidateSurface()` | `void` | Redraws the grid |
