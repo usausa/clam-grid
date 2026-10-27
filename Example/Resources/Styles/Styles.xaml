@@ -349,14 +349,6 @@
     <!-- Grid -->
     <!-- ================================================================================ -->
 
-    <!-- Grid style declared as a resource; the list grids refer to it with GridStyle="{StaticResource ListGridStyle}" -->
-    <clam:GridStyle x:Key="ListGridStyle"
-                    FontFamily="monospace"
-                    TextColor="Black"
-                    AscendingHeaderBackground="#1565C0" AscendingSortMark="▲" Background="White" DescendingHeaderBackground="#EF6C00"
-                    DescendingSortMark="▼" GridLineColor="Gray" HeaderBackground="#424242" HeaderTextColor="White"
-                    RowHeadersVisible="False" />
-
     <!-- Row colors by status -->
     <helpers:StatusColorSelector x:Key="StatusColorSelector"
                                  ActiveColor="#FFF59D" CompletedColor="#F8BBD0" PendingColor="#B3E5FC" />
@@ -368,6 +360,30 @@
         <Setter Property="AllowColumnResizing" Value="True" />
         <Setter Property="AllowColumnConfiguration" Value="True" />
         <Setter Property="BackgroundColor" Value="White" />
+        <Setter Property="FontFamily" Value="monospace" />
+        <Setter Property="TextColor" Value="Black" />
+        <Setter Property="HeaderBackground" Value="#424242" />
+        <Setter Property="HeaderTextColor" Value="White" />
+        <Setter Property="GridLineColor" Value="Gray" />
+        <Setter Property="AscendingHeaderBackground" Value="#1565C0" />
+        <Setter Property="DescendingHeaderBackground" Value="#EF6C00" />
+        <Setter Property="AscendingSortMark" Value="▲" />
+        <Setter Property="DescendingSortMark" Value="▼" />
+        <Setter Property="RowHeadersVisible" Value="False" />
+    </Style>
+
+    <!-- Common settings of the scenario grids -->
+    <Style x:Key="ScenarioGrid"
+           TargetType="clam:ClamGridView">
+        <Setter Property="FontFamily" Value="monospace" />
+        <Setter Property="TextColor" Value="Black" />
+        <Setter Property="HeaderTextColor" Value="White" />
+        <Setter Property="GridLineColor" Value="Gray" />
+        <Setter Property="AscendingHeaderBackground" Value="#1565C0" />
+        <Setter Property="DescendingHeaderBackground" Value="#EF6C00" />
+        <Setter Property="SelectedBackground" Value="#448AFF" />
+        <Setter Property="SelectedTextColor" Value="White" />
+        <Setter Property="RowHeadersVisible" Value="False" />
     </Style>
     <!-- ================================================================================ -->
     <!-- Setting sheet -->

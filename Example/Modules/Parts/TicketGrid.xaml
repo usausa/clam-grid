@@ -9,7 +9,6 @@
                    ColumnConfigurationCommand="{Binding ColumnEditCommand}"
                    ColumnStates="{Binding ColumnStates}"
                    FrozenColumnCount="2"
-                   GridStyle="{StaticResource ListGridStyle}"
                    SelectAllCommand="{Binding SelectCommand}"
                    SelectedKeys="{Binding SelectedKeys}"
                    SelectionMode="MultipleToggle" SortCycle="AscendingDescendingNone"

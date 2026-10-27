@@ -14,7 +14,6 @@ using SkiaSharp.Views.Maui.Controls;
 public partial class ClamGridView : SKCanvasView, IDisposable
 {
     public static readonly BindableProperty ItemsSourceProperty = BindableProperty.Create(nameof(ItemsSource), typeof(IEnumerable), typeof(ClamGridView), propertyChanged: OnItemsSourceChanged);
-    public static readonly BindableProperty GridStyleProperty = BindableProperty.Create(nameof(GridStyle), typeof(GridStyle), typeof(ClamGridView), defaultValueCreator: static _ => new GridStyle(), validateValue: static (_, value) => GridStyle.ValidateValue(value), propertyChanged: OnStyleChanged);
     public static readonly BindableProperty SelectionModeProperty = BindableProperty.Create(nameof(SelectionMode), typeof(GridSelectionMode), typeof(ClamGridView), GridSelectionMode.MultipleToggle, propertyChanged: OnSelectionModeChanged);
     public static readonly BindableProperty EmptyTextProperty = BindableProperty.Create(nameof(EmptyText), typeof(string), typeof(ClamGridView), propertyChanged: OnEmptyTextChanged);
 
@@ -46,12 +45,6 @@ public partial class ClamGridView : SKCanvasView, IDisposable
     {
         get => (IEnumerable?)GetValue(ItemsSourceProperty);
         set => SetValue(ItemsSourceProperty, value);
-    }
-
-    public GridStyle GridStyle
-    {
-        get => (GridStyle)GetValue(GridStyleProperty);
-        set => SetValue(GridStyleProperty, value);
     }
 
     public GridSelectionMode SelectionMode
@@ -95,14 +88,13 @@ public partial class ClamGridView : SKCanvasView, IDisposable
     private GridLayout? CurrentLayout { get; set; }
 
     // Every definition counts, hidden ones included, so showing or hiding columns keeps the header and row heights
-    private int HeaderLineCount => columnCatalog.Select(static column => GridRenderer.GetTextLines(column.Header).Length).Append(GridStyle.RowHeadersVisible ? GridRenderer.GetTextLines(GridStyle.CornerText).Length : 1).Max();
+    private int HeaderLineCount => columnCatalog.Select(static column => GridRenderer.GetTextLines(column.Header).Length).Append(EffectiveStyle.RowHeadersVisible ? GridRenderer.GetTextLines(EffectiveStyle.CornerText).Length : 1).Max();
 
     private int CellLineCount => columnCatalog.Select(static column => column.LineCount).Append(1).Max();
 
     public ClamGridView()
     {
         AutoMeasureRowLimit = 32;
-        BackgroundColor = Colors.White;
         EnableTouchEvents = true;
         ColumnDefinitions.Changed += OnColumnDefinitionsChanged;
         Touch += OnGridTouch;
@@ -214,16 +206,12 @@ public partial class ClamGridView : SKCanvasView, IDisposable
         {
             CancelInput(true);
         }
-    }
 
-    public void ApplyStyle()
-    {
-        RequireUiThread();
-        GridStyle.Validate();
-        renderer?.Dispose();
-        renderer = null;
-        CancelInput();
-        InvalidateLayout();
+        if (propertyName is nameof(BackgroundColor))
+        {
+            RefreshStyle();
+            InvalidateSurface();
+        }
     }
 
     //--------------------------------------------------------------------------------
@@ -631,16 +619,6 @@ public partial class ClamGridView : SKCanvasView, IDisposable
 
     private static void OnEmptyTextChanged(BindableObject bindable, object oldValue, object newValue) => ((ClamGridView)bindable).InvalidateSurface();
 
-    private static void OnStyleChanged(BindableObject bindable, object oldValue, object newValue)
-    {
-        var grid = (ClamGridView)bindable;
-        grid.RequireUiThread();
-        grid.renderer?.Dispose();
-        grid.renderer = null;
-        grid.CancelInput();
-        grid.InvalidateLayout();
-    }
-
     private void SubscribeData()
     {
         if (!dataSubscribed && (DataView is { } view))
@@ -732,15 +710,15 @@ public partial class ClamGridView : SKCanvasView, IDisposable
             return;
         }
 
-        renderer ??= new GridRenderer(GridStyle);
-        var rowHeader = GridStyle.RowHeadersVisible ? GridStyle.RowHeaderWidth : 0;
+        renderer ??= new GridRenderer(EffectiveStyle);
+        var rowHeader = EffectiveStyle.RowHeadersVisible ? EffectiveStyle.RowHeaderWidth : 0;
         var widths = renderer.MeasureColumns(ArrangedColumns, Items, Math.Max(0, Width - rowHeader), AutoMeasureRowLimit, DataView);
         if ((resizeColumn >= 0) && (resizeColumn < widths.Length))
         {
             widths[resizeColumn] = previewWidth;
         }
 
-        var replacement = new GridLayout(widths, Items.Count, GridStyle.RowHeight ?? renderer.GetAutoHeight(CellLineCount), GridStyle.ColumnHeadersVisible ? GridStyle.HeaderHeight ?? renderer.GetAutoHeight(HeaderLineCount) : 0, rowHeader, Width, Height, Math.Clamp(FrozenColumnCount, 0, widths.Length));
+        var replacement = new GridLayout(widths, Items.Count, EffectiveStyle.RowHeight ?? renderer.GetAutoHeight(CellLineCount), EffectiveStyle.ColumnHeadersVisible ? EffectiveStyle.HeaderHeight ?? renderer.GetAutoHeight(HeaderLineCount) : 0, rowHeader, Width, Height, Math.Clamp(FrozenColumnCount, 0, widths.Length));
         replacement.ScrollTo(ScrollX, ScrollY);
         CurrentLayout = replacement;
         layoutDirty = false;

@@ -41,7 +41,9 @@ public sealed partial class InputVerifier : IDisposable
         this.parent = parent;
         data = new GridDataView<SampleRow>(source, static row => row.Id);
         data.RegisterSort("id", static row => row.Id);
-        grid.GridStyle = new GridStyle { RowHeaderWidth = 40, RowHeight = 40, HeaderHeight = 40 };
+        grid.RowHeaderWidth = 40;
+        grid.RowHeight = 40;
+        grid.HeaderHeight = 40;
         grid.ColumnDefinitions.ReplaceAll([
             new GridColumn("id", "番号", new GridValueAccessor<SampleRow, int>(static row => row.Id + 1)) { Width = GridColumnWidth.Absolute(100) },
             new GridColumn("name", "名前", new GridValueAccessor<SampleRow, string>(static row => row.Name)) { Width = GridColumnWidth.Absolute(130) },

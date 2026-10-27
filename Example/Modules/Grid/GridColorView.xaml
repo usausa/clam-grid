@@ -24,8 +24,14 @@
                                Grid.Row="0"
                                behaviors:GridBind.Controller="{Binding Grid}"
                                ItemsSource="{Binding Rows}"
-                               GridStyle="{Binding GridStyle}"
-                               IsReadOnly="False" />
+                               FontSize="{Binding FontSize}"
+                               CellColors="{Binding CellColors}"
+                               ColumnHeaderColors="{Binding ColumnHeaderColors}"
+                               HorizontalLinesVisible="{Binding HorizontalLinesVisible}"
+                               IsReadOnly="False"
+                               RowHeaderColors="{Binding RowHeaderColors}"
+                               RowHeaderWidth="{Binding RowHeaderWidth}"
+                               VerticalLinesVisible="{Binding VerticalLinesVisible}" />
 
             <Label Grid.Row="1"
                    Style="{StaticResource StatusLabel}"

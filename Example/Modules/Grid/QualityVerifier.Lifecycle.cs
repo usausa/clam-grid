@@ -75,7 +75,7 @@ public sealed partial class QualityVerifier
         Check("source replacement restores usable grid", grid.RowCount == 1000 && grid.VisibleColumns().Count == 18);
         foreach (var size in new[] { 12f, 22f, 32f })
         {
-            var frame = await NextFrameAsync(() => grid.GridStyle = grid.GridStyle with { FontSize = size }).ConfigureAwait(true);
+            var frame = await NextFrameAsync(() => grid.FontSize = size).ConfigureAwait(true);
             Check($"font {size}: rendered and bounded", frame.RenderedCells > 0 && frame.RenderedCells < 500);
         }
     }

@@ -24,7 +24,7 @@ public sealed partial class QualityVerifier
             grid.ValueAccessors = null;
             grid.ColumnStates = null;
             grid.ColumnDefinitions.Clear();
-            grid.GridStyle = ScenarioGridFactory.CreateStyle(scenario);
+            ScenarioGridFactory.ApplyStyle(grid, scenario);
             grid.ItemsSource = data;
             // Orders bound before the definitions are applied when the definitions are added
             grid.SetBinding(ClamGridView.ColumnStatesProperty, static (OrderSource source) => source.Orders, BindingMode.TwoWay, source: orders);

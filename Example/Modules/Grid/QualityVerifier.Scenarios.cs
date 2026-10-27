@@ -14,7 +14,7 @@ public sealed partial class QualityVerifier
             data?.Dispose();
             data = scenario.CreateData(120);
             var frame = await NextFrameAsync(() => ScenarioGridFactory.Configure(grid, scenario, data)).ConfigureAwait(true);
-            Check($"{scenario.Key}: columns and visible painting", grid.VisibleColumns().Count == scenario.Columns.Count && frame.RenderedCells > 0 && !grid.GridStyle.RowHeadersVisible);
+            Check($"{scenario.Key}: columns and visible painting", grid.VisibleColumns().Count == scenario.Columns.Count && frame.RenderedCells > 0 && !grid.RowHeadersVisible);
             Check($"{scenario.Key}: source keys and values", grid.VisibleColumns().All(column => column.ValueAccessor.GetValue(data[0]) is string));
             Check($"{scenario.Key}: header colors independent of sorting", grid.VisibleColumns().Zip(scenario.Columns).All(pair => pair.First.AllowSorting == pair.Second.AllowSorting && Equals(pair.First.HeaderBackground, Color.FromArgb(pair.Second.GreenHeader ? "#2E7D32" : "#616161"))));
             scenario.SelectAll(data, true);
@@ -38,7 +38,7 @@ public sealed partial class QualityVerifier
             Check($"{scenario.Key}: legacy columns roundtrip", grid.VisibleColumns().Count == scenario.Columns.Count - 1 && grid.VisibleColumns()[0].Key == scenario.Columns[^1].Key && data.SelectedCount == 1);
             grid.ColumnStates = null;
             Check($"{scenario.Key}: default columns restored", grid.VisibleColumns().Count == scenario.Columns.Count);
-            Check($"{scenario.Key}: three state colors", Enumerable.Range(0, 3).Select(id => grid.GridStyle.RowBackground!(new TicketRow(id))).Distinct().Count() == 3 && grid.GridStyle.SelectedBackground.Equals(Color.FromArgb("#448AFF")) && grid.GridStyle.SelectedTextColor.Equals(Colors.White));
+            Check($"{scenario.Key}: three state colors", Enumerable.Range(0, 3).Select(id => grid.RowBackground!(new TicketRow(id))).Distinct().Count() == 3 && grid.SelectedBackground.Equals(Color.FromArgb("#448AFF")) && grid.SelectedTextColor.Equals(Colors.White));
             if (scenario.PendingField is not null)
             {
                 data.RestoreSortOrders([new("CaseNo", true)]);

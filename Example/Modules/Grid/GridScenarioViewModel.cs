@@ -35,7 +35,7 @@ public sealed partial class GridScenarioViewModel : AppViewModelBase
     public partial GridController? Grid { get; set; }
 
     [ObservableProperty]
-    public partial GridStyle GridStyle { get; set; }
+    public partial Func<object, Color?>? RowBackground { get; set; }
 
     [ObservableProperty]
     public partial GridSelectionMode SelectionMode { get; set; }
@@ -70,8 +70,6 @@ public sealed partial class GridScenarioViewModel : AppViewModelBase
     public GridScenarioViewModel(IColumnSettingsStore columnSettingsStore)
     {
         this.columnSettingsStore = columnSettingsStore;
-
-        GridStyle = new GridStyle();
 
         SelectAllCommand = MakeDelegateCommand<bool>(x => scenario?.SelectAll(Data!, x));
         ColumnConfigurationCommand = MakeAsyncCommand<GridColumnConfigurationEventArgs>(_ => OpenColumnSettingsAsync());
@@ -159,7 +157,7 @@ public sealed partial class GridScenarioViewModel : AppViewModelBase
         }
 
         data.Changed += OnDataChanged;
-        GridStyle = ScenarioGridFactory.CreateStyle(scenario);
+        RowBackground = ScenarioGridFactory.CreateRowBackground(scenario);
         SelectionMode = scenario.SingleSelection ? GridSelectionMode.SingleToggle : GridSelectionMode.MultipleToggle;
         Grid = new GridController(ScenarioGridFactory.CreateColumns(scenario), columnSettingsStore.Load(ColumnSettingsKey));
         Data = data;

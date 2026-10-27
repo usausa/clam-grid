@@ -2,19 +2,14 @@ namespace Example.Modules.Grid;
 
 internal static class ScenarioGridFactory
 {
-    public static GridStyle CreateStyle(ListScenario scenario) => new()
+    public static Func<object, Color?> CreateRowBackground(ListScenario scenario) =>
+        item => item is TicketRow row ? Color.FromArgb(scenario.Background(row)) : null;
+
+    public static void ApplyStyle(ClamGridView grid, ListScenario scenario)
     {
-        RowHeadersVisible = false,
-        FontFamily = "monospace",
-        TextColor = Colors.Black,
-        HeaderTextColor = Colors.White,
-        AscendingHeaderBackground = Color.FromArgb("#1565C0"),
-        DescendingHeaderBackground = Color.FromArgb("#EF6C00"),
-        GridLineColor = Colors.Gray,
-        SelectedBackground = Color.FromArgb("#448AFF"),
-        SelectedTextColor = Colors.White,
-        RowBackground = item => item is TicketRow row ? Color.FromArgb(scenario.Background(row)) : null
-    };
+        grid.Style = (Style)Application.Current!.Resources["ScenarioGrid"];
+        grid.RowBackground = CreateRowBackground(scenario);
+    }
 
     public static GridColumn[] CreateColumns(ListScenario scenario) =>
         scenario.Columns.Select(static column => new GridColumn(column.Key, column.Header, new GridValueAccessor<TicketRow, string>(row => row.GetText(column.Key)))
@@ -27,7 +22,7 @@ internal static class ScenarioGridFactory
 
     public static void Configure(ClamGridView grid, ListScenario scenario, GridDataView<TicketRow> data, IEnumerable<GridColumnState>? orders = null)
     {
-        grid.GridStyle = CreateStyle(scenario);
+        ApplyStyle(grid, scenario);
         grid.ColumnStates = orders?.ToArray();
         grid.ColumnDefinitions.ReplaceAll(CreateColumns(scenario));
         grid.ItemsSource = data;

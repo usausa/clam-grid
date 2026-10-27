@@ -28,10 +28,11 @@
                 Title="一覧の種類" />
 
         <clam:ClamGridView Grid.Row="1"
+                           Style="{StaticResource ScenarioGrid}"
                            behaviors:GridBind.Controller="{Binding Grid}"
                            ItemsSource="{Binding Data}"
                            ColumnConfigurationCommand="{Binding ColumnConfigurationCommand}"
-                           GridStyle="{Binding GridStyle}"
+                           RowBackground="{Binding RowBackground}"
                            SelectAllCommand="{Binding SelectAllCommand}"
                            SelectionMode="{Binding SelectionMode}" />
 

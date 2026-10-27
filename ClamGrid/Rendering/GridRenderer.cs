@@ -14,7 +14,7 @@ internal sealed class GridRenderer : IDisposable
     private const int RowNumberCacheLimit = 2048;
     private const int CellLineCacheLimit = 2048;
 
-    private readonly GridStyle style;
+    private GridStyle style;
     private readonly FontResolver fonts;
     private readonly float fontSize;
     private readonly SKPaint paint = new() { IsAntialias = true };
@@ -33,11 +33,12 @@ internal sealed class GridRenderer : IDisposable
 
     public GridRenderer(GridStyle style)
     {
-        style.Validate();
         this.style = style;
         fonts = new FontResolver(style.FontFamily);
         fontSize = (float)style.FontSize;
     }
+
+    public void UpdateStyle(GridStyle value) => style = value;
 
     public static string GetCellText(GridColumn column, object? value) =>
         column.TextFormat.Format(column.Converter is { } converter ? converter.Convert(value, typeof(string), null, CultureInfo.CurrentCulture) : value, CultureInfo.CurrentCulture);

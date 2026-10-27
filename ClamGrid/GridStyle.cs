@@ -1,7 +1,6 @@
 namespace ClamGrid;
 
-// Can be a XAML resource; treat it as immutable once assigned and replace it with a with expression
-public sealed record GridStyle
+internal sealed record GridStyle
 {
     public string FontFamily { get; set; } = "monospace";
 
@@ -84,36 +83,4 @@ public sealed record GridStyle
 
     // Row header text by item; null falls back to the row number
     public Func<GridRowHeaderTextContext, string?>? RowHeaderText { get; set; }
-
-    internal static bool ValidateValue(object? value)
-    {
-        ArgumentNullException.ThrowIfNull(value, nameof(GridStyle));
-        ((GridStyle)value).Validate();
-        return true;
-    }
-
-    internal void Validate()
-    {
-        if (!Double.IsFinite(FontSize) || (FontSize <= 0) || !Double.IsFinite(HorizontalPadding) || (HorizontalPadding < 0) || !Double.IsFinite(VerticalPadding) || (VerticalPadding < 0))
-        {
-            throw new ArgumentException("Font size and padding must be valid finite values.");
-        }
-
-        if (!IsNullOrPositive(RowHeight) || !IsNullOrPositive(HeaderHeight) || !Double.IsFinite(RowHeaderWidth) || (RowHeaderWidth < 0))
-        {
-            throw new ArgumentException("Row and header heights must be positive finite values and the row header width must be a finite value of zero or more.");
-        }
-
-        if (!Double.IsFinite(ScrollBarThickness) || (ScrollBarThickness <= 0))
-        {
-            throw new ArgumentException("The scroll bar thickness must be a positive finite value.");
-        }
-
-        if (!Double.IsFinite(GridLineWidth) || (GridLineWidth <= 0))
-        {
-            throw new ArgumentException("The grid line width must be a positive finite value.");
-        }
-    }
-
-    private static bool IsNullOrPositive(double? value) => (value is not { } number) || (Double.IsFinite(number) && (number > 0));
 }

@@ -1,7 +1,5 @@
 namespace Example.Modules.Grid;
 
-using ClamChart;
-
 using SkiaSharp.Views.Maui;
 
 public sealed partial class GridSparklineViewModel : AppViewModelBase
@@ -10,12 +8,15 @@ public sealed partial class GridSparklineViewModel : AppViewModelBase
 
     private static readonly SKColor TrendColor = new(0x1E, 0x88, 0xE5);
 
-    private static readonly ChartDrawingThreshold[] AchievementThresholds =
-    [
-        new(0, new SKColor(0xE5, 0x39, 0x35)),
-        new(80, new SKColor(0xFB, 0x8C, 0x00)),
-        new(100, new SKColor(0x43, 0xA0, 0x47))
-    ];
+    private static readonly SKColor LossColor = new(0xE5, 0x39, 0x35);
+
+    private static readonly SKColor WarningColor = new(0xFB, 0x8C, 0x00);
+
+    private static readonly SKColor GoodColor = new(0x43, 0xA0, 0x47);
+
+    private static readonly SKColor TrackColor = new(0xEE, 0xEE, 0xEE);
+
+    private readonly SparklineDrawing drawing = new();
 
     private readonly SalesRow[] sales;
 
@@ -34,13 +35,16 @@ public sealed partial class GridSparklineViewModel : AppViewModelBase
     public GridController Grid { get; }
 
     [ObservableProperty]
-    public partial GridStyle GridStyle { get; set; } = CreateStyle(16);
+    public partial double FontSize { get; set; } = 16;
+
+    [ObservableProperty]
+    public partial double RowHeaderWidth { get; set; } = 48;
 
     [ObservableProperty]
     public partial bool IsSettingOpen { get; set; }
 
     [ObservableProperty]
-    public partial ChartSparklineKind TrendKind { get; set; } = ChartSparklineKind.Line;
+    public partial SparklineKind TrendKind { get; set; } = SparklineKind.Line;
 
     [ObservableProperty]
     public partial string FontText { get; set; } = "文字 16";
@@ -69,7 +73,7 @@ public sealed partial class GridSparklineViewModel : AppViewModelBase
         Grid = new GridController(CreateColumns());
         Grid.FrameRendered += OnFrameRendered;
 
-        SelectKindCommand = MakeDelegateCommand<ChartSparklineKind>(SelectKind);
+        SelectKindCommand = MakeDelegateCommand<SparklineKind>(SelectKind);
         ToggleFontCommand = MakeDelegateCommand(ToggleFont);
     }
 
@@ -78,6 +82,7 @@ public sealed partial class GridSparklineViewModel : AppViewModelBase
         if (disposing)
         {
             Grid.FrameRendered -= OnFrameRendered;
+            drawing.Dispose();
         }
 
         base.Dispose(disposing);
@@ -121,7 +126,7 @@ public sealed partial class GridSparklineViewModel : AppViewModelBase
     // Operation
     //--------------------------------------------------------------------------------
 
-    private void SelectKind(ChartSparklineKind value)
+    private void SelectKind(SparklineKind value)
     {
         TrendKind = value;
         Grid.Invalidate();
@@ -129,8 +134,10 @@ public sealed partial class GridSparklineViewModel : AppViewModelBase
 
     private void ToggleFont()
     {
-        GridStyle = CreateStyle(GridStyle.FontSize.Equals(16d) ? 22 : 16);
-        FontText = $"文字 {GridStyle.FontSize}";
+        var size = FontSize.Equals(16d) ? 22 : 16;
+        FontSize = size;
+        RowHeaderWidth = size > 16 ? 64 : 48;
+        FontText = $"文字 {size}";
     }
 
     //--------------------------------------------------------------------------------
@@ -155,36 +162,30 @@ public sealed partial class GridSparklineViewModel : AppViewModelBase
         if (context.Value is double[] values)
         {
             var color = context.IsSelected ? context.Colors.TextColor!.ToSKColor() : TrendColor;
-            ChartDrawing.DrawSparkline(canvas, Inset(context.Bounds), values, new SparklineDrawOptions { Kind = TrendKind, Color = color, Markers = ChartSparklineMarkers.Last });
+            drawing.DrawTrend(canvas, Inset(context.Bounds), values, TrendKind, color);
         }
     }
 
-    private static void PaintChanges(SKCanvas canvas, GridCellPaintContext context)
+    private void PaintChanges(SKCanvas canvas, GridCellPaintContext context)
     {
         if (context.Value is double[] values)
         {
-            ChartDrawing.DrawSparkline(canvas, Inset(context.Bounds), values, new SparklineDrawOptions { Kind = ChartSparklineKind.WinLoss });
+            drawing.DrawWinLoss(canvas, Inset(context.Bounds), values, TrendColor, LossColor);
         }
     }
 
-    private static void PaintProgress(SKCanvas canvas, GridCellPaintContext context)
+    private void PaintProgress(SKCanvas canvas, GridCellPaintContext context)
     {
         if (context.Value is double ratio)
         {
-            ReadOnlySpan<double> values = [ratio * 100];
-            ChartDrawing.DrawBarGauge(canvas, Inset(context.Bounds), values, new BarGaugeDrawOptions { Thresholds = AchievementThresholds });
+            var percent = ratio * 100;
+            drawing.DrawProgress(canvas, Inset(context.Bounds), ratio, TrackColor, percent >= 100 ? GoodColor : percent >= 80 ? WarningColor : LossColor);
         }
     }
 
     //--------------------------------------------------------------------------------
     // Style
     //--------------------------------------------------------------------------------
-
-    private static GridStyle CreateStyle(double fontSize) => new()
-    {
-        FontSize = fontSize,
-        RowHeaderWidth = fontSize > 16 ? 64 : 48
-    };
 
     //--------------------------------------------------------------------------------
     // Statistics

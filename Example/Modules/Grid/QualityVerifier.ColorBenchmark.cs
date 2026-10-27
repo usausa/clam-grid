@@ -5,7 +5,8 @@ public sealed partial class QualityVerifier
     private async Task BenchmarkColorsAsync()
     {
         report("50,000行: 条件色コールバックの描画負荷");
-        var baseline = grid.GridStyle with { RowHeadersVisible = true, RowHeaderWidth = 48 };
+        grid.RowHeadersVisible = true;
+        grid.RowHeaderWidth = 48;
         var warning = new GridColors(Colors.DarkRed, Colors.MistyRose);
         var header = new GridColors(Colors.Yellow, Colors.DarkSlateBlue);
         foreach (var enabled in new[] { false, true })
@@ -13,26 +14,28 @@ public sealed partial class QualityVerifier
             var cellCalls = 0;
             var columnCalls = 0;
             var rowCalls = 0;
+            GridColors CellColors(GridCellColorContext context)
+            {
+                cellCalls++;
+                return !context.IsSelected && (((TicketRow)context.Item).Status == 2) ? warning : default;
+            }
+
+            GridColors ColumnHeaderColors(GridColumnHeaderColorContext context)
+            {
+                columnCalls++;
+                return context.SortPriority == 0 ? header : default;
+            }
+
+            GridColors RowHeaderColors(GridRowHeaderColorContext context)
+            {
+                rowCalls++;
+                return !context.IsSelected && (((TicketRow)context.Item).Status == 2) ? warning : default;
+            }
             await NextFrameAsync(() =>
             {
-                grid.GridStyle = enabled ? baseline with
-                {
-                    CellColors = context =>
-                    {
-                        cellCalls++;
-                        return !context.IsSelected && (((TicketRow)context.Item).Status == 2) ? warning : default;
-                    },
-                    ColumnHeaderColors = context =>
-                    {
-                        columnCalls++;
-                        return context.SortPriority == 0 ? header : default;
-                    },
-                    RowHeaderColors = context =>
-                    {
-                        rowCalls++;
-                        return !context.IsSelected && (((TicketRow)context.Item).Status == 2) ? warning : default;
-                    }
-                } : baseline;
+                grid.CellColors = enabled ? CellColors : null;
+                grid.ColumnHeaderColors = enabled ? ColumnHeaderColors : null;
+                grid.RowHeaderColors = enabled ? RowHeaderColors : null;
                 grid.ScrollTo(0, 0);
             }).ConfigureAwait(true);
             var frames = new List<double>();
@@ -82,6 +85,8 @@ public sealed partial class QualityVerifier
             Log(FormattableString.Invariant($"COLOR_METRIC enabled={enabled};rows={grid.RowCount};columns={grid.VisibleColumns().Count};frames={frames.Count};paint_p95_ms={P95(frames):F3};max_callbacks_per_frame={maxCalls}"));
         }
 
-        grid.GridStyle = baseline;
+        grid.CellColors = null;
+        grid.ColumnHeaderColors = null;
+        grid.RowHeaderColors = null;
     }
 }

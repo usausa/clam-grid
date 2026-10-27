@@ -30,45 +30,41 @@ public sealed partial class QualityVerifier
             new("id", "BBB", new GridValueAccessor<SampleRow, int>(static row => row.Id)) { Width = GridColumnWidth.Absolute(100) },
             new("done", "CCC", new GridValueAccessor<SampleRow, bool>(static row => row.IsChecked)) { Width = GridColumnWidth.Absolute(100), IsBoolean = true, AllowSorting = false }
         ];
-        var only = backgroundOnly;
         await NextFrameAsync(() =>
         {
             probe.ColumnDefinitions.ReplaceAll(columns);
-            probe.GridStyle = new GridStyle
+            probe.RowHeight = 40;
+            probe.HeaderHeight = 40;
+            probe.RowHeaderWidth = 48;
+            probe.TextColor = Colors.Black;
+            probe.BackgroundColor = Colors.White;
+            probe.RowHeaderBackground = Colors.Beige;
+            probe.HeaderBackground = Colors.Gray;
+            probe.HeaderTextColor = Colors.White;
+            probe.SelectedTextColor = Colors.White;
+            probe.SelectedBackground = Colors.Blue;
+            probe.AscendingHeaderBackground = Colors.LightBlue;
+            probe.DescendingHeaderBackground = Colors.Orange;
+            probe.RowBackground = static item => ((SampleRow)item).Id == 1 ? Colors.LightCyan : null;
+            probe.CellColors = context =>
             {
-                RowHeight = 40,
-                HeaderHeight = 40,
-                RowHeaderWidth = 48,
-                TextColor = Colors.Black,
-                Background = Colors.White,
-                RowHeaderBackground = Colors.Beige,
-                HeaderBackground = Colors.Gray,
-                HeaderTextColor = Colors.White,
-                SelectedTextColor = Colors.White,
-                SelectedBackground = Colors.Blue,
-                AscendingHeaderBackground = Colors.LightBlue,
-                DescendingHeaderBackground = Colors.Orange,
-                RowBackground = static item => ((SampleRow)item).Id == 1 ? Colors.LightCyan : null,
-                CellColors = context =>
+                cells.Add(context);
+                if ((context.Column.Key == "name") && (context.Item is SampleRow { Id: 0, IsDiscontinued: true }))
                 {
-                    cells.Add(context);
-                    if ((context.Column.Key == "name") && (context.Item is SampleRow { Id: 0, IsDiscontinued: true }))
-                    {
-                        return only ? new(Background: Colors.Pink) : new(Colors.Red, Colors.Pink);
-                    }
-
-                    return context.Column.IsBoolean ? new(Colors.Green) : default;
-                },
-                ColumnHeaderColors = context =>
-                {
-                    headers.Add(context);
-                    return overrideHeader && (context.Column.Key == "id") ? new(Colors.Yellow, Colors.Purple) : default;
-                },
-                RowHeaderColors = context =>
-                {
-                    rowHeaders.Add(context);
-                    return context.Item is SampleRow { Id: 0, IsDiscontinued: true } ? new(Colors.Yellow, Colors.Purple) : default;
+                    return backgroundOnly ? new(Background: Colors.Pink) : new(Colors.Red, Colors.Pink);
                 }
+
+                return context.Column.IsBoolean ? new(Colors.Green) : default;
+            };
+            probe.ColumnHeaderColors = context =>
+            {
+                headers.Add(context);
+                return overrideHeader && (context.Column.Key == "id") ? new(Colors.Yellow, Colors.Purple) : default;
+            };
+            probe.RowHeaderColors = context =>
+            {
+                rowHeaders.Add(context);
+                return context.Item is SampleRow { Id: 0, IsDiscontinued: true } ? new(Colors.Yellow, Colors.Purple) : default;
             };
             probe.ItemsSource = view;
             host.Content = probe;
@@ -88,7 +84,11 @@ public sealed partial class QualityVerifier
             Check("colors: no unregistered sort state", headers.All(static context => context.SortOrder is null && context.SortPriority == -1));
         }
 
-        await NextFrameAsync(() => probe.GridStyle = probe.GridStyle with { RowHeaderText = static context => context.RowIndex == 0 ? "S" : String.Empty, CornerText = String.Empty }).ConfigureAwait(true);
+        await NextFrameAsync(() =>
+        {
+            probe.RowHeaderText = static context => context.RowIndex == 0 ? "S" : String.Empty;
+            probe.CornerText = String.Empty;
+        }).ConfigureAwait(true);
         using (var bitmap = RenderBitmap())
         {
             Check("colors: row header text callback draws the text", CountForeground(bitmap, ToBitmapRect(bitmap, new Rect(0, 40, 48, 40)), Colors.Yellow) >= 3);
@@ -96,16 +96,20 @@ public sealed partial class QualityVerifier
             Check("colors: empty corner text draws no glyph", CountForeground(bitmap, ToBitmapRect(bitmap, new Rect(0, 0, 48, 40)), Colors.Black) == 0);
         }
 
-        await NextFrameAsync(() => probe.GridStyle = probe.GridStyle with { RowHeaderText = null, CornerText = "#" }).ConfigureAwait(true);
+        await NextFrameAsync(() =>
+        {
+            probe.RowHeaderText = null;
+            probe.CornerText = "#";
+        }).ConfigureAwait(true);
         await NextFrameAsync(() => backgroundOnly = true).ConfigureAwait(true);
         using (var bitmap = RenderBitmap())
         {
             CheckColors(bitmap, new Rect(48, 40, 100, 40), Colors.Pink, Colors.Blue, "background-only override inherits text");
         }
 
-        backgroundOnly = false;
         await NextFrameAsync(() =>
         {
+            backgroundOnly = false;
             view.SetSelected(0, true);
             view.SetSelected(1, true);
         }).ConfigureAwait(true);
@@ -129,7 +133,7 @@ public sealed partial class QualityVerifier
             CheckColors(bitmap, new Rect(0, 40, 48, 40), Colors.Beige, Colors.Black, "row header property change");
         }
 
-        await NextFrameAsync(() => probe.GridStyle = probe.GridStyle with { AlternatingRowBackground = Colors.Lavender }).ConfigureAwait(true);
+        await NextFrameAsync(() => probe.AlternatingRowBackground = Colors.Lavender).ConfigureAwait(true);
         using (var bitmap = RenderBitmap())
         {
             CheckColors(bitmap, new Rect(148, 160, 100, 40), Colors.Lavender, Colors.Black, "alternating row");
@@ -141,7 +145,7 @@ public sealed partial class QualityVerifier
             Check("colors: alternating row in default colors", Equals(alternate.DefaultColors.Background, Colors.Lavender));
         }
 
-        await NextFrameAsync(() => probe.GridStyle = probe.GridStyle with { AlternatingRowBackground = null }).ConfigureAwait(true);
+        await NextFrameAsync(() => probe.AlternatingRowBackground = null).ConfigureAwait(true);
 
         await NextFrameAsync(() => view.RestoreSortOrders([new("nameKey", true), new("id")])).ConfigureAwait(true);
         using (var bitmap = RenderBitmap())
@@ -183,7 +187,7 @@ public sealed partial class QualityVerifier
             Check("frozen: hit test shifts scrolling columns by the offset", probe.HitTest(160, 60).ColumnIndex == 1);
             Check("frozen: frame reports the frozen count and scrolling range", (probe.LastFrame!.FrozenColumns == 1) && (probe.LastFrame.Columns.Start == 1) && probe.ScrollX.Equals(100d));
             var edge = ToBitmapRect(bitmap, new Rect(147, 60, 1, 1));
-            Check("frozen: separator line on the frozen edge", bitmap.GetPixel((int)edge.X, (int)edge.Y) == probe.GridStyle.FrozenLineColor.ToSKColor());
+            Check("frozen: separator line on the frozen edge", bitmap.GetPixel((int)edge.X, (int)edge.Y) == probe.FrozenLineColor.ToSKColor());
         }
 
         await NextFrameAsync(() =>
@@ -201,7 +205,11 @@ public sealed partial class QualityVerifier
             Check("colors: offscreen rows not evaluated", cells.Count == probe.LastFrame!.RenderedCells && cells.Min(static context => context.RowIndex) > 0 && rowHeaders.Count == probe.LastFrame.Rows.Count);
         }
 
-        await NextFrameAsync(() => probe.GridStyle = probe.GridStyle with { ColumnHeadersVisible = false, RowHeadersVisible = false }).ConfigureAwait(true);
+        await NextFrameAsync(() =>
+        {
+            probe.ColumnHeadersVisible = false;
+            probe.RowHeadersVisible = false;
+        }).ConfigureAwait(true);
         using (RenderBitmap())
         {
             Check("colors: hidden headers not evaluated", headers.Count == 0 && rowHeaders.Count == 0 && cells.Count > 0);
@@ -209,7 +217,8 @@ public sealed partial class QualityVerifier
 
         await NextFrameAsync(() =>
         {
-            probe.GridStyle = probe.GridStyle with { ColumnHeadersVisible = true, RowHeadersVisible = true };
+            probe.ColumnHeadersVisible = true;
+            probe.RowHeadersVisible = true;
             view.SetSource(Array.Empty<SampleRow>());
         }).ConfigureAwait(true);
         using (RenderBitmap())

@@ -23,7 +23,8 @@ public sealed partial class QualityVerifier
         {
             data = scenario.CreateData(rows);
             ScenarioGridFactory.Configure(grid, scenario, data);
-            grid.GridStyle = grid.GridStyle with { RowHeight = 40, HeaderHeight = 40 };
+            grid.RowHeight = 40;
+            grid.HeaderHeight = 40;
             if (columns > grid.VisibleColumns().Count)
             {
                 grid.ColumnDefinitions.ReplaceAll(grid.ColumnDefinitions.Concat(Enumerable.Range(0, columns - grid.VisibleColumns().Count).Select(static index => new GridColumn($"extra{index}", $"追加項目{index + 1}", new GridValueAccessor<TicketRow, string>(static row => row.GetText("Department"))) { Width = GridColumnWidth.Absolute(150) })).ToArray());

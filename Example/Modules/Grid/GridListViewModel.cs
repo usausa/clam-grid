@@ -54,14 +54,21 @@ public sealed partial class GridListViewModel : AppViewModelBase
     public partial int RowCount { get; set; } = 10000;
 
     [ObservableProperty]
-    public partial string FontText { get; set; }
+    public partial string FontText { get; set; } = "文字 16";
 
     public IObserveCommand SelectRowCountCommand { get; }
 
     public IObserveCommand SelectModeCommand { get; }
 
     [ObservableProperty]
-    public partial GridStyle GridStyle { get; set; }
+    public partial double FontSize { get; set; }
+
+    [ObservableProperty]
+    public partial double RowHeaderWidth { get; set; }
+
+    public Func<GridRowHeaderTextContext, string?> RowHeaderText { get; } = static context => context.IsSelected ? "✓" : null;
+
+    public Func<object, Color?> RowBackground { get; } = static x => x is SampleRow { IsDiscontinued: true } ? SampleColumns.DiscontinuedBackground : null;
 
     [ObservableProperty]
     public partial string SelectionText { get; set; } = default!;
@@ -114,8 +121,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
         Grid.FrameRendered += OnFrameRendered;
 
         SelectionMode = GridSelectionMode.MultipleToggle;
-        GridStyle = CreateStyle(16);
-        FontText = $"文字 {GridStyle.FontSize}";
+        ApplyFont(16);
         Statistics = String.Empty;
 
         SelectAllCommand = MakeDelegateCommand<bool>(x =>
@@ -207,8 +213,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
 
     private void ToggleFont()
     {
-        GridStyle = CreateStyle(GridStyle.FontSize.Equals(16d) ? 22 : 16);
-        FontText = $"文字 {GridStyle.FontSize}";
+        ApplyFont(FontSize.Equals(16d) ? 22 : 16);
     }
 
     private void SelectRowCount(int value)
@@ -229,19 +234,12 @@ public sealed partial class GridListViewModel : AppViewModelBase
         }
     }
 
-    private static GridStyle CreateStyle(double fontSize) => new()
+    private void ApplyFont(double size)
     {
-        FontSize = fontSize,
-        RowHeaderWidth = fontSize > 16 ? 88 : 72,
-        AscendingSortMark = "▲",
-        DescendingSortMark = "▼",
-        SortMarkPosition = GridSortMarkPosition.End,
-        SortPriorityVisible = true,
-        CornerText = "No.",
-        RowHeaderText = static context => context.IsSelected ? "✓" : null,
-        RowBackground = static x => x is SampleRow { IsDiscontinued: true } ? SampleColumns.DiscontinuedBackground : null,
-        AlternatingRowBackground = SampleColumns.AlternatingBackground
-    };
+        FontSize = size;
+        RowHeaderWidth = size > 16 ? 88 : 72;
+        FontText = $"文字 {size}";
+    }
 
     private void Load()
     {
@@ -478,7 +476,7 @@ public sealed partial class GridListViewModel : AppViewModelBase
             foreach (var count in new[] { 1000, 10000 })
             {
                 RowCount = count;
-                GridStyle = CreateStyle(16);
+                ApplyFont(16);
                 Load();
                 frames.Clear();
                 intervals.Clear();

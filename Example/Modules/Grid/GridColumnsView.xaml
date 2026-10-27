@@ -26,9 +26,8 @@
         <clam:ClamGridView Grid.Row="1"
                            behaviors:GridBind.Controller="{Binding Grid}"
                            ItemsSource="{Binding Rows}"
-                           AllowColumnConfiguration="False" AllowColumnResizing="False" AllowRowDragging="True"
-                           GridStyle="{Binding GridStyle}"
-                           IsReadOnly="False"
+                           AllowColumnConfiguration="False" AllowColumnResizing="False" AllowRowDragging="True" IsReadOnly="False"
+                           RowHeaderWidth="56" RowHeight="46"
                            RowMover="{Binding RowMover}" />
 
         <Label Grid.Row="2"

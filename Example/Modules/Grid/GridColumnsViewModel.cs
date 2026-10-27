@@ -13,9 +13,6 @@ public sealed partial class GridColumnsViewModel : AppViewModelBase
     public partial IGridRowMover? RowMover { get; set; }
 
     [ObservableProperty]
-    public partial GridStyle GridStyle { get; set; }
-
-    [ObservableProperty]
     public partial string Status { get; set; }
 
     //--------------------------------------------------------------------------------
@@ -28,7 +25,6 @@ public sealed partial class GridColumnsViewModel : AppViewModelBase
         Grid.CellTapped += OnCellTapped;
         Grid.CellValueChanged += OnCellValueChanged;
         Grid.RowMoved += OnRowMoved;
-        GridStyle = new GridStyle { RowHeaderWidth = 56, RowHeight = 46 };
         Status = $"表示 {session.Columns.Count(static x => x.IsVisible)} / {session.Columns.Count}列";
     }
 

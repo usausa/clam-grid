@@ -16,7 +16,7 @@ public sealed partial class GridColorViewModel : AppViewModelBase
     public partial bool IsSettingOpen { get; set; }
 
     [ObservableProperty]
-    public partial string FontText { get; set; }
+    public partial string FontText { get; set; } = "文字 16";
 
     public bool EmphasizeHeader
     {
@@ -41,7 +41,29 @@ public sealed partial class GridColorViewModel : AppViewModelBase
     public IObserveCommand SelectLineCommand { get; }
 
     [ObservableProperty]
-    public partial GridStyle GridStyle { get; set; }
+    public partial double FontSize { get; set; }
+
+    [ObservableProperty]
+    public partial double RowHeaderWidth { get; set; }
+
+    [ObservableProperty]
+    public partial bool HorizontalLinesVisible { get; set; } = true;
+
+    [ObservableProperty]
+    public partial bool VerticalLinesVisible { get; set; } = true;
+
+    public Func<GridCellColorContext, GridColors> CellColors { get; } = static context => context.IsSelected ? default : context.Column.Key switch
+    {
+        "difference" when context.Value is < 0 => new GridColors(WarningText, WarningBackground),
+        "discontinued" when context.Value is true => new GridColors(CompleteText, CompleteBackground),
+        "name" when ((SampleRow)context.Item).IsDiscontinued => new GridColors(CompleteText),
+        _ => default
+    };
+
+    public Func<GridRowHeaderColorContext, GridColors> RowHeaderColors { get; } = static context =>
+        !context.IsSelected && ((SampleRow)context.Item).IsDiscontinued ? new GridColors(CompleteText, CompleteBackground) : default;
+
+    public Func<GridColumnHeaderColorContext, GridColors> ColumnHeaderColors { get; }
 
     [ObservableProperty]
     public partial string Status { get; set; }
@@ -57,8 +79,8 @@ public sealed partial class GridColorViewModel : AppViewModelBase
         SampleColumns.RegisterSorts(Rows);
 
         Grid = new GridController(SampleColumns.CreateColor());
-        GridStyle = CreateStyle(16);
-        FontText = $"文字 {GridStyle.FontSize}";
+        ColumnHeaderColors = context => EmphasizeHeader && (context.Column.Key == "name") ? new GridColors(Colors.White, EmphasisBackground) : default;
+        ApplyFont(16);
         ToggleFontCommand = MakeDelegateCommand(ToggleFont);
         SelectLineCommand = MakeDelegateCommand<int>(SelectLine);
         Status = $"{Rows.Count:N0}行";
@@ -100,9 +122,8 @@ public sealed partial class GridColorViewModel : AppViewModelBase
 
     private void ToggleFont()
     {
-        GridStyle = CreateStyle(GridStyle.FontSize.Equals(16d) ? 22 : 16);
-        FontText = $"文字 {GridStyle.FontSize}";
-        Status = $"文字 {GridStyle.FontSize}";
+        ApplyFont(FontSize.Equals(16d) ? 22 : 16);
+        Status = FontText;
     }
 
     public void ShowCellBounds(string? columnKey, Rect? bounds) =>
@@ -111,7 +132,8 @@ public sealed partial class GridColorViewModel : AppViewModelBase
     private void SelectLine(int index)
     {
         LineIndex = index;
-        GridStyle = CreateStyle(GridStyle.FontSize);
+        HorizontalLinesVisible = index != 2;
+        VerticalLinesVisible = index == 0;
         Status = index switch { 1 => "罫線 横だけ", 2 => "罫線 なし", _ => "罫線 格子" };
     }
 
@@ -119,20 +141,10 @@ public sealed partial class GridColorViewModel : AppViewModelBase
     // Style
     //--------------------------------------------------------------------------------
 
-    private GridStyle CreateStyle(double fontSize) => new()
+    private void ApplyFont(double size)
     {
-        FontSize = fontSize,
-        RowHeaderWidth = fontSize > 16 ? 64 : 48,
-        HorizontalLinesVisible = LineIndex != 2,
-        VerticalLinesVisible = LineIndex == 0,
-        CellColors = static context => context.IsSelected ? default : context.Column.Key switch
-        {
-            "difference" when context.Value is < 0 => new GridColors(WarningText, WarningBackground),
-            "discontinued" when context.Value is true => new GridColors(CompleteText, CompleteBackground),
-            "name" when ((SampleRow)context.Item).IsDiscontinued => new GridColors(CompleteText),
-            _ => default
-        },
-        RowHeaderColors = static context => !context.IsSelected && ((SampleRow)context.Item).IsDiscontinued ? new GridColors(CompleteText, CompleteBackground) : default,
-        ColumnHeaderColors = context => EmphasizeHeader && (context.Column.Key == "name") ? new GridColors(Colors.White, EmphasisBackground) : default
-    };
+        FontSize = size;
+        RowHeaderWidth = size > 16 ? 64 : 48;
+        FontText = $"文字 {size}";
+    }
 }

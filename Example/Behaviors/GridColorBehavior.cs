@@ -2,7 +2,6 @@ namespace Example.Behaviors;
 
 using Smart.Maui.Interactivity;
 
-// Composes the row background by item state and the selection colors into GridStyle
 public sealed class GridColorBehavior : BehaviorBase<ClamGridView>
 {
     public static readonly BindableProperty ColorSelectorProperty = BindableProperty.Create(
@@ -22,8 +21,6 @@ public sealed class GridColorBehavior : BehaviorBase<ClamGridView>
         typeof(Color),
         typeof(GridColorBehavior),
         propertyChanged: HandleColorPropertyChanged);
-
-    private bool applying;
 
     public IColorSelector? ColorSelector
     {
@@ -47,15 +44,7 @@ public sealed class GridColorBehavior : BehaviorBase<ClamGridView>
     {
         base.OnAttachedTo(bindable);
 
-        bindable.PropertyChanged += GridOnPropertyChanged;
         Apply(bindable);
-    }
-
-    protected override void OnDetachingFrom(ClamGridView bindable)
-    {
-        bindable.PropertyChanged -= GridOnPropertyChanged;
-
-        base.OnDetachingFrom(bindable);
     }
 
     private static void HandleColorPropertyChanged(BindableObject bindable, object? oldValue, object? newValue)
@@ -67,31 +56,21 @@ public sealed class GridColorBehavior : BehaviorBase<ClamGridView>
         }
     }
 
-    private void GridOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        // Keeps the color settings when the style is replaced
-        if (!applying && (e.PropertyName == nameof(ClamGridView.GridStyle)) && (AssociatedObject is { } grid))
-        {
-            Apply(grid);
-        }
-    }
-
     private void Apply(ClamGridView grid)
     {
-        applying = true;
-        try
+        if (ColorSelector is { } selector)
         {
-            var style = grid.GridStyle;
-            grid.GridStyle = style with
-            {
-                RowBackground = ColorSelector is { } selector ? selector.Resolve : style.RowBackground,
-                SelectedBackground = SelectedBackgroundColor ?? style.SelectedBackground,
-                SelectedTextColor = SelectedTextColor ?? style.SelectedTextColor
-            };
+            grid.RowBackground = selector.Resolve;
         }
-        finally
+
+        if (SelectedBackgroundColor is { } background)
         {
-            applying = false;
+            grid.SelectedBackground = background;
+        }
+
+        if (SelectedTextColor is { } text)
+        {
+            grid.SelectedTextColor = text;
         }
     }
 }

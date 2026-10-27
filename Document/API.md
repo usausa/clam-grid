@@ -14,7 +14,6 @@
 | `FrozenColumnCount` | `int` | `0` | ✓ | Leading columns that stay in place while the others scroll |
 | `SortOrders` | `IReadOnlyList<GridSortOrder>` | `[]` | ✓ TwoWay | Sort keys and directions; applied to the data view and written back after every sort, an empty list clears the sort and `null` leaves the view unchanged |
 | `SortCycle` | `GridSortCycle` | `AscendingDescending` | ✓ | Direction sequence of repeated header taps; the `None` variants remove the key on the third tap |
-| `GridStyle` | `GridStyle` | `new()` | ✓ | Font, sizes and colors |
 | `EmptyText` | `string?` | `null` | ✓ | Text drawn in the center of the body when there is no row; the headers stay, and `null` or an empty string draws nothing |
 | `SelectionMode` | `GridSelectionMode` | `MultipleToggle` | ✓ | Selection behavior |
 | `RowCount` | `int` | | | Number of rows |
@@ -61,7 +60,6 @@
 | `GetColumnHeaderBounds(int column)`, `GetColumnHeaderBounds(string columnKey)` | `Rect?` | Column header in DIP, same `null` cases |
 | `GetRowHeaderBounds(int row)` | `Rect?` | Row header in DIP, same `null` cases; the width is zero while `RowHeadersVisible` is `False` |
 | `CancelInteraction()` | `void` | Stops the current gesture and inertia |
-| `ApplyStyle()` | `void` | Recreates the renderer and the layout and redraws after the content of `GridStyle` was changed in place |
 | `InvalidateSurface()` | `void` | Redraws the grid |
 | `Dispose()` | `void` | Releases the data view subscriptions, timers and native resources |
 
@@ -102,7 +100,7 @@ The grid is used on the UI thread; the members that change it throw `InvalidOper
 | `LineCount` | `int` | `1` | Cell text lines; above `1` the text is split at its line breaks (`&#10;` in XAML) into lines that are truncated one by one, lines past the count are dropped and `Auto` width measures the widest line. `0` draws as many lines as the row height allows without taking part in deriving it. At `1` the line breaks stay collapsed into spaces |
 | `Format` | `string?` | `null` | Composite format applied to any value when it contains `{` (`{0:N0} pcs`, `{0} san`), otherwise a .NET format string applied to `IFormattable` values (`N0`, `D6`, `yyyy/MM/dd`); parsed when assigned, so an invalid composite format throws `FormatException` there |
 | `Converter` | `IValueConverter?` | `null` | Runs on the cell value before `Format` when a text cell is painted; boolean cells, sorting and editing use the raw value |
-| `HeaderBackground`, `HeaderTextColor`, `TextColor`, `Background` | `Color?` | `null` | Static colors; `null` falls back to `GridStyle` |
+| `HeaderBackground`, `HeaderTextColor`, `TextColor`, `Background` | `Color?` | `null` | Static colors; `null` falls back to the colors of the grid |
 | `IsBoolean` | `bool` | `false` | Draws a check box and toggles the value on tap |
 | `CellPainter` | `Action<SKCanvas, GridCellPaintContext>?` | `null` | Draws the content of the body cells instead of the text or the check box (see below) |
 | `IsReadOnly` | `bool?` | `null` | Overrides `ClamGridView.IsReadOnly` for the column |
@@ -127,7 +125,7 @@ The painter runs while the grid is drawn, so it must not change the grid.
 | `IsSelected` | `bool` | Whether the row is selected |
 | `Colors` | `GridColors` | Text and background colors with the selection and `CellColors` applied |
 
-`ChartDrawing` of [ClamChart](https://github.com/usausa/clam-chart) draws a sparkline into the cell; the grid does not depend on ClamChart.  
+The application draws into the cell with SkiaSharp; the grid only clips the canvas to the cell and calls back.  
 
 ```csharp
 new GridColumn("trend", "Trend", new GridValueAccessor<SalesRow, double[]>(static x => x.GetSales()))
@@ -137,11 +135,24 @@ new GridColumn("trend", "Trend", new GridValueAccessor<SalesRow, double[]>(stati
     {
         if (context.Value is double[] values)
         {
-            ChartDrawing.DrawSparkline(canvas, SKRect.Inflate(context.Bounds, -8, -6), values, new SparklineDrawOptions());
+            using var paint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f, Color = SKColors.DodgerBlue };
+            var bounds = SKRect.Inflate(context.Bounds, -8, -6);
+            var minimum = values.Min();
+            var range = Math.Max(values.Max() - minimum, Double.Epsilon);
+            var points = new SKPoint[values.Length];
+            for (var i = 0; i < values.Length; i++)
+            {
+                var x = bounds.Left + (bounds.Width * i / (values.Length - 1));
+                points[i] = new SKPoint(x, (float)(bounds.Bottom - (bounds.Height * (values[i] - minimum) / range)));
+            }
+
+            canvas.DrawPoints(SKPointMode.Polygon, points, paint);
         }
     }
 }
 ```
+
+The example keeps the paints in a field and reuses the point buffer (`Example/Modules/Grid/SparklineDrawing.cs`), so a painted cell allocates nothing per frame.  
 
 ## 🧭 GridColumnState
 
@@ -155,11 +166,11 @@ An entry of `ColumnStates`, also produced by `GridColumnEditSession.Export()`.
 
 Changing `ColumnDefinitions` or `ColumnStates` is folded into one arrangement, which runs when the grid is drawn or when `ColumnStates` is read. The visible columns in display order are `ColumnStates` where `IsVisible`, and their effective width is `Width` of the state or the declared width of the definition when it is `null`.  
 
-## 🎨 GridStyle
+## 🎨 Appearance
 
-A style can be a XAML resource.  
-Treat it as immutable once assigned and replace it with a `with` expression to change it, or call `ApplyStyle()` after changing it in place.  
-Invalid sizes throw `ArgumentException` when the style is assigned or `ApplyStyle()` is called, and `null` throws `ArgumentNullException`.  
+The look is set with ordinary bindable properties on the view; there is no style object.  
+The grid builds a snapshot of them when one changes, so a frame reads one object and allocates nothing.  
+Each size is validated when it is assigned: the font size, the heights, the scroll bar thickness and the grid line width must be positive, the paddings and the row header width zero or more; otherwise `ArgumentOutOfRangeException` is thrown.  
 The default colors follow the Material palette: Blue 700 header, Cyan 700 and Orange 700 for the sorted column, Blue 100 selection and Gray tints.  
 
 | Name | Type | Default | Description |
@@ -175,7 +186,8 @@ The default colors follow the Material palette: Blue 700 header, Cyan 700 and Or
 | `ScrollBarVisible`, `ScrollBarThickness`, `ScrollBarColor` | `bool`, `double`, `Color` | `true`, `4`, `#8C64748B` | Scroll bars drawn over the right and bottom edges while the content overflows; the corner radius is half the thickness and the bar keeps a gap of one DIP from the edge |
 | `CornerText` | `string` | `#` | Text of the corner cell above the row headers; line breaks work as in column headers |
 | `RowHeaderAlignment` | `TextAlignment` | `End` | Alignment of the row header text |
-| `TextColor`, `Background`, `HeaderBackground`, `HeaderTextColor`, `RowHeaderBackground`, `GridLineColor`, `SelectedBackground`, `SelectedTextColor` | `Color` | | Base colors |
+| `BackgroundColor` | `Color?` | `null` | Background of the whole grid and the fallback of every cell; `null` fills it with white. This is the ordinary MAUI property of the view |
+| `TextColor`, `HeaderBackground`, `HeaderTextColor`, `RowHeaderBackground`, `GridLineColor`, `SelectedBackground`, `SelectedTextColor` | `Color` | | Base colors |
 | `AlternatingRowBackground` | `Color?` | `null` | Background of every second row in display order; the selection, `RowBackground` and the column background win, row headers keep their own color |
 | `FrozenLineColor` | `Color` | `#9E9E9E` | Separator on the right edge of the frozen columns |
 | `EmptyTextColor` | `Color` | `#9E9E9E` | Color of `ClamGridView.EmptyText` |
@@ -186,6 +198,28 @@ The default colors follow the Material palette: Blue 700 header, Cyan 700 and Or
 | `RowBackground` | `Func<object, Color?>?` | `null` | Row background by item |
 | `RowHeaderText` | `Func<GridRowHeaderTextContext, string?>?` | `null` | Row header text by item and selection state; `null` falls back to the row number |
 | `CellColors`, `ColumnHeaderColors`, `RowHeaderColors` | callback | `null` | Per cell and per header colors with the item, column, sort state and default colors in the context |
+
+### ClamGridThemes
+
+The library ships a `ResourceDictionary` whose keyed style carries both themes with `{AppThemeBinding}`, so merging it once is enough.  
+
+| Key | Target | Description |
+|---|---|---|
+| `ClamGridTheme` | `ClamGridView` | The thirteen colors of both themes; the sizes and the visibility are left to the application |
+
+```xml
+<Application.Resources>
+    <ResourceDictionary>
+        <ResourceDictionary.MergedDictionaries>
+            <clam:ClamGridThemes />
+        </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+</Application.Resources>
+
+<Style TargetType="clam:ClamGridView" BasedOn="{StaticResource ClamGridTheme}" />
+```
+
+⚠️ MAUI picks the most specific implicit style and does not merge two of them, so base an application style on the key instead of writing a second implicit style for the same type.
 
 ## 🗂 GridDataView&lt;T&gt;
 

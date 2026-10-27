@@ -81,7 +81,6 @@ Every setting a view model needs is a bindable property or a command.
                    SortOrders="{Binding SortOrders}"
                    SelectedKeys="{Binding SelectedKeys}"
                    FrozenColumnCount="1"
-                   GridStyle="{StaticResource ListGridStyle}"
                    SelectionMode="MultipleToggle"
                    SelectAllCommand="{Binding SelectCommand}"
                    ColumnConfigurationCommand="{Binding ColumnEditCommand}">
@@ -162,7 +161,7 @@ public sealed class TicketListViewModel : ObservableObject
 | Sort state | `SortOrders` (TwoWay) with the keys registered on the data view, and `SortCycle` for the header tap sequence |
 | Selection | `SelectionMode`, `SelectedKeys` (TwoWay), `SelectAllCommand` and the selection methods of the data view |
 | Editing | `IsReadOnly` and `CellValueChangedCommand` for boolean cells |
-| Colors | `GridStyle` as a resource with `RowBackground` and the color callbacks |
+| Colors | Bindable color properties, a MAUI `Style` for the theme, and `RowBackground` and the color callbacks for the data-driven colors |
 | Other input | `CellTappedCommand`, `CellLongPressedCommand`, `ColumnWidthChangedCommand` and `RowMovedCommand` |
 
 Messaging, navigation and screen controllers belong to the application.  
