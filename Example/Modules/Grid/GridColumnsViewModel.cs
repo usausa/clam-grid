@@ -25,7 +25,7 @@ public sealed partial class GridColumnsViewModel : AppViewModelBase
         Grid.CellTapped += OnCellTapped;
         Grid.CellValueChanged += OnCellValueChanged;
         Grid.RowMoved += OnRowMoved;
-        Status = $"表示 {session.Columns.Count(static x => x.IsVisible)} / {session.Columns.Count}列";
+        Status = String.Empty;
     }
 
     //--------------------------------------------------------------------------------
@@ -39,6 +39,7 @@ public sealed partial class GridColumnsViewModel : AppViewModelBase
         Disposables.Add(rows);
         Rows = rows;
         RowMover = new GridRowMover<GridColumnOption>(session.Columns, rows);
+        UpdateStatus();
         return Task.CompletedTask;
     }
 
@@ -72,9 +73,11 @@ public sealed partial class GridColumnsViewModel : AppViewModelBase
         }
     }
 
-    private void OnCellValueChanged(object? sender, GridCellValueEventArgs e) =>
-        Status = $"表示 {session.Columns.Count(static x => x.IsVisible)} / {session.Columns.Count}列";
+    private void OnCellValueChanged(object? sender, GridCellValueEventArgs e) => UpdateStatus();
 
     private void OnRowMoved(object? sender, GridRowMoveEventArgs e) =>
         Status = $"移動 {e.OldIndex + 1}行目 → {e.NewIndex + 1}行目";
+
+    private void UpdateStatus() =>
+        Status = $"表示 {session.Columns.Count(static x => x.IsVisible)} / {session.Columns.Count}列";
 }
