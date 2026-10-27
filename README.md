@@ -11,6 +11,10 @@ Layout, sorting, selection and touch handling run in C#, so the grid stays respo
 |:-:|:-:|:-:|
 | <img src="Document/list.png" width="240" /> | <img src="Document/color.png" width="240" /> | <img src="Document/ticket.png" width="240" /> |
 
+| ✨ Sparklines in cells | 🔗 Bound to a view model | ✏️ Editing in a scroll view |
+|:-:|:-:|:-:|
+| <img src="Document/sparkline.png" width="240" /> | <img src="Document/mvvm.png" width="240" /> | <img src="Document/input.png" width="240" /> |
+
 ## 🚀 Quick Start
 
 Call `UseSkiaSharp()` when building the application.  
@@ -68,6 +72,32 @@ public static GridValueAccessorCollection<Customer> Accessors { get; } = new()
 
 The grid scrolls by itself, so give it a definite size such as a `*` row of a `Grid`.  
 Tap a header to sort, tap a row to select it and long press to select or clear all rows.  
+
+## 🎨 Look
+
+| Part | Properties |
+|---|---|
+| Text | `FontFamily` with per character fallback through `FallbackFonts` of SkiaExtension, `FontSize`, `HorizontalPadding` / `VerticalPadding` |
+| Rows | `RowHeight`, `AlternatingRowBackground`, row headers with `RowHeaderWidth`, `RowHeaderAlignment` and `CornerText` |
+| Headers | `HeaderHeight`, `HeaderBackground`, `HeaderTextColor`, `ColumnHeadersVisible` / `RowHeadersVisible` |
+| Lines | `HorizontalLinesVisible` / `VerticalLinesVisible`, `GridLineWidth`, `GridLineColor`, `FrozenLineColor` |
+| Selection | `SelectedBackground`, `SelectedTextColor` |
+| Sorting | `AscendingHeaderBackground` / `DescendingHeaderBackground`, `AscendingSortMark` / `DescendingSortMark`, `SortMarkPosition`, `SortPriorityVisible` |
+| Conditional | `RowBackground`, `CellColors`, `ColumnHeaderColors`, `RowHeaderColors` and `RowHeaderText` callbacks, and `GridColumn.CellPainter` for drawing of your own |
+| Theme | The `ClamGridThemes` dictionary carries the light and dark colors |
+
+The look is set with bindable properties on the view; there is no style object.  
+Sizes are DIP and the default colors follow the Material palette.  
+
+Merge the theme of the library and base a style on it.  
+
+```xml
+<ResourceDictionary.MergedDictionaries>
+    <clam:ClamGridThemes />
+</ResourceDictionary.MergedDictionaries>
+
+<Style TargetType="clam:ClamGridView" BasedOn="{StaticResource ClamGridTheme}" />
+```
 
 ## 🔗 Binding and MVVM
 
@@ -185,16 +215,15 @@ Messaging, navigation and screen controllers belong to the application.
 
 ## 🧵 Threading
 
-The grid must be used on the UI thread, and a `GridDataView<T>` on the thread that created it, which in practice is the same thread.  
-Setting properties, calling methods and changing the bound collection all have to happen there; the members that change the grid or the data view check this and throw `InvalidOperationException` at once instead of leaving them in a state that breaks later.  
+Use the grid and its `GridDataView<T>` on the UI thread; the members that change them throw `InvalidOperationException` at once when called elsewhere.  
 
 ```csharp
 var rows = await LoadRowsAsync();
 await MainThread.InvokeOnMainThreadAsync(() => view.SetSource(rows));
 ```
 
-A change made from inside one of the data view events is refused as well, so make it after the notification returns.  
-`Suspend()` and `Resume()` of the data view fold a long series of changes into one rebuild.  
+A change made from inside a data view event is refused as well, so make it after the notification returns.  
+`Suspend()` and `Resume()` fold a long series of changes into one rebuild.  
 
 ## 📖 API
 
