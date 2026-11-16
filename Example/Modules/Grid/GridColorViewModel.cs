@@ -52,13 +52,15 @@ public sealed partial class GridColorViewModel : AppViewModelBase
     [ObservableProperty]
     public partial bool VerticalLinesVisible { get; set; } = true;
 
-    public Func<GridCellColorContext, GridColors> CellColors { get; } = static context => context.IsSelected ? default : context.Column.Key switch
-    {
-        "difference" when context.Value is < 0 => new GridColors(WarningText, WarningBackground),
-        "discontinued" when context.Value is true => new GridColors(CompleteText, CompleteBackground),
-        "name" when ((SampleRow)context.Item).IsDiscontinued => new GridColors(CompleteText),
-        _ => default
-    };
+    public Func<GridCellColorContext, GridColors> CellColors { get; } = static context => context.IsSelected
+        ? default
+        : context.Column.Key switch
+        {
+            "difference" when context.Value is < 0 => new GridColors(WarningText, WarningBackground),
+            "discontinued" when context.Value is true => new GridColors(CompleteText, CompleteBackground),
+            "name" when ((SampleRow)context.Item).IsDiscontinued => new GridColors(CompleteText),
+            _ => default
+        };
 
     public Func<GridRowHeaderColorContext, GridColors> RowHeaderColors { get; } = static context =>
         !context.IsSelected && ((SampleRow)context.Item).IsDiscontinued ? new GridColors(CompleteText, CompleteBackground) : default;

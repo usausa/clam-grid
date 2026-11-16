@@ -23,7 +23,11 @@ public sealed class GridColumnWidthTypeConverter : TypeConverter
             return GridColumnWidth.Auto;
         }
 
+#if NET11_0_OR_GREATER
+        if (text.EndsWith('*', StringComparison.Ordinal))
+#else
         if (text.EndsWith('*'))
+#endif
         {
             var weight = text[..^1].Trim();
             return GridColumnWidth.Star(weight.Length == 0 ? 1 : Double.Parse(weight, NumberStyles.Float, CultureInfo.InvariantCulture));

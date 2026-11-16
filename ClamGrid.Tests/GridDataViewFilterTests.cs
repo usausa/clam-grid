@@ -70,7 +70,7 @@ public sealed class GridDataViewFilterTests
     {
         // Arrange
         var rows = Rows(3);
-        var view = new GridDataView<Row>(rows, static row => row.Id) { Filter = static row => !row.Name.StartsWith('x') };
+        var view = new GridDataView<Row>(rows, static row => row.Id) { Filter = static row => !row.Name.StartsWith('x', StringComparison.Ordinal) };
 
         // Act
         rows[1].Name = "x1";

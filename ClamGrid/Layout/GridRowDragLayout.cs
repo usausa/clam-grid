@@ -14,7 +14,10 @@ internal static class GridRowDragLayout
     }
 
     public static int GetTargetIndex(int from, int insertion, int count) => (from < 0) || (from >= count) || (insertion < 0) || (insertion > count)
-        ? -1 : insertion > from ? insertion - 1 : insertion;
+        ? -1
+        : insertion > from
+            ? insertion - 1
+            : insertion;
 
     public static double GetScrollVelocity(GridLayout layout, Point point)
     {
